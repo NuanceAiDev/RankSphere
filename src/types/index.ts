@@ -3,7 +3,7 @@ export interface Client {
   name: string;
   domain: string;
   industry?: string;
-  rank_type?: 'organic' | 'qatar';
+  rank_type?: 'dubai' | 'qatar';
   created_at: string;
   updated_at: string;
 }
