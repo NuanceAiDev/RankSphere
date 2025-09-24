@@ -7,7 +7,7 @@ const BASE_URL = 'https://api.valueserp.com/search';
 export async function fetchKeywordRanking(
   domain: string, 
   keyword: string, 
-  rankType: 'dubai' | 'qatar' = 'qatar'
+  rankType: 'organic' | 'qatar' = 'qatar'
 ): Promise<RankingData> {
   if (!VALUESERP_API_KEY) {
     console.warn('ValueSERP API key not configured, using mock data');
@@ -26,16 +26,11 @@ export async function fetchKeywordRanking(
       num: '100' // Get top 100 results to find domain
     };
 
-    // Add location-specific parameters based on rank type
+    // Add Qatar-specific parameters if rank type is 'qatar'
     const params = new URLSearchParams(baseParams);
     if (rankType === 'qatar') {
       params.append('location', 'Doha, Qatar');
       params.append('gl', 'qa');
-      params.append('hl', 'en');
-      params.append('device', 'desktop');
-    } else if (rankType === 'dubai') {
-      params.append('location', 'Dubai, United Arab Emirates');
-      params.append('gl', 'ae');
       params.append('hl', 'en');
       params.append('device', 'desktop');
     }
@@ -82,10 +77,10 @@ export const DEFAULT_RANK_SETTINGS: RankSettings = {
   device: 'desktop'
 };
 
-export const DUBAI_RANK_SETTINGS: RankSettings = {
-  type: 'qatar-desktop',
-  location: 'Dubai, United Arab Emirates',
-  gl: 'ae',
+export const ORGANIC_RANK_SETTINGS: RankSettings = {
+  type: 'organic',
+  location: 'United States',
+  gl: 'us',
   hl: 'en',
   device: 'desktop'
 };

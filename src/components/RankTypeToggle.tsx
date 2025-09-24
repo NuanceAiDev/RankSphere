@@ -16,7 +16,7 @@ export function RankTypeToggle({ client, onUpdate }: RankTypeToggleProps) {
     setLocalRankType(client.rank_type || 'qatar');
   }, [client.rank_type]);
 
-  const handleToggle = async (rankType: 'dubai' | 'qatar') => {
+  const handleToggle = async (rankType: 'organic' | 'qatar') => {
     // Update UI immediately
     setLocalRankType(rankType);
     
@@ -28,7 +28,7 @@ export function RankTypeToggle({ client, onUpdate }: RankTypeToggleProps) {
 
       if (error) throw error;
 
-      toast.success(`Rank type updated to ${rankType === 'qatar' ? 'Qatar' : 'Dubai'}`);
+      toast.success(`Rank type updated to ${rankType === 'qatar' ? 'Qatar' : 'Organic'}`);
       onUpdate();
     } catch (error) {
       console.error('Error updating rank type:', error);
@@ -53,14 +53,14 @@ export function RankTypeToggle({ client, onUpdate }: RankTypeToggleProps) {
           Qatar
         </button>
         <button
-          onClick={() => handleToggle('dubai')}
+          onClick={() => handleToggle('organic')}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-            localRankType === 'dubai'
+            localRankType === 'organic'
               ? 'bg-blue-500 text-white shadow-sm'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
-          Dubai
+          Organic
         </button>
       </div>
     </div>
