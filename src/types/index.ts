@@ -4,6 +4,7 @@ export interface Client {
   domain: string;
   industry?: string;
   rank_type?: 'dubai' | 'qatar';
+  ga4_property_id?: string;
   created_at: string;
   updated_at: string;
 }
