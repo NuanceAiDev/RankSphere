@@ -10,7 +10,18 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved ? JSON.parse(saved) : false;
+    if (!saved) return false;
+    
+    // Handle legacy string values
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    
+    // Handle JSON boolean values
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return false;
+    }
   });
 
   useEffect(() => {
