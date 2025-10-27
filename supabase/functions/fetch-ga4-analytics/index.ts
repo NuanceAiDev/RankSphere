@@ -1,20 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-interface GA4Request {
-  propertyId: string;
-  startDate?: string;
-  endDate?: string;
-  metrics?: string[];
-  dimensions?: string[];
-}
+const propertyId = "286170308"; // Nuance GA4 property ID
 
 interface GA4Response {
   ok: boolean;
-  summary?: Record<string, number>;
-  rows?: any[];
-  metrics?: string[];
-  dimensions?: string[];
-  raw?: any;
+  overview?: {
+    totalUsers: number;
+    sessions: number;
+    engagementRate: number;
+    averageSessionDuration: number;
+  };
+  trafficSources?: Array<{
+    source: string;
+    sessions: number;
+  }>;
   error?: string;
   details?: any;
 }
@@ -22,80 +21,11 @@ interface GA4Response {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-async function createJWT(clientEmail: string, privateKey: string): Promise<string> {
-  const header = {
-    alg: "RS256",
-    typ: "JWT"
-  };
-
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    iss: clientEmail,
-    scope: "https://www.googleapis.com/auth/analytics.readonly",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now
-  };
-
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  
-  const data = encoder.encode(`${headerB64}.${payloadB64}`);
-  
-  // Import the private key
-  const keyData = privateKey.replace(/\\n/g, '\n');
-  const pemHeader = "-----BEGIN PRIVATE KEY-----";
-  const pemFooter = "-----END PRIVATE KEY-----";
-  const pemContents = keyData.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
-  
-  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    {
-      name: "RSASSA-PKCS1-v1_5",
-      hash: "SHA-256"
-    },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, data);
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-  return `${headerB64}.${payloadB64}.${signatureB64}`;
-}
-
-async function getAccessToken(clientEmail: string, privateKey: string): Promise<string> {
-  const jwt = await createJWT(clientEmail, privateKey);
-  
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to get access token: ${error}`);
-  }
-
-  const data = await response.json();
-  return data.access_token;
-}
-
 serve(async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -104,17 +34,18 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Read environment variables
     const clientEmail = Deno.env.get("GA4_CLIENT_EMAIL");
     const privateKey = Deno.env.get("GA4_PRIVATE_KEY");
-
+    
     if (!clientEmail || !privateKey) {
       const response: GA4Response = {
         ok: false,
-        error: "Missing GA4_CLIENT_EMAIL or GA4_PRIVATE_KEY environment variables"
+        error: "GA4 credentials missing"
       };
       
       return new Response(JSON.stringify(response), {
-        status: 400,
+        status: 500,
         headers: {
           "Content-Type": "application/json",
           ...corsHeaders,
@@ -122,81 +53,88 @@ serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    const requestData: GA4Request = await req.json();
-    const {
-      propertyId,
-      startDate = "28daysAgo",
-      endDate = "yesterday",
-      metrics = ["totalUsers", "sessions", "engagementRate"],
-      dimensions = ["sessionDefaultChannelGroup"]
-    } = requestData;
+    // Parse query parameters
+    const url = new URL(req.url);
+    const startDate = url.searchParams.get("startDate") || "30daysAgo";
+    const endDate = url.searchParams.get("endDate") || "today";
 
-    // Get access token
-    const accessToken = await getAccessToken(clientEmail, privateKey);
+    // Format private key correctly
+    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
-    // Prepare GA4 API request
-    const ga4Request = {
-      dateRanges: [{
-        startDate,
-        endDate
-      }],
-      metrics: metrics.map(name => ({ name })),
-      dimensions: dimensions.map(name => ({ name }))
+    // Import GA4 client
+    const { BetaAnalyticsDataClient } = await import("npm:@google-analytics/data@5.2.0");
+
+    // Initialize GA4 client
+    const analyticsDataClient = new BetaAnalyticsDataClient({
+      credentials: {
+        client_email: clientEmail,
+        private_key: formattedPrivateKey,
+      },
+    });
+
+    // Fetch overview metrics
+    const [overviewResponse] = await analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [
+        {
+          startDate,
+          endDate,
+        },
+      ],
+      metrics: [
+        { name: 'totalUsers' },
+        { name: 'sessions' },
+        { name: 'engagedSessions' },
+        { name: 'engagementRate' },
+        { name: 'averageSessionDuration' },
+      ],
+    });
+
+    // Fetch traffic sources
+    const [trafficResponse] = await analyticsDataClient.runReport({
+      property: `properties/${propertyId}`,
+      dateRanges: [
+        {
+          startDate,
+          endDate,
+        },
+      ],
+      metrics: [
+        { name: 'sessions' },
+      ],
+      dimensions: [
+        { name: 'sessionSource' },
+      ],
+      orderBys: [
+        {
+          metric: {
+            metricName: 'sessions'
+          },
+          desc: true
+        }
+      ],
+      limit: 5
+    });
+
+    // Extract overview metrics
+    const overviewRow = overviewResponse.rows?.[0];
+    const overview = {
+      totalUsers: parseInt(overviewRow?.metricValues?.[0]?.value || '0'),
+      sessions: parseInt(overviewRow?.metricValues?.[1]?.value || '0'),
+      engagementRate: parseFloat(overviewRow?.metricValues?.[3]?.value || '0'),
+      averageSessionDuration: parseFloat(overviewRow?.metricValues?.[4]?.value || '0'),
     };
 
-    // Call GA4 Data API
-    const ga4Response = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(ga4Request)
-      }
-    );
-
-    if (!ga4Response.ok) {
-      const errorData = await ga4Response.json().catch(() => ({}));
-      const response: GA4Response = {
-        ok: false,
-        error: `GA4 API Error: ${ga4Response.status}`,
-        details: errorData
-      };
-      
-      return new Response(JSON.stringify(response), {
-        status: ga4Response.status,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      });
-    }
-
-    const ga4Data = await ga4Response.json();
-
-    // Process summary metrics
-    const summary: Record<string, number> = {};
-    if (ga4Data.rows && ga4Data.rows.length > 0) {
-      const totalsRow = ga4Data.rows[0];
-      metrics.forEach((metric, index) => {
-        const value = totalsRow.metricValues?.[index]?.value;
-        summary[metric] = value ? parseFloat(value) : 0;
-      });
-    } else {
-      metrics.forEach(metric => {
-        summary[metric] = 0;
-      });
-    }
+    // Extract traffic sources
+    const trafficSources = trafficResponse.rows?.map(row => ({
+      source: row.dimensionValues?.[0]?.value || 'Unknown',
+      sessions: parseInt(row.metricValues?.[0]?.value || '0')
+    })) || [];
 
     const response: GA4Response = {
       ok: true,
-      summary,
-      rows: ga4Data.rows || [],
-      metrics,
-      dimensions,
-      raw: ga4Data
+      overview,
+      trafficSources
     };
 
     return new Response(JSON.stringify(response), {
@@ -208,12 +146,12 @@ serve(async (req: Request): Promise<Response> => {
     });
 
   } catch (error: any) {
-    console.error('GA4 Function Error:', error);
+    console.error('GA4 API Error:', error);
     
     const response: GA4Response = {
       ok: false,
-      error: error.message || 'Unknown error occurred',
-      details: error
+      error: "Failed to fetch GA4 data",
+      details: error.message || 'Unknown error occurred'
     };
 
     return new Response(JSON.stringify(response), {
