@@ -1,29 +1,42 @@
 // GA4 API client configuration
-const getGA4Client = () => {
-  console.warn('GA4 client is a server-side component and cannot run in the browser');
-  return null;
-};
+export async function fetchGA4Analytics(
+  startDate: string = '30daysAgo',
+  endDate: string = 'today'
+): Promise<GA4AnalyticsData> {
+  if (!SUPABASE_URL) {
+    throw new Error('Supabase URL not configured');
+  }
 
-export interface GA4Metrics {
-  date: string;
-  sessions: number;
-  users: number;
-  engagements: number;
-  source: string;
-  medium: string;
-}
+  const params = new URLSearchParams({
+    startDate,
+    endDate,
+  });
 
-export interface GA4Summary {
-  totalSessions: number;
-  totalUsers: number;
-  totalEngagements: number;
-  data: GA4Metrics[];
-}
+  const response = await fetch(
+    `${SUPABASE_URL}/functions/v1/fetch-ga4-analytics?${params}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
-export async function fetchGA4Data(propertyId: string): Promise<GA4Summary> {
-  throw new Error('GA4 data fetching is a server-side operation and cannot be performed in the browser. This functionality needs to be moved to a server-side component (e.g., Supabase Edge Function).');
-}
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+  }
 
-export const isGA4Configured = () => {
-  return false; // GA4 client cannot run in browser
+  const data = await response.json();
+  
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to fetch GA4 analytics');
+  }
+
+  return {
+    overview: data.overview,
+    trafficSources: data.trafficSources,
+    dateRange: data.dateRange,
+  };
+  return !!(SUPABASE_URL);
 };

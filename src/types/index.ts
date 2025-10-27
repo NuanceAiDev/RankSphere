@@ -48,3 +48,24 @@ export interface RankSettings {
   hl: string;
   device: string;
 }
+
+export interface GA4OverviewMetrics {
+  totalUsers: number;
+  sessions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+}
+
+export interface GA4TrafficSource {
+  name: string;
+  sessions: number;
+}
+
+export interface GA4AnalyticsData {
+  overview: GA4OverviewMetrics;
+  trafficSources: GA4TrafficSource[];
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+}
