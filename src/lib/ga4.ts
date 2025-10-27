@@ -1,48 +1,13 @@
-// GA4 API client configuration
-import { supabaseUrl, isSupabaseConfigured } from './supabase';
-import type { GA4AnalyticsData, GA4Summary, GA4Report } from '../types';
+// Legacy file - kept for backwards compatibility
+// All GA4 functionality has been moved to src/services/ga4.ts
 
-export async function fetchGA4Analytics(
-  startDate: string = '30daysAgo',
-  endDate: string = 'today'
-): Promise<GA4AnalyticsData> {
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL not configured');
-  }
-
-  const params = new URLSearchParams({
-    startDate,
-    endDate,
-  });
-
-  const response = await fetch(
-    `${supabaseUrl}/functions/v1/fetch-ga4-analytics?${params}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  
-  if (!data.success) {
-    throw new Error(data.error || 'Failed to fetch GA4 analytics');
-  }
-
-  return {
-    overview: data.overview,
-    trafficSources: data.trafficSources,
-    dateRange: data.dateRange,
-  };
-}
+export { fetchGA4Data } from '../services/ga4';
 
 export function isGA4Configured(): boolean {
-  return isSupabaseConfigured;
+  return !!(import.meta.env.VITE_SUPABASE_FUNCTIONS_URL && import.meta.env.VITE_SUPABASE_ANON_KEY && import.meta.env.VITE_GA4_PROPERTY_ID);
+}
+
+// Remove old unused exports
+export async function fetchGA4Analytics(): Promise<any> {
+  throw new Error('fetchGA4Analytics is deprecated. Use fetchGA4Data from src/services/ga4.ts instead.');
 }
