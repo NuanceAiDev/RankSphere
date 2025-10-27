@@ -42,3 +42,7 @@ export async function fetchGA4Analytics(
     dateRange: data.dateRange,
   };
 }
+
+export function isGA4Configured(): boolean {
+  return isSupabaseConfigured();
+}
