@@ -44,5 +44,5 @@ export async function fetchGA4Analytics(
 }
 
 export function isGA4Configured(): boolean {
-  return isSupabaseConfigured();
+  return isSupabaseConfigured;
 }
