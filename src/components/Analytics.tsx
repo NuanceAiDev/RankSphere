@@ -9,79 +9,73 @@ interface AnalyticsProps {
   selectedClient: Client | null;
 }
 
-interface GA4Data {
+interface GA4Overview {
   totalUsers: number;
   sessions: number;
   engagementRate: number;
-  trafficSources: Array<{
-    name: string;
-    sessions: number;
-    color: string;
-  }>;
+  averageSessionDuration: number;
+}
+
+interface GA4TrafficSource {
+  source: string;
+  sessions: number;
+  color: string;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export function Analytics({ selectedClient }: AnalyticsProps) {
-  const [ga4Data, setGa4Data] = useState<GA4Data | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [overview, setOverview] = useState<GA4Overview | null>(null);
+  const [trafficSources, setTrafficSources] = useState<GA4TrafficSource[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (selectedClient) {
-      loadGA4Data();
-    }
-  }, [selectedClient]);
+  // Resolve GA4 property ID in priority order
+  const propertyId = selectedClient?.ga4_property_id || import.meta.env.VITE_GA4_PROPERTY_ID || null;
 
-  const loadGA4Data = async () => {
-    const propertyId = import.meta.env.VITE_GA4_PROPERTY_ID;
-    
+  const handleRefresh = async () => {
     if (!propertyId) {
       setError('GA4 Property ID not configured');
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
 
     try {
-      const response = await fetchGA4Data({
-        propertyId,
-        startDate: "28daysAgo",
-        endDate: "yesterday",
-        metrics: ["totalUsers", "sessions", "engagementRate"],
-        dimensions: ["sessionDefaultChannelGroup"]
+      const result = await fetchGA4Data({ 
+        propertyId, 
+        startDate: "30daysAgo", 
+        endDate: "today" 
       });
 
-      // Process traffic sources from rows
-      const trafficSources = response.rows?.map((row: any, index: number) => ({
-        name: row.dimensionValues?.[0]?.value || 'Unknown',
-        sessions: parseInt(row.metricValues?.[1]?.value || '0'),
+      setOverview(result.overview || null);
+      
+      // Add colors to traffic sources
+      const sourcesWithColors = (result.trafficSources || []).map((source, index) => ({
+        ...source,
         color: COLORS[index % COLORS.length]
-      })) || [];
-
-      setGa4Data({
-        totalUsers: response.summary?.totalUsers || 0,
-        sessions: response.summary?.sessions || 0,
-        engagementRate: response.summary?.engagementRate || 0,
-        trafficSources
-      });
+      }));
+      setTrafficSources(sourcesWithColors);
 
       setLastUpdated(new Date().toISOString());
       toast.success('Analytics data refreshed successfully!');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics data';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleRefreshAnalytics = () => {
-    loadGA4Data();
-  };
+  // Auto-run on mount and when propertyId changes
+  useEffect(() => {
+    if (propertyId) {
+      handleRefresh();
+    }
+  }, [propertyId]);
 
   const formatEngagementRate = (rate: number) => {
     return `${(rate * 100).toFixed(1)}%`;
@@ -112,12 +106,12 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
             </span>
           )}
           <button
-            onClick={handleRefreshAnalytics}
-            disabled={isLoading}
+            onClick={handleRefresh}
+            disabled={loading}
             className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Refreshing...' : 'Refresh Analytics'}
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Refreshing...' : 'Refresh Analytics'}
           </button>
         </div>
       </div>
@@ -136,13 +130,13 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
               <p className="text-2xl font-bold text-blue-600">
-                {ga4Data?.totalUsers.toLocaleString() || '—'}
+                {overview?.totalUsers?.toLocaleString() || '—'}
               </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
@@ -156,7 +150,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Sessions</p>
               <p className="text-2xl font-bold text-green-600">
-                {ga4Data?.sessions.toLocaleString() || '—'}
+                {overview?.sessions?.toLocaleString() || '—'}
               </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
@@ -170,11 +164,25 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Engagement Rate</p>
               <p className="text-2xl font-bold text-purple-600">
-                {ga4Data ? formatEngagementRate(ga4Data.engagementRate) : '—'}
+                {overview ? formatEngagementRate(overview.engagementRate) : '—'}
               </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
               <MousePointer className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Session Duration</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {overview ? `${Math.round(overview.averageSessionDuration)}s` : '—'}
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
@@ -183,13 +191,13 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       {/* Traffic Acquisition */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Traffic Acquisition</h3>
-        {ga4Data?.trafficSources && ga4Data.trafficSources.length > 0 ? (
+        {trafficSources && trafficSources.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="flex justify-center">
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
-                    data={ga4Data.trafficSources}
+                    data={trafficSources}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -197,7 +205,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
                     paddingAngle={5}
                     dataKey="sessions"
                   >
-                    {ga4Data.trafficSources.map((entry, index) => (
+                    {trafficSources.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -214,7 +222,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
               </ResponsiveContainer>
             </div>
             <div className="space-y-3">
-              {ga4Data.trafficSources.map((source, index) => (
+              {trafficSources.map((source, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div 
@@ -222,7 +230,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
                       style={{ backgroundColor: source.color }}
                     ></div>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {source.name}
+                      {source.source}
                     </span>
                   </div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -241,16 +249,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           </div>
         )}
       </div>
-
-      {!ga4Data && !isLoading && !error && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
-          <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Analytics Data</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Click "Refresh Analytics" to fetch the latest data from Google Analytics 4
-          </p>
-        </div>
-      )}
     </div>
   );
 }

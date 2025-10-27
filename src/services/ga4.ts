@@ -2,22 +2,30 @@ interface GA4Params {
   propertyId: string;
   startDate?: string;
   endDate?: string;
-  metrics?: string[];
-  dimensions?: string[];
 }
 
 interface GA4Response {
   ok: boolean;
-  summary?: Record<string, number>;
-  rows?: any[];
-  metrics?: string[];
-  dimensions?: string[];
-  raw?: any;
+  overview?: {
+    totalUsers: number;
+    sessions: number;
+    engagementRate: number;
+    averageSessionDuration: number;
+  };
+  trafficSources?: Array<{
+    source: string;
+    sessions: number;
+  }>;
   error?: string;
   details?: any;
 }
 
-export async function fetchGA4Data(params: GA4Params): Promise<GA4Response> {
+export async function fetchGA4Data({ 
+  propertyId, 
+  startDate = "30daysAgo", 
+  endDate = "today" 
+}: GA4Params): Promise<{ overview: any; trafficSources: any[] }> {
+  // Validate required environment variables
   const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -29,20 +37,30 @@ export async function fetchGA4Data(params: GA4Params): Promise<GA4Response> {
     throw new Error('VITE_SUPABASE_ANON_KEY environment variable is not set');
   }
 
-  const response = await fetch(`${functionsUrl}/fetch-ga4-analytics`, {
-    method: 'POST',
+  // Build URL with query parameters (GET request)
+  const base = functionsUrl.replace(/\/$/, "");
+  const url = `${base}/fetch-ga4-analytics?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+
+  console.debug('GA4 Request URL:', url);
+
+  const response = await fetch(url, {
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'apikey': anonKey,
     },
-    body: JSON.stringify(params),
   });
 
-  const data: GA4Response = await response.json();
+  console.debug('GA4 Response:', response.status);
 
-  if (!data.ok) {
-    throw new Error(data.error || 'Failed to fetch GA4 data');
+  const json: GA4Response = await response.json();
+  console.debug('GA4 JSON:', json);
+
+  if (!response.ok || json.ok === false) {
+    throw new Error(json.error || 'GA4 request failed');
   }
 
-  return data;
+  return {
+    overview: json.overview || null,
+    trafficSources: json.trafficSources || []
+  };
 }
