@@ -57,7 +57,7 @@ serve(async (req: Request): Promise<Response> => {
     const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
     
     // Set the property ID
-    const propertyId = "2861*****";
+    const propertyId = "286170308";
 
     // Import GA4 client (using npm: specifier for Deno)
     const { BetaAnalyticsDataClient } = await import("npm:@google-analytics/data@4.7.0");
