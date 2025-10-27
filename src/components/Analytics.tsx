@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, MousePointer, RefreshCw, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Client, GA4Summary } from '../types';
-import { fetchGA4Analytics, isSupabaseConfigured } from '../lib/ga4';
+import { fetchGA4Analytics, isGA4Configured } from '../lib/ga4';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
