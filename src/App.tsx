@@ -9,7 +9,7 @@ import { Analytics } from './components/Analytics';
 import { ClientModal } from './components/ClientModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { Client, Keyword } from './types';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { supabase, isSupabaseConfigured, retryOperation } from './lib/supabase';
 import toast from 'react-hot-toast';
 
 function App() {
@@ -28,31 +28,49 @@ function App() {
 
   const loadClients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await retryOperation(async () => {
+        return await supabase
+          .from('clients')
+          .select('*')
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       setClients(data || []);
     } catch (error) {
       console.error('Error loading clients:', error);
-      toast.error('Failed to load clients');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('schema cache') || errorMessage.includes('PGRST002')) {
+        toast.error('Database is initializing. Please wait a moment and refresh the page.');
+      } else if (errorMessage.includes('not configured')) {
+        toast.error('Please connect to Supabase first');
+      } else {
+        toast.error('Failed to load clients. Please check your connection.');
+      }
     }
   };
 
   const loadKeywords = async () => {
     try {
-      const { data, error } = await supabase
-        .from('keywords')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await retryOperation(async () => {
+        return await supabase
+          .from('keywords')
+          .select('*')
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       setKeywords(data || []);
     } catch (error) {
       console.error('Error loading keywords:', error);
-      toast.error('Failed to load keywords');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('schema cache') || errorMessage.includes('PGRST002')) {
+        toast.error('Database is initializing. Please wait a moment and refresh the page.');
+      } else if (errorMessage.includes('not configured')) {
+        toast.error('Please connect to Supabase first');
+      } else {
+        toast.error('Failed to load keywords. Please check your connection.');
+      }
     }
   };
 

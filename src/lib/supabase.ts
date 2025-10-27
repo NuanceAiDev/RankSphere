@@ -8,6 +8,32 @@ console.log('URL:', supabaseUrl);
 console.log('Key exists:', !!supabaseAnonKey);
 console.log('Key length:', supabaseAnonKey?.length);
 
+// Retry utility for database operations
+export const retryOperation = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      const isRetryableError = 
+        error?.message?.includes('schema cache') ||
+        error?.message?.includes('PGRST002') ||
+        error?.code === 'PGRST002';
+      
+      if (attempt === maxRetries || !isRetryableError) {
+        throw error;
+      }
+      
+      console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms...`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay * attempt));
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
+
 // Create a mock client when environment variables are not configured
 const createSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -15,10 +41,10 @@ const createSupabaseClient = () => {
     // Return a mock client that throws helpful errors
     return {
       from: () => ({
-        select: () => Promise.resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase.') }),
-        insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase.') }),
-        update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase.') }),
-        delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase.') }),
+        select: () => Promise.resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
         eq: function() { return this; },
         order: function() { return this; },
         single: function() { return this; }
