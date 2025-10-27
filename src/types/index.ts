@@ -69,3 +69,19 @@ export interface GA4AnalyticsData {
     endDate: string;
   };
 }
+
+export interface GA4Report {
+  totalUsers: number;
+  sessions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+  trafficSources: GA4TrafficSource[];
+}
+
+export interface GA4Summary {
+  totalUsers: number;
+  sessions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+  topTrafficSources: GA4TrafficSource[];
+}

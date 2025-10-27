@@ -1,9 +1,12 @@
 // GA4 API client configuration
+import { supabaseUrl, isSupabaseConfigured } from './supabase';
+import type { GA4AnalyticsData, GA4Summary, GA4Report } from '../types';
+
 export async function fetchGA4Analytics(
   startDate: string = '30daysAgo',
   endDate: string = 'today'
 ): Promise<GA4AnalyticsData> {
-  if (!SUPABASE_URL) {
+  if (!supabaseUrl) {
     throw new Error('Supabase URL not configured');
   }
 
@@ -13,7 +16,7 @@ export async function fetchGA4Analytics(
   });
 
   const response = await fetch(
-    `${SUPABASE_URL}/functions/v1/fetch-ga4-analytics?${params}`,
+    `${supabaseUrl}/functions/v1/fetch-ga4-analytics?${params}`,
     {
       method: 'GET',
       headers: {
@@ -38,5 +41,4 @@ export async function fetchGA4Analytics(
     trafficSources: data.trafficSources,
     dateRange: data.dateRange,
   };
-  return !!(SUPABASE_URL);
-};
+}
