@@ -41,3 +41,4 @@ export async function fetchGA4Analytics(
     trafficSources: data.trafficSources,
     dateRange: data.dateRange,
   };
+}
