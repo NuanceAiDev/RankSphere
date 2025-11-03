@@ -129,7 +129,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               
               // Add logo to PDF (top-left, professional size)
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 60, 30);
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 130, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               console.warn('Logo processing failed:', error);
@@ -148,7 +148,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             pdf.text('Nuance Digital', margin, 35);
             resolve(true);
           };
-          logoImg.src = '/pp copy copy.jpg';
+          logoImg.src = '/pp.jpg';
         });
         
         await loadLogo;
@@ -204,14 +204,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
       pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
       
-      // Light watermark effect - more transparent
-      pdf.setFontSize(80);
-      pdf.setTextColor(250, 250, 250); // Even lighter gray (opacity ~0.05-0.08)
-      pdf.text('NUANCE', centerX, pageHeight / 2 + 20, { 
-        align: 'center',
-        angle: -15
-      });
-      
       // Yellow and Blue accent bars at bottom (matching page 2)
       pdf.setFillColor(251, 194, 16); // #fbc210 - Yellow
       pdf.rect(0, pageHeight - 8, 8, 8, 'F');
@@ -259,7 +251,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 35, 18);
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 130, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               pdf.setFontSize(12);
@@ -274,7 +266,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             pdf.text('Nuance', margin, 20);
             resolve(true);
           };
-          logoImg.src = '/pp copy copy.jpg';
+          logoImg.src = '/pp.jpg';
         });
         
         await loadPageLogo;
@@ -346,7 +338,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   ctx.drawImage(logoImg, 0, 0);
                   
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 35, 18);
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 130, 0); // Auto height to maintain aspect ratio
                   resolve(true);
                 } catch (error) {
                   pdf.setFontSize(12);
@@ -361,7 +353,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 pdf.text('Nuance', margin, 20);
                 resolve(true);
               };
-              logoImg.src = '/pp copy copy.jpg';
+              logoImg.src = '/pp.jpg';
             });
             
             await loadAdditionalPageLogo;
@@ -422,7 +414,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, footerY - 5, 30, 15);
+              pdf.addImage(logoDataUrl, 'JPEG', margin, footerY - 5, 130, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               pdf.setFontSize(10);
@@ -439,7 +431,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             pdf.text('Digital Solutions', margin, footerY + 8);
             resolve(true);
           };
-          logoImg.src = '/pp copy copy.jpg';
+          logoImg.src = '/pp.jpg';
         });
         
         await loadFooterLogo;
