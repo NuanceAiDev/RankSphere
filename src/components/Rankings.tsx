@@ -108,49 +108,83 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const currentMonthLabel = format(currentMonth, 'MMM-yy');
       const previousMonthLabel = format(previousMonth, 'MMM-yy');
       
-      // Add yellow left border
-      pdf.setFillColor(251, 194, 16); // #fbc210
-      pdf.rect(0, 0, 8, pageHeight, 'F');
+      // ===== FIRST PAGE - PROFESSIONAL COVER =====
       
-      // Add blue bottom border
-      pdf.setFillColor(4, 140, 212); // #048cd4
-      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+      // Header Section
+      // Logo placeholder (top-left)
+      pdf.setFontSize(14);
+      pdf.setTextColor(4, 140, 212); // #048cd4
+      pdf.text('NUANCE', margin, 30);
+      pdf.setFontSize(10);
+      pdf.text('DIGITAL', margin, 42);
       
-      // Add Nuance logo (we'll add a placeholder for now since we can't load images in this environment)
-      // In a real implementation, you would load and add the actual logo image
-      pdf.setFontSize(16);
-      pdf.setTextColor(4, 140, 212);
-      pdf.text('Nuance', margin + 10, 40);
-      pdf.setFontSize(12);
-      pdf.text('DIGITAL', margin + 55, 40);
-      
-      // Main title
-      pdf.setFontSize(24);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(`${selectedClient.name}`, margin, 80);
-      
+      // Title section (top-right)
       pdf.setFontSize(18);
-      pdf.text('Keyword Ranking Report', margin, 100);
+      pdf.setTextColor(4, 140, 212); // #048cd4
+      const titleX = pageWidth - 80;
+      pdf.text('Nuance Digital Solutions', titleX, 30, { align: 'right' });
       
       pdf.setFontSize(14);
-      pdf.text(`${format(currentMonth, 'MMM dd, yyyy')} to ${format(currentMonthEnd, 'MMM dd, yyyy')}`, margin, 115);
+      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.text('Keyword Ranking Report', titleX, 45, { align: 'right' });
       
-      // Client website
+      // Header divider line
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, 55, pageWidth - margin, 55);
+      
+      // Report Information Section (Centered)
+      const centerX = pageWidth / 2;
+      const infoStartY = 100;
+      
+      // Client Name
       pdf.setFontSize(12);
-      pdf.text(`https://${selectedClient.domain}`, margin, 130);
-      
-      // Blue header box
-      pdf.setFillColor(4, 140, 212);
-      pdf.rect(margin + 70, 150, pageWidth - margin - 90, 60, 'F');
-      
-      // Header text in white
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(20);
-      pdf.text(`${selectedClient.name}`, margin + 80, 170);
+      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.text('Client:', centerX - 60, infoStartY);
       pdf.setFontSize(16);
-      pdf.text('Keyword Ranking Report', margin + 80, 185);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(selectedClient.name, centerX - 20, infoStartY);
+      
+      // Website URL
       pdf.setFontSize(12);
-      pdf.text(`${format(currentMonth, 'MMM dd, yyyy')} to ${format(currentMonthEnd, 'MMM dd, yyyy')}`, margin + 80, 200);
+      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.text('Website:', centerX - 60, infoStartY + 25);
+      pdf.setFontSize(12);
+      pdf.setTextColor(4, 140, 212); // #048cd4
+      pdf.text(`https://${selectedClient.domain}`, centerX - 20, infoStartY + 25);
+      
+      // Report Period
+      pdf.setFontSize(12);
+      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.text('Period:', centerX - 60, infoStartY + 50);
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
+      pdf.text(periodText, centerX - 20, infoStartY + 50);
+      
+      // Light watermark effect (optional - using text as placeholder)
+      pdf.setFontSize(60);
+      pdf.setTextColor(245, 245, 245); // Very light gray
+      pdf.text('NUANCE', centerX, pageHeight / 2 + 20, { 
+        align: 'center',
+        angle: -15
+      });
+      
+      // Footer Section (Page 1 only)
+      const footerY = pageHeight - 60;
+      
+      // Tagline
+      pdf.setFontSize(12);
+      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.text('Empowering businesses through strategic digital growth.', centerX, footerY, { 
+        align: 'center',
+        fontStyle: 'italic'
+      });
+      
+      // Prepared by
+      pdf.setFontSize(10);
+      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.text('Prepared by Nuance Digital Solutions', centerX, footerY + 15, { align: 'center' });
       
       // Add new page for table
       pdf.addPage();
