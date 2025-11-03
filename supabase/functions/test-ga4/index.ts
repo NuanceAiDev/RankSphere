@@ -36,6 +36,7 @@ serve(async (req: Request): Promise<Response> => {
     // Read environment variables
     const clientEmail = Deno.env.get("GA4_CLIENT_EMAIL");
     const privateKey = Deno.env.get("GA4_PRIVATE_KEY");
+    const propertyId = Deno.env.get("GA4_PROPERTY_ID") || "286170308";
     
     if (!clientEmail || !privateKey) {
       const response: GA4Response = {
@@ -56,9 +57,6 @@ serve(async (req: Request): Promise<Response> => {
     // Format private key correctly
     const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
     
-    // Set the property ID
-    const propertyId = "286170308";
-
     // Import GA4 client (using npm: specifier for Deno)
     const { BetaAnalyticsDataClient } = await import("npm:@google-analytics/data@4.7.0");
 

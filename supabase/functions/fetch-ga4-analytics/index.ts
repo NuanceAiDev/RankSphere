@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const propertyId = "286170308"; // Nuance GA4 property ID
-
 interface GA4Response {
   ok: boolean;
   overview?: {
@@ -37,11 +35,12 @@ serve(async (req: Request): Promise<Response> => {
     // Read environment variables
     const clientEmail = Deno.env.get("GA4_CLIENT_EMAIL");
     const privateKey = Deno.env.get("GA4_PRIVATE_KEY");
+    const propertyId = Deno.env.get("GA4_PROPERTY_ID");
     
-    if (!clientEmail || !privateKey) {
+    if (!clientEmail || !privateKey || !propertyId) {
       const response: GA4Response = {
         ok: false,
-        error: "GA4 credentials missing"
+        error: "GA4 credentials or property ID missing"
       };
       
       return new Response(JSON.stringify(response), {
