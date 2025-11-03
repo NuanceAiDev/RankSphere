@@ -171,12 +171,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       });
       
       // Footer Section (Page 1 only)
-      const footerY = pageHeight - 60;
+      const coverFooterY = pageHeight - 60;
       
       // Tagline
       pdf.setFontSize(12);
       pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Empowering businesses through strategic digital growth.', centerX, footerY, { 
+      pdf.text('Empowering businesses through strategic digital growth.', centerX, coverFooterY, { 
         align: 'center',
         fontStyle: 'italic'
       });
@@ -184,7 +184,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Prepared by
       pdf.setFontSize(10);
       pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Prepared by Nuance Digital Solutions', centerX, footerY + 15, { align: 'center' });
+      pdf.text('Prepared by Nuance Digital Solutions', centerX, coverFooterY + 15, { align: 'center' });
       
       // Add new page for table
       pdf.addPage();
