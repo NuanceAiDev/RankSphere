@@ -38,7 +38,7 @@ export function Sidebar({
             <img 
               src="/pp copy copy copy.jpg" 
               alt="Nuance Digital" 
-              className="h-14 w-auto"
+              className="h-16 w-auto"
             />
           </div>
           <button
