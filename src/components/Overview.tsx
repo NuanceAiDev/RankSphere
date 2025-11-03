@@ -24,7 +24,16 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   }, [selectedClient]);
 
   const loadGA4Data = async () => {
+    // Check if required environment variables are set
+    const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
     if (!selectedClient?.ga4_property_id) {
+      return;
+    }
+    
+    if (!functionsUrl || !anonKey) {
+      console.warn('GA4 integration not configured: Missing Supabase environment variables');
       return;
     }
     
@@ -34,7 +43,11 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       setGa4Data(data);
     } catch (error) {
       console.error('Error loading GA4 data:', error);
-      // Don't show error toast for GA4 data - it's optional
+      // Only show error if it's not a configuration issue
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (!errorMessage.includes('environment variable') && !errorMessage.includes('not configured')) {
+        // Don't show error toast for configuration issues - GA4 data is optional
+      }
     } finally {
       setIsLoadingGA4(false);
     }
