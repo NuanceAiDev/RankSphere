@@ -6,6 +6,7 @@ import { Overview } from './components/Overview';
 import { Keywords } from './components/Keywords';
 import { Rankings } from './components/Rankings';
 import { Analytics } from './components/Analytics';
+import { GA4ValidationPanel } from './components/GA4ValidationPanel';
 import { ClientModal } from './components/ClientModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { Client, Keyword } from './types';
@@ -150,6 +151,7 @@ function App() {
     { id: 'keywords', label: 'Keywords' },
     { id: 'rankings', label: 'Report' },
     { id: 'analytics', label: 'Analytics' },
+    { id: 'validation', label: 'GA4 Validation' },
   ] as const;
 
   return (
@@ -219,6 +221,10 @@ function App() {
             <Analytics
               selectedClient={selectedClient}
             />
+          )}
+
+          {activeTab === 'validation' && (
+            <GA4ValidationPanel />
           )}
         </div>
 
