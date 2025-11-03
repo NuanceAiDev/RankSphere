@@ -129,7 +129,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               
               // Add logo to PDF (top-left, professional size)
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 100, 0); // Auto height to maintain aspect ratio
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 10, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               console.warn('Logo processing failed:', error);
@@ -251,7 +251,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 100, 0); // Auto height to maintain aspect ratio
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 10, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               pdf.setFontSize(12);
@@ -338,7 +338,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   ctx.drawImage(logoImg, 0, 0);
                   
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 100, 0); // Auto height to maintain aspect ratio
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 10, 0); // Auto height to maintain aspect ratio
                   resolve(true);
                 } catch (error) {
                   pdf.setFontSize(12);
@@ -414,7 +414,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, footerY - 5, 100, 0); // Auto height to maintain aspect ratio
+              pdf.addImage(logoDataUrl, 'JPEG', margin, footerY - 5, 10, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               pdf.setFontSize(10);
