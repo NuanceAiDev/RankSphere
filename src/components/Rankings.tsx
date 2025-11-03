@@ -110,81 +110,88 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // ===== FIRST PAGE - PROFESSIONAL COVER =====
       
-      // Header Section
-      // Logo placeholder (top-left)
-      pdf.setFontSize(14);
-      pdf.setTextColor(4, 140, 212); // #048cd4
-      pdf.text('NUANCE', margin, 30);
-      pdf.setFontSize(10);
-      pdf.text('DIGITAL', margin, 42);
+      // Header Section - Clean layout
+      // Logo placeholder (top-left) - actual logo would be loaded here
+      // For now, we'll use a placeholder box
+      pdf.setFillColor(4, 140, 212);
+      pdf.rect(margin, 20, 40, 20, 'F'); // Logo placeholder box
+      pdf.setFontSize(8);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('LOGO', margin + 15, 32);
       
-      // Title section (top-right)
+      // Title section (top-right) - single clean header
       pdf.setFontSize(18);
       pdf.setTextColor(4, 140, 212); // #048cd4
-      const titleX = pageWidth - 80;
-      pdf.text('Nuance Digital Solutions', titleX, 30, { align: 'right' });
+      const titleX = pageWidth - margin;
+      pdf.text('Nuance Digital Solutions', titleX, 28, { align: 'right' });
       
       pdf.setFontSize(14);
-      pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Keyword Ranking Report', titleX, 45, { align: 'right' });
+      pdf.setTextColor(85, 85, 85); // #555555
+      pdf.text('Keyword Ranking Report', titleX, 42, { align: 'right' });
       
-      // Header divider line
-      pdf.setDrawColor(200, 200, 200);
+      // Header divider line - thin and subtle
+      pdf.setDrawColor(224, 224, 224); // #e0e0e0
       pdf.setLineWidth(0.5);
-      pdf.line(margin, 55, pageWidth - margin, 55);
+      pdf.line(margin, 52, pageWidth - margin, 52);
       
-      // Report Information Section (Centered)
+      // Report Information Section (Centered) - reduced spacing
       const centerX = pageWidth / 2;
-      const infoStartY = 100;
+      const infoStartY = 85;
       
       // Client Name
-      pdf.setFontSize(12);
-      pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Client:', centerX - 60, infoStartY);
-      pdf.setFontSize(16);
+      pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(selectedClient.name, centerX - 20, infoStartY);
+      pdf.text('Client:', centerX - 50, infoStartY, { fontStyle: 'bold' });
+      pdf.setFontSize(18);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(selectedClient.name, centerX + 10, infoStartY, { fontStyle: 'bold' });
       
       // Website URL
-      pdf.setFontSize(12);
-      pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Website:', centerX - 60, infoStartY + 25);
-      pdf.setFontSize(12);
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Website:', centerX - 50, infoStartY + 20, { fontStyle: 'bold' });
+      pdf.setFontSize(14);
       pdf.setTextColor(4, 140, 212); // #048cd4
-      pdf.text(`https://${selectedClient.domain}`, centerX - 20, infoStartY + 25);
+      pdf.text(`https://${selectedClient.domain}`, centerX + 10, infoStartY + 20, { fontStyle: 'bold' });
       
       // Report Period
-      pdf.setFontSize(12);
-      pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Period:', centerX - 60, infoStartY + 50);
-      pdf.setFontSize(12);
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Period:', centerX - 50, infoStartY + 40, { fontStyle: 'bold' });
+      pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
       const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
-      pdf.text(periodText, centerX - 20, infoStartY + 50);
+      pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
       
-      // Light watermark effect (optional - using text as placeholder)
-      pdf.setFontSize(60);
-      pdf.setTextColor(245, 245, 245); // Very light gray
+      // Light watermark effect - more transparent
+      pdf.setFontSize(80);
+      pdf.setTextColor(250, 250, 250); // Even lighter gray (opacity ~0.05-0.08)
       pdf.text('NUANCE', centerX, pageHeight / 2 + 20, { 
         align: 'center',
         angle: -15
       });
       
-      // Footer Section (Page 1 only)
-      const coverFooterY = pageHeight - 60;
+      // Yellow and Blue accent bars at bottom (matching page 2)
+      pdf.setFillColor(251, 194, 16); // #fbc210 - Yellow
+      pdf.rect(0, pageHeight - 8, 8, 8, 'F');
+      pdf.setFillColor(4, 140, 212); // #048cd4 - Blue
+      pdf.rect(8, pageHeight - 8, pageWidth - 8, 8, 'F');
       
-      // Tagline
-      pdf.setFontSize(12);
+      // Footer Section (Page 1 only)
+      const coverFooterY = pageHeight - 45;
+      
+      // Updated Tagline - "Helping Your Business Grow"
+      pdf.setFontSize(14);
       pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Empowering businesses through strategic digital growth.', centerX, coverFooterY, { 
+      pdf.text('Helping Your Business Grow', centerX, coverFooterY, { 
         align: 'center',
-        fontStyle: 'italic'
+        fontStyle: 'bolditalic'
       });
       
       // Prepared by
       pdf.setFontSize(10);
       pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Prepared by Nuance Digital Solutions', centerX, coverFooterY + 15, { align: 'center' });
+      pdf.text('Prepared by Nuance Digital Solutions', centerX, coverFooterY + 12, { align: 'center' });
       
       // Add new page for table
       pdf.addPage();
