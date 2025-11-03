@@ -116,7 +116,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await (async () => new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
           logoImg.onload = () => {
             try {
               // Create canvas to convert image to data URL
@@ -148,7 +148,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             resolve(true);
           };
           logoImg.src = '/pp copy copy.jpg';
-        }))();
+        });
       } catch (error) {
         console.warn('Logo loading error:', error);
         // Fallback to text
@@ -246,7 +246,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await (async () => new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
           logoImg.onload = () => {
             try {
               const canvas = document.createElement('canvas');
@@ -272,7 +272,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             resolve(true);
           };
           logoImg.src = '/pp copy copy.jpg';
-        }))();
+        });
       } catch (error) {
         pdf.setFontSize(12);
         pdf.setTextColor(4, 140, 212);
