@@ -113,19 +113,11 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Header Section - Clean layout
       // Logo placeholder (top-left) - actual logo would be loaded here
       // For now, we'll use a placeholder box
-      // Add Nuance Digital logo
-      try {
-        const logoImg = new Image();
-        logoImg.src = '/pp copy.jpg';
-        pdf.addImage(logoImg, 'JPEG', margin, 20, 50, 25); // Adjusted size for new logo with tagline
-      } catch (error) {
-        // Fallback to placeholder if logo fails to load
-        pdf.setFillColor(4, 140, 212);
-        pdf.rect(margin, 20, 50, 25, 'F');
-        pdf.setFontSize(8);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text('NUANCE LOGO', margin + 15, 35);
-      }
+      pdf.setFillColor(4, 140, 212);
+      pdf.rect(margin, 20, 40, 20, 'F'); // Logo placeholder box
+      pdf.setFontSize(8);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('LOGO', margin + 15, 32);
       
       // Title section (top-right) - single clean header
       pdf.setFontSize(18);
@@ -213,18 +205,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Header with logo and client info
       pdf.setFontSize(12);
       pdf.setTextColor(4, 140, 212);
-      // Add smaller Nuance logo for table pages
-      try {
-        const logoImg = new Image();
-        logoImg.src = '/pp copy.jpg';
-        pdf.addImage(logoImg, 'JPEG', margin, 12, 30, 15); // Smaller size for table pages
-      } catch (error) {
-        // Fallback text if logo fails to load
-        pdf.text('Nuance', margin, 20);
-      }
+      pdf.text('Nuance', margin, 20);
       
       pdf.setTextColor(128, 128, 128);
-      pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 100, 20);
+      pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
       
       // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
@@ -273,16 +257,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           // Header
           pdf.setFontSize(12);
           pdf.setTextColor(4, 140, 212);
-          // Add smaller Nuance logo for additional table pages
-          try {
-            const logoImg = new Image();
-            logoImg.src = '/pp copy.jpg';
-            pdf.addImage(logoImg, 'JPEG', margin, 12, 30, 15);
-          } catch (error) {
-            pdf.text('Nuance', margin, 20);
-          }
+          pdf.text('Nuance', margin, 20);
           pdf.setTextColor(128, 128, 128);
-          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 100, 20);
+          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
           pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           
           currentY = 40;
@@ -317,21 +294,15 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Footer on last page
       const footerY = pageHeight - 25;
       
-      // Nuance logo in footer
+      // Nuance logo placeholder in footer
       pdf.setFontSize(10);
       pdf.setTextColor(4, 140, 212);
-      try {
-        const logoImg = new Image();
-        logoImg.src = '/pp copy.jpg';
-        pdf.addImage(logoImg, 'JPEG', margin, footerY - 10, 25, 12); // Small footer logo
-      } catch (error) {
-        pdf.text('Nuance', margin, footerY);
-        pdf.text('Digital Solutions', margin, footerY + 8);
-      }
+      pdf.text('Nuance', margin, footerY);
+      pdf.text('Digital Solutions', margin, footerY + 8);
       
       // Generated date
       pdf.setTextColor(128, 128, 128);
-      pdf.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 100, footerY);
+      pdf.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, footerY);
       
       // Save the PDF
       const fileName = `${selectedClient.name} - Keyword Ranking Report - ${format(currentMonth, 'dd MMM, yyyy')} to ${format(currentMonthEnd, 'dd MMM, yyyy')}.pdf`;
