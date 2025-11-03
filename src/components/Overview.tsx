@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Target, BarChart3, Users } from 'lucide-react';
 import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Client, Keyword } from '../types';
-import { fetchGA4Analytics, GA4AnalyticsData } from '../lib/ga4';
+import { fetchGA4Data, GA4AnalyticsData } from '../services/ga4';
 import toast from 'react-hot-toast';
 
 interface OverviewProps {
@@ -24,9 +24,13 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   }, [selectedClient]);
 
   const loadGA4Data = async () => {
+    if (!selectedClient?.ga4_property_id) {
+      return;
+    }
+    
     setIsLoadingGA4(true);
     try {
-      const data = await fetchGA4Analytics();
+      const data = await fetchGA4Data(selectedClient.ga4_property_id);
       setGa4Data(data);
     } catch (error) {
       console.error('Error loading GA4 data:', error);
