@@ -116,7 +116,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await new Promise((resolve, reject) => {
+        // Use Promise.then() instead of await to avoid transpilation issues
+        const loadLogo = new Promise((resolve) => {
           logoImg.onload = () => {
             try {
               // Create canvas to convert image to data URL
@@ -149,6 +150,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           };
           logoImg.src = '/pp copy copy.jpg';
         });
+        
+        await loadLogo;
       } catch (error) {
         console.warn('Logo loading error:', error);
         // Fallback to text
@@ -246,7 +249,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await new Promise((resolve, reject) => {
+        const loadPageLogo = new Promise((resolve) => {
           logoImg.onload = () => {
             try {
               const canvas = document.createElement('canvas');
@@ -273,6 +276,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           };
           logoImg.src = '/pp copy copy.jpg';
         });
+        
+        await loadPageLogo;
       } catch (error) {
         pdf.setFontSize(12);
         pdf.setTextColor(4, 140, 212);
@@ -331,7 +336,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             const logoImg = new Image();
             logoImg.crossOrigin = 'anonymous';
             
-            await new Promise((resolve) => {
+            const loadAdditionalPageLogo = new Promise((resolve) => {
               logoImg.onload = () => {
                 try {
                   const canvas = document.createElement('canvas');
@@ -358,6 +363,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               };
               logoImg.src = '/pp copy copy.jpg';
             });
+            
+            await loadAdditionalPageLogo;
           } catch (error) {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
@@ -405,7 +412,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await new Promise((resolve) => {
+        const loadFooterLogo = new Promise((resolve) => {
           logoImg.onload = () => {
             try {
               const canvas = document.createElement('canvas');
@@ -434,6 +441,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           };
           logoImg.src = '/pp copy copy.jpg';
         });
+        
+        await loadFooterLogo;
       } catch (error) {
         pdf.setFontSize(10);
         pdf.setTextColor(4, 140, 212);
