@@ -319,7 +319,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       let pageNumber = 1;
       
       // Table rows
-      clientKeywords.forEach((keyword, index) => {
+      for (const [index, keyword] of clientKeywords.entries()) {
         // Check if we need a new page
         if (currentY > pageHeight - 40) {
           pdf.addPage();
@@ -402,7 +402,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         pdf.text(previousRankText, margin + colWidths[0] + colWidths[1] + 5, currentY);
         
         currentY += rowHeight;
-      });
+      }
       
       // Footer on last page
       const footerY = pageHeight - 25;
