@@ -148,7 +148,7 @@ function App() {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'keywords', label: 'Keywords' },
-    { id: 'rankings', label: 'Rankings' },
+    { id: 'rankings', label: 'Report' },
     { id: 'analytics', label: 'Analytics' },
   ] as const;
 
