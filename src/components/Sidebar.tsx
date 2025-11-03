@@ -36,7 +36,7 @@ export function Sidebar({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <img 
-              src="/pp copy copy copy.jpg" 
+              src="/pp-new.png" 
               alt="Nuance Digital" 
               className="h-18 w-auto"
             />
