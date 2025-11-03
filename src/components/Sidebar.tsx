@@ -35,12 +35,11 @@ export function Sidebar({
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Rank<span className="text-blue-500">Sphere</span>
-            </h1>
+            <img 
+              src="/pp.jpg" 
+              alt="Nuance Digital" 
+              className="h-10 w-auto"
+            />
           </div>
           <button
             onClick={toggleTheme}

@@ -81,8 +81,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Header with RankSphere branding
       pdf.setFontSize(24);
-      pdf.setTextColor(59, 130, 246); // Blue color
-      pdf.text('RankSphere', 20, 30);
+      pdf.setTextColor(0, 150, 200); // Nuance blue color
+      pdf.text('Nuance Digital', 20, 30);
       
       pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);

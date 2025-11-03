@@ -1,4 +1,4 @@
-# RankSphere - SEO Rank Tracking Dashboard
+# Nuance Digital - SEO Rank Tracking Dashboard
 
 A modern, comprehensive SEO dashboard application built for agencies to manage multiple clients and track their keyword rankings with monthly snapshots and professional reporting.
 
