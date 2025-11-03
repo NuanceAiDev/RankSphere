@@ -110,33 +110,71 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // ===== FIRST PAGE - PROFESSIONAL COVER =====
       
-      // Header Section - Clean layout
-      // Logo placeholder (top-left) - actual logo would be loaded here
-      // For now, we'll use a placeholder box
-      pdf.setFillColor(4, 140, 212);
-      pdf.rect(margin, 20, 40, 20, 'F'); // Logo placeholder box
-      pdf.setFontSize(8);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text('LOGO', margin + 15, 32);
+      // Header Section with actual logo
+      try {
+        // Load and add the Nuance Digital logo
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          logoImg.onload = () => {
+            try {
+              // Create canvas to convert image to data URL
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = logoImg.width;
+              canvas.height = logoImg.height;
+              ctx.drawImage(logoImg, 0, 0);
+              
+              // Add logo to PDF (top-left, professional size)
+              const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 60, 30);
+              resolve(true);
+            } catch (error) {
+              console.warn('Logo processing failed:', error);
+              // Fallback to text
+              pdf.setFontSize(14);
+              pdf.setTextColor(4, 140, 212);
+              pdf.text('Nuance Digital', margin, 35);
+              resolve(true);
+            }
+          };
+          logoImg.onerror = () => {
+            console.warn('Logo loading failed, using text fallback');
+            // Fallback to text
+            pdf.setFontSize(14);
+            pdf.setTextColor(4, 140, 212);
+            pdf.text('Nuance Digital', margin, 35);
+            resolve(true);
+          };
+          logoImg.src = '/pp copy copy.jpg';
+        });
+      } catch (error) {
+        console.warn('Logo loading error:', error);
+        // Fallback to text
+        pdf.setFontSize(14);
+        pdf.setTextColor(4, 140, 212);
+        pdf.text('Nuance Digital', margin, 35);
+      }
       
-      // Title section (top-right) - single clean header
+      // Title section (top-right) - clean header with proper spacing
       pdf.setFontSize(18);
       pdf.setTextColor(4, 140, 212); // #048cd4
       const titleX = pageWidth - margin;
-      pdf.text('Nuance Digital Solutions', titleX, 28, { align: 'right' });
+      pdf.text('Nuance Digital Solutions', titleX, 25, { align: 'right' });
       
       pdf.setFontSize(14);
       pdf.setTextColor(85, 85, 85); // #555555
-      pdf.text('Keyword Ranking Report', titleX, 42, { align: 'right' });
+      pdf.text('Keyword Ranking Report', titleX, 40, { align: 'right' });
       
       // Header divider line - thin and subtle
       pdf.setDrawColor(224, 224, 224); // #e0e0e0
       pdf.setLineWidth(0.5);
-      pdf.line(margin, 52, pageWidth - margin, 52);
+      pdf.line(margin, 55, pageWidth - margin, 55);
       
       // Report Information Section (Centered) - reduced spacing
       const centerX = pageWidth / 2;
-      const infoStartY = 85;
+      const infoStartY = 90;
       
       // Client Name
       pdf.setFontSize(14);
@@ -203,9 +241,43 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
       
       // Header with logo and client info
-      pdf.setFontSize(12);
-      pdf.setTextColor(4, 140, 212);
-      pdf.text('Nuance', margin, 20);
+      try {
+        // Add smaller logo for table pages
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          logoImg.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = logoImg.width;
+              canvas.height = logoImg.height;
+              ctx.drawImage(logoImg, 0, 0);
+              
+              const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 35, 18);
+              resolve(true);
+            } catch (error) {
+              pdf.setFontSize(12);
+              pdf.setTextColor(4, 140, 212);
+              pdf.text('Nuance', margin, 20);
+              resolve(true);
+            }
+          };
+          logoImg.onerror = () => {
+            pdf.setFontSize(12);
+            pdf.setTextColor(4, 140, 212);
+            pdf.text('Nuance', margin, 20);
+            resolve(true);
+          };
+          logoImg.src = '/pp copy copy.jpg';
+        });
+      } catch (error) {
+        pdf.setFontSize(12);
+        pdf.setTextColor(4, 140, 212);
+        pdf.text('Nuance', margin, 20);
+      }
       
       pdf.setTextColor(128, 128, 128);
       pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
@@ -254,10 +326,44 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           pdf.setFillColor(4, 140, 212);
           pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
           
-          // Header
-          pdf.setFontSize(12);
-          pdf.setTextColor(4, 140, 212);
-          pdf.text('Nuance', margin, 20);
+          // Header with logo for additional pages
+          try {
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            
+            await new Promise((resolve) => {
+              logoImg.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  canvas.width = logoImg.width;
+                  canvas.height = logoImg.height;
+                  ctx.drawImage(logoImg, 0, 0);
+                  
+                  const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 35, 18);
+                  resolve(true);
+                } catch (error) {
+                  pdf.setFontSize(12);
+                  pdf.setTextColor(4, 140, 212);
+                  pdf.text('Nuance', margin, 20);
+                  resolve(true);
+                }
+              };
+              logoImg.onerror = () => {
+                pdf.setFontSize(12);
+                pdf.setTextColor(4, 140, 212);
+                pdf.text('Nuance', margin, 20);
+                resolve(true);
+              };
+              logoImg.src = '/pp copy copy.jpg';
+            });
+          } catch (error) {
+            pdf.setFontSize(12);
+            pdf.setTextColor(4, 140, 212);
+            pdf.text('Nuance', margin, 20);
+          }
+          
           pdf.setTextColor(128, 128, 128);
           pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
           pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
@@ -294,11 +400,46 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Footer on last page
       const footerY = pageHeight - 25;
       
-      // Nuance logo placeholder in footer
-      pdf.setFontSize(10);
-      pdf.setTextColor(4, 140, 212);
-      pdf.text('Nuance', margin, footerY);
-      pdf.text('Digital Solutions', margin, footerY + 8);
+      // Footer with logo
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve) => {
+          logoImg.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = logoImg.width;
+              canvas.height = logoImg.height;
+              ctx.drawImage(logoImg, 0, 0);
+              
+              const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              pdf.addImage(logoDataUrl, 'JPEG', margin, footerY - 5, 30, 15);
+              resolve(true);
+            } catch (error) {
+              pdf.setFontSize(10);
+              pdf.setTextColor(4, 140, 212);
+              pdf.text('Nuance', margin, footerY);
+              pdf.text('Digital Solutions', margin, footerY + 8);
+              resolve(true);
+            }
+          };
+          logoImg.onerror = () => {
+            pdf.setFontSize(10);
+            pdf.setTextColor(4, 140, 212);
+            pdf.text('Nuance', margin, footerY);
+            pdf.text('Digital Solutions', margin, footerY + 8);
+            resolve(true);
+          };
+          logoImg.src = '/pp copy copy.jpg';
+        });
+      } catch (error) {
+        pdf.setFontSize(10);
+        pdf.setTextColor(4, 140, 212);
+        pdf.text('Nuance', margin, footerY);
+        pdf.text('Digital Solutions', margin, footerY + 8);
+      }
       
       // Generated date
       pdf.setTextColor(128, 128, 128);
