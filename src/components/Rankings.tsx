@@ -116,7 +116,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await new Promise((resolve, reject) => {
+        await (async () => new Promise((resolve, reject) => {
           logoImg.onload = () => {
             try {
               // Create canvas to convert image to data URL
@@ -148,7 +148,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             resolve(true);
           };
           logoImg.src = '/pp copy copy.jpg';
-        });
+        }))();
       } catch (error) {
         console.warn('Logo loading error:', error);
         // Fallback to text
@@ -246,7 +246,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        await new Promise((resolve, reject) => {
+        await (async () => new Promise((resolve, reject) => {
           logoImg.onload = () => {
             try {
               const canvas = document.createElement('canvas');
@@ -272,7 +272,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             resolve(true);
           };
           logoImg.src = '/pp copy copy.jpg';
-        });
+        }))();
       } catch (error) {
         pdf.setFontSize(12);
         pdf.setTextColor(4, 140, 212);
@@ -331,7 +331,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             const logoImg = new Image();
             logoImg.crossOrigin = 'anonymous';
             
-            await new Promise((resolve) => {
+            await (async () => new Promise((resolve) => {
               logoImg.onload = () => {
                 try {
                   const canvas = document.createElement('canvas');
@@ -343,7 +343,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                   pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 35, 18);
                   resolve(true);
-                } catch (error) {
+          await (async () => new Promise((resolve) => {
                   pdf.setFontSize(12);
                   pdf.setTextColor(4, 140, 212);
                   pdf.text('Nuance', margin, 20);
@@ -357,7 +357,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 resolve(true);
               };
               logoImg.src = '/pp copy copy.jpg';
-            });
+            }))();
           } catch (error) {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
@@ -425,7 +425,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               resolve(true);
             }
           };
-          logoImg.onerror = () => {
+          }))();
             pdf.setFontSize(10);
             pdf.setTextColor(4, 140, 212);
             pdf.text('Nuance', margin, footerY);
