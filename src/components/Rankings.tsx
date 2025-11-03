@@ -331,7 +331,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             const logoImg = new Image();
             logoImg.crossOrigin = 'anonymous';
             
-            await (async () => new Promise((resolve) => {
+            await new Promise((resolve) => {
               logoImg.onload = () => {
                 try {
                   const canvas = document.createElement('canvas');
@@ -357,7 +357,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 resolve(true);
               };
               logoImg.src = '/pp copy copy.jpg';
-            }))();
+            });
           } catch (error) {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
