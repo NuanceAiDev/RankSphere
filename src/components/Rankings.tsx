@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveCo
 import { Client, Keyword } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
 
 interface RankingsProps {
@@ -74,145 +74,197 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
     }
   ];
 
+  // Helper function to convert number to ordinal (1st, 2nd, 3rd, etc.)
+  const toOrdinal = (num: number): string => {
+    const suffixes = ['th', 'st', 'nd', 'rd'];
+    const v = num % 100;
+    return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+  };
+
+  // Helper function to get ranking color based on change
+  const getRankingColor = (current: number | null, previous: number | null): [number, number, number] => {
+    if (!current || !previous) return [0, 0, 0]; // Black for no data
+    
+    if (previous > current) return [0, 128, 0]; // Green for improvement
+    if (previous < current) return [255, 0, 0]; // Red for decline
+    return [128, 128, 128]; // Gray for no change
+  };
+
   const generateReport = async () => {
     setIsGeneratingReport(true);
     try {
       const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
       
-      // Header with RankSphere branding
+      // Calculate date ranges
+      const currentDate = new Date();
+      const currentMonth = startOfMonth(currentDate);
+      const previousMonth = startOfMonth(subMonths(currentDate, 1));
+      const currentMonthEnd = endOfMonth(currentDate);
+      const previousMonthEnd = endOfMonth(previousMonth);
+      
+      const currentMonthLabel = format(currentMonth, 'MMM-yy');
+      const previousMonthLabel = format(previousMonth, 'MMM-yy');
+      
+      // Add yellow left border
+      pdf.setFillColor(251, 194, 16); // #fbc210
+      pdf.rect(0, 0, 8, pageHeight, 'F');
+      
+      // Add blue bottom border
+      pdf.setFillColor(4, 140, 212); // #048cd4
+      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+      
+      // Add Nuance logo (we'll add a placeholder for now since we can't load images in this environment)
+      // In a real implementation, you would load and add the actual logo image
+      pdf.setFontSize(16);
+      pdf.setTextColor(4, 140, 212);
+      pdf.text('Nuance', margin + 10, 40);
+      pdf.setFontSize(12);
+      pdf.text('DIGITAL', margin + 55, 40);
+      
+      // Main title
       pdf.setFontSize(24);
-      pdf.setTextColor(0, 150, 200); // Nuance blue color
-      pdf.text('Nuance Digital', 20, 30);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`${selectedClient.name}`, margin, 80);
       
       pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('SEO Rankings Report', 20, 45);
+      pdf.text('Keyword Ranking Report', margin, 100);
       
-      // Client info
-      pdf.setFontSize(12);
-      pdf.text(`Client: ${selectedClient.name}`, 20, 65);
-      pdf.text(`Domain: ${selectedClient.domain}`, 20, 75);
-      if (selectedClient.industry) {
-        pdf.text(`Industry: ${selectedClient.industry}`, 20, 85);
-      }
-      pdf.text(`Generated: ${format(new Date(), 'MMMM d, yyyy')}`, 20, selectedClient.industry ? 95 : 85);
-      
-      // Summary stats
-      const yStart = selectedClient.industry ? 105 : 95;
       pdf.setFontSize(14);
+      pdf.text(`${format(currentMonth, 'MMM dd, yyyy')} to ${format(currentMonthEnd, 'MMM dd, yyyy')}`, margin, 115);
+      
+      // Client website
+      pdf.setFontSize(12);
+      pdf.text(`https://${selectedClient.domain}`, margin, 130);
+      
+      // Blue header box
+      pdf.setFillColor(4, 140, 212);
+      pdf.rect(margin + 70, 150, pageWidth - margin - 90, 60, 'F');
+      
+      // Header text in white
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.text(`${selectedClient.name}`, margin + 80, 170);
+      pdf.setFontSize(16);
+      pdf.text('Keyword Ranking Report', margin + 80, 185);
+      pdf.setFontSize(12);
+      pdf.text(`${format(currentMonth, 'MMM dd, yyyy')} to ${format(currentMonthEnd, 'MMM dd, yyyy')}`, margin + 80, 200);
+      
+      // Add new page for table
+      pdf.addPage();
+      
+      // Add borders to new page
+      pdf.setFillColor(251, 194, 16);
+      pdf.rect(0, 0, 8, pageHeight, 'F');
+      pdf.setFillColor(4, 140, 212);
+      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+      
+      // Header with logo and client info
+      pdf.setFontSize(12);
+      pdf.setTextColor(4, 140, 212);
+      pdf.text('Nuance', margin, 20);
+      
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+      
+      // Page number
+      pdf.text('1', pageWidth - margin, pageHeight - 15);
+      
+      // Google Ranking section
+      pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);
-      pdf.text('Performance Summary', 20, yStart);
+      pdf.text('Google Ranking', margin, 50);
       
-      // Create performance summary table
-      const summaryTableY = yStart + 15;
+      pdf.setFontSize(12);
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`Showing ${clientKeywords.length} of ${clientKeywords.length} Rows`, margin, 65);
       
-      // Table headers
-      pdf.setFontSize(10);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Metric', 30, summaryTableY);
-      pdf.text('Value', 120, summaryTableY);
+      // Table header
+      const tableStartY = 80;
+      const colWidths = [100, 40, 40]; // Keyword, Current Month, Previous Month
+      const rowHeight = 12;
       
-      // Draw header line
-      pdf.line(25, summaryTableY + 3, 160, summaryTableY + 3);
+      // Header background
+      pdf.setFillColor(128, 128, 128);
+      pdf.rect(margin, tableStartY - 5, colWidths[0] + colWidths[1] + colWidths[2], rowHeight, 'F');
+      
+      // Header text
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.text('Keyword', margin + 5, tableStartY + 5);
+      pdf.text(currentMonthLabel, margin + colWidths[0] + 5, tableStartY + 5);
+      pdf.text(previousMonthLabel, margin + colWidths[0] + colWidths[1] + 5, tableStartY + 5);
+      
+      let currentY = tableStartY + rowHeight + 5;
+      let pageNumber = 1;
       
       // Table rows
-      let rowY = summaryTableY + 15;
-      
-      // Total Keywords
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Total Keywords', 30, rowY);
-      pdf.text(`${clientKeywords.length}`, 120, rowY);
-      rowY += 12;
-      
-      // Improvements
-      pdf.setTextColor(16, 185, 129); // Green
-      pdf.text('Improvements', 30, rowY);
-      pdf.text(`${improvements}`, 120, rowY);
-      rowY += 12;
-      
-      // Declines
-      pdf.setTextColor(239, 68, 68); // Red
-      pdf.text('Declines', 30, rowY);
-      pdf.text(`${declines}`, 120, rowY);
-      rowY += 12;
-      
-      // No Change
-      pdf.setTextColor(107, 114, 128); // Gray
-      pdf.text('No Change', 30, rowY);
-      pdf.text(`${noChange}`, 120, rowY);
-      
-      // Draw table border
-      pdf.rect(25, summaryTableY - 5, 135, rowY - summaryTableY + 10);
-      
-      // Keywords table header
-      const tableStart = rowY + 25;
-      pdf.setFontSize(12);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Keyword Rankings', 20, tableStart);
-      
-      // Table headers
-      pdf.setFontSize(8);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Keyword', 20, tableStart + 15);
-      pdf.text('Previous Rank', 80, tableStart + 15);
-      pdf.text('Current Rank', 120, tableStart + 15);
-      pdf.text('Change', 160, tableStart + 15);
-      pdf.text('Last Updated', 180, tableStart + 15);
-      
-      // Draw header line
-      pdf.line(20, tableStart + 18, 200, tableStart + 18);
-      
-      let yPosition = tableStart + 25;
       clientKeywords.forEach((keyword, index) => {
-        if (yPosition > 270) {
+        // Check if we need a new page
+        if (currentY > pageHeight - 40) {
           pdf.addPage();
-          yPosition = 30;
+          pageNumber++;
+          
+          // Add borders to new page
+          pdf.setFillColor(251, 194, 16);
+          pdf.rect(0, 0, 8, pageHeight, 'F');
+          pdf.setFillColor(4, 140, 212);
+          pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+          
+          // Header
+          pdf.setFontSize(12);
+          pdf.setTextColor(4, 140, 212);
+          pdf.text('Nuance', margin, 20);
+          pdf.setTextColor(128, 128, 128);
+          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+          pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+          
+          currentY = 40;
         }
         
-        const rankChange = keyword.current_month_rank && keyword.previous_month_rank
-          ? keyword.previous_month_rank - keyword.current_month_rank
-          : null;
-        
-        pdf.setFontSize(8);
-        
-        // Truncate long keywords
-        const truncatedKeyword = keyword.text.length > 25 
-          ? keyword.text.substring(0, 25) + '...' 
-          : keyword.text;
-        
-        pdf.text(truncatedKeyword, 20, yPosition);
-        pdf.text(keyword.previous_month_rank ? `#${keyword.previous_month_rank}` : '—', 80, yPosition);
-        pdf.text(keyword.current_month_rank ? `#${keyword.current_month_rank}` : '—', 120, yPosition);
-        
-        if (rankChange !== null) {
-          if (rankChange > 0) {
-            pdf.setTextColor(16, 185, 129); // Green
-            pdf.text(`+${rankChange}`, 160, yPosition);
-          } else if (rankChange < 0) {
-            pdf.setTextColor(239, 68, 68); // Red
-            pdf.text(`${rankChange}`, 160, yPosition);
-          } else {
-            pdf.setTextColor(107, 114, 128); // Gray
-            pdf.text('0', 160, yPosition);
-          }
-          pdf.setTextColor(0, 0, 0); // Reset to black
-        } else {
-          pdf.text('—', 160, yPosition);
+        // Row background (alternating)
+        if (index % 2 === 0) {
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(margin, currentY - 8, colWidths[0] + colWidths[1] + colWidths[2], rowHeight, 'F');
         }
         
-        pdf.text(
-          keyword.last_checked 
-            ? format(new Date(keyword.last_checked), 'MMM d')
-            : '—', 
-          180, 
-          yPosition
-        );
+        // Keyword name
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        const truncatedKeyword = keyword.text.length > 35 ? keyword.text.substring(0, 35) + '...' : keyword.text;
+        pdf.text(truncatedKeyword, margin + 2, currentY);
         
-        yPosition += 8;
+        // Current month rank
+        const currentRankColor = getRankingColor(keyword.current_month_rank, keyword.previous_month_rank);
+        pdf.setTextColor(currentRankColor[0], currentRankColor[1], currentRankColor[2]);
+        const currentRankText = keyword.current_month_rank ? toOrdinal(keyword.current_month_rank) : '—';
+        pdf.text(currentRankText, margin + colWidths[0] + 5, currentY);
+        
+        // Previous month rank
+        pdf.setTextColor(0, 0, 0); // Always black for previous month
+        const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
+        pdf.text(previousRankText, margin + colWidths[0] + colWidths[1] + 5, currentY);
+        
+        currentY += rowHeight;
       });
       
+      // Footer on last page
+      const footerY = pageHeight - 25;
+      
+      // Nuance logo placeholder in footer
+      pdf.setFontSize(10);
+      pdf.setTextColor(4, 140, 212);
+      pdf.text('Nuance', margin, footerY);
+      pdf.text('Digital Solutions', margin, footerY + 8);
+      
+      // Generated date
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`Generated on ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, footerY);
+      
       // Save the PDF
-      const fileName = `${selectedClient.name}-rankings-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      const fileName = `${selectedClient.name} - Keyword Ranking Report - ${format(currentMonth, 'dd MMM, yyyy')} to ${format(currentMonthEnd, 'dd MMM, yyyy')}.pdf`;
       pdf.save(fileName);
       toast.success('Report generated successfully!');
     } catch (error) {
