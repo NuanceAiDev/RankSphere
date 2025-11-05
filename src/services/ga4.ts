@@ -46,11 +46,18 @@ export async function fetchGA4Data({
   const response = await fetch(url, {
     method: 'GET',
     headers: {
+      'Authorization': `Bearer ${anonKey}`,
       'apikey': anonKey,
+      'Content-Type': 'application/json',
     },
   });
 
   console.debug('GA4 Response:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`GA4 API request failed: ${response.status} - ${errorText}`);
+  }
 
   const json: GA4Response = await response.json();
   console.debug('GA4 JSON:', json);
