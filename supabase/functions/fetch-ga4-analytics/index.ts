@@ -18,8 +18,8 @@ interface GA4Response {
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req: Request): Promise<Response> => {
@@ -28,6 +28,23 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
+    });
+  }
+
+  // Check for authorization header
+  const authHeader = req.headers.get("authorization") || req.headers.get("apikey");
+  if (!authHeader) {
+    const response: GA4Response = {
+      ok: false,
+      error: "Missing authorization header. Please include 'Authorization: Bearer <anon_key>' or 'apikey: <anon_key>' header."
+    };
+    
+    return new Response(JSON.stringify(response), {
+      status: 401,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
     });
   }
 
@@ -40,7 +57,12 @@ serve(async (req: Request): Promise<Response> => {
     if (!clientEmail || !privateKey || !propertyId) {
       const response: GA4Response = {
         ok: false,
-        error: "GA4 credentials or property ID missing"
+        error: "GA4 credentials or property ID missing",
+        details: {
+          hasClientEmail: !!clientEmail,
+          hasPrivateKey: !!privateKey,
+          hasPropertyId: !!propertyId
+        }
       };
       
       return new Response(JSON.stringify(response), {
