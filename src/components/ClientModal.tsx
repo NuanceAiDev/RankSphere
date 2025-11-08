@@ -5,7 +5,7 @@ import { Client } from '../types';
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string, domain: string, industry?: string, ga4PropertyId?: string) => void;
+  onSubmit: (name: string, domain: string, industry?: string) => void;
   editingClient?: Client | null;
 }
 
@@ -13,19 +13,16 @@ export function ClientModal({ isOpen, onClose, onSubmit, editingClient }: Client
   const [name, setName] = useState('');
   const [domain, setDomain] = useState('');
   const [industry, setIndustry] = useState('');
-  const [ga4PropertyId, setGa4PropertyId] = useState('');
 
   useEffect(() => {
     if (editingClient) {
       setName(editingClient.name);
       setDomain(editingClient.domain);
       setIndustry(editingClient.industry || '');
-      setGa4PropertyId(editingClient.ga4_property_id || '');
     } else {
       setName('');
       setDomain('');
       setIndustry('');
-      setGa4PropertyId('');
     }
   }, [editingClient, isOpen]);
 
@@ -38,13 +35,11 @@ export function ClientModal({ isOpen, onClose, onSubmit, editingClient }: Client
       onSubmit(
         name.trim(), 
         domain.trim(), 
-        industry.trim() || undefined,
-        ga4PropertyId.trim() || undefined
+        industry.trim() || undefined
       );
       setName('');
       setDomain('');
       setIndustry('');
-      setGa4PropertyId('');
     }
   };
 
@@ -103,22 +98,6 @@ export function ClientModal({ isOpen, onClose, onSubmit, editingClient }: Client
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="e.g., Technology, Healthcare, Finance"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              GA4 Property ID
-            </label>
-            <input
-              type="text"
-              value={ga4PropertyId}
-              onChange={(e) => setGa4PropertyId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="e.g., 123456789"
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Optional: Enter your Google Analytics 4 Property ID for analytics integration
-            </p>
           </div>
 
           <div className="flex gap-3 pt-4">
