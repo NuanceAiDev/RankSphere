@@ -409,28 +409,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         )}
       </div>
 
-      {/* Setup Warning Banner */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">
-              ⚠️ Supabase Storage Setup Required
-            </h3>
-            <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-              Before uploading screenshots, you must create the storage bucket in your Supabase project:
-            </p>
-            <ol className="text-sm text-amber-700 dark:text-amber-300 space-y-1 ml-4 list-decimal">
-              <li>Go to your <strong>Supabase Dashboard → Storage</strong></li>
-              <li>Click <strong>"New bucket"</strong></li>
-              <li>Name it: <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">analytics_screenshots</code></li>
-              <li>Set it to <strong>"Public"</strong> for PDF access</li>
-              <li>Optionally add 7-day lifecycle rules for auto-cleanup</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-
       {/* Upload Area */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="mb-4">
@@ -595,16 +573,24 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
             <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
               Setup Required: Supabase Storage
             </h4>
-              <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">How It Works</h4>
-              <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                <p>• Screenshots are organized by client and month</p>
-                <p>• Files auto-delete after 7 days (with lifecycle rules)</p>
-                <p>• Uploaded images appear in generated PDF reports</p>
-                <p>• Supports JPEG, PNG, WebP formats (max 10MB each)</p>
+            <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+              <p className="font-medium">Before uploading, ensure your Supabase Storage is configured:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>Go to your Supabase Dashboard → Storage</li>
+                <li>Create a new bucket named: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">analytics_screenshots</code></li>
+                <li>Make the bucket <strong>Public</strong> for PDF generation</li>
+                <li>Set up lifecycle rules to auto-delete files after 7 days</li>
+              </ol>
+              <div className="mt-3 pt-2 border-t border-blue-200 dark:border-blue-700">
+                <p className="text-xs">
+                  <strong>Features:</strong> Auto-organized by client/month • Temporary storage (7-day cleanup) • 
+                  PDF report integration • JPEG/PNG/WebP support (max 10MB each)
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
 }
