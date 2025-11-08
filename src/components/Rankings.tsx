@@ -263,6 +263,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Yellow and Blue accent bars at bottom (matching page 2)
       pdf.setFillColor(251, 194, 16); // #fbc210 - Yellow
       pdf.rect(0, pageHeight - 8, 8, 8, 'F');
+      pdf.rect(pageWidth - 8, 0, 8, pageHeight - 8, 'F'); // Right-side yellow accent
       pdf.setFillColor(4, 140, 212); // #048cd4 - Blue
       pdf.rect(8, pageHeight - 8, pageWidth - 8, 8, 'F');
       
@@ -288,6 +289,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Add borders to new page
       pdf.setFillColor(251, 194, 16);
       pdf.rect(0, 0, 8, pageHeight, 'F');
+      pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
       pdf.setFillColor(4, 140, 212);
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
       
