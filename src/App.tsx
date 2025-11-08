@@ -5,8 +5,6 @@ import { Sidebar } from './components/Sidebar';
 import { Overview } from './components/Overview';
 import { Keywords } from './components/Keywords';
 import { Rankings } from './components/Rankings';
-import { Analytics } from './components/Analytics';
-import { GA4ValidationPanel } from './components/GA4ValidationPanel';
 import { ClientModal } from './components/ClientModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { Client, Keyword } from './types';
@@ -17,7 +15,7 @@ function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'keywords' | 'rankings' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keywords' | 'rankings'>('overview');
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
@@ -75,7 +73,7 @@ function App() {
     }
   };
 
-  const handleAddClient = async (name: string, domain: string, industry?: string, ga4PropertyId?: string) => {
+  const handleAddClient = async (name: string, domain: string, industry?: string) => {
     if (!isSupabaseConfigured) {
       toast.error('Please connect to Supabase first');
       return;
@@ -84,7 +82,7 @@ function App() {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .insert({ name, domain, industry, ga4_property_id: ga4PropertyId })
+        .insert({ name, domain, industry })
         .select()
         .single();
 
@@ -99,13 +97,13 @@ function App() {
     }
   };
 
-  const handleEditClient = async (name: string, domain: string, industry?: string, ga4PropertyId?: string) => {
+  const handleEditClient = async (name: string, domain: string, industry?: string) => {
     if (!editingClient) return;
 
     try {
       const { data, error } = await supabase
         .from('clients')
-        .update({ name, domain, industry, ga4_property_id: ga4PropertyId })
+        .update({ name, domain, industry })
         .eq('id', editingClient.id)
         .select()
         .single();
@@ -150,8 +148,6 @@ function App() {
     { id: 'overview', label: 'Overview' },
     { id: 'keywords', label: 'Keywords' },
     { id: 'rankings', label: 'Report' },
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'validation', label: 'GA4 Validation' },
   ] as const;
 
   return (
@@ -215,16 +211,6 @@ function App() {
               keywords={keywords}
               onClientUpdated={loadClients}
             />
-          )}
-
-          {activeTab === 'analytics' && (
-            <Analytics
-              selectedClient={selectedClient}
-            />
-          )}
-
-          {activeTab === 'validation' && (
-            <GA4ValidationPanel />
           )}
         </div>
 
