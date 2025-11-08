@@ -57,7 +57,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const { data } = supabase.storage
           .from('analytics_screenshots')
           .getPublicUrl(`${folderPath}/${file.name}`);
-        return data.publicUrl;
+        // Add cache busting parameter to ensure fresh images in reports
+        const separator = data.publicUrl.includes('?') ? '&' : '?';
+        return `${data.publicUrl}${separator}t=${Date.now()}`;
       });
 
       return urls;
