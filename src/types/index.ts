@@ -47,3 +47,5 @@ export interface RankSettings {
   hl: string;
   device: string;
 }
+
+export type TabId = 'overview' | 'keywords' | 'analytics' | 'rankings';

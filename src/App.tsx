@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { Overview } from './components/Overview';
 import { Keywords } from './components/Keywords';
 import { Rankings } from './components/Rankings';
+import { Analytics } from './components/Analytics';
 import { ClientModal } from './components/ClientModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { Client, Keyword } from './types';
@@ -147,6 +148,7 @@ function App() {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'keywords', label: 'Keywords' },
+    { id: 'analytics', label: 'Analytics' },
     { id: 'rankings', label: 'Report' },
   ] as const;
 
@@ -202,6 +204,12 @@ function App() {
               keywords={keywords}
               onKeywordAdded={loadKeywords}
               onClientUpdated={loadClients}
+            />
+          )}
+
+          {activeTab === 'analytics' && (
+            <Analytics
+              selectedClient={selectedClient}
             />
           )}
 
