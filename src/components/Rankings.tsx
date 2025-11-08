@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
+import { supabase } from '../lib/supabase';
 
 interface RankingsProps {
   selectedClient: Client | null;
@@ -15,6 +16,56 @@ interface RankingsProps {
 
 export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  const generateClientSlug = (clientName: string): string => {
+    return clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const getCurrentMonthPath = (): string => {
+    return format(new Date(), 'yyyy-MM');
+  };
+
+  const fetchAnalyticsScreenshots = async (): Promise<string[]> => {
+    if (!selectedClient) return [];
+
+    try {
+      const clientSlug = generateClientSlug(selectedClient.name);
+      const monthPath = getCurrentMonthPath();
+      const folderPath = `${clientSlug}/${monthPath}`;
+
+      const { data: files, error } = await supabase.storage
+        .from('analytics_screenshots')
+        .list(folderPath);
+
+      if (error || !files) {
+        console.warn('No analytics screenshots found:', error);
+        return [];
+      }
+
+      // Filter out .keep files and get public URLs
+      const imageFiles = files.filter(file => 
+        file.name !== '.keep' && 
+        /\.(jpg|jpeg|png|webp)$/i.test(file.name)
+      );
+
+      const urls = imageFiles.map(file => {
+        const { data } = supabase.storage
+          .from('analytics_screenshots')
+          .getPublicUrl(`${folderPath}/${file.name}`);
+        return data.publicUrl;
+      });
+
+      return urls;
+    } catch (error) {
+      console.error('Error fetching analytics screenshots:', error);
+      return [];
+    }
+  };
 
   if (!selectedClient) {
     return (
@@ -93,6 +144,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   const generateReport = async () => {
     setIsGeneratingReport(true);
     try {
+      // Fetch analytics screenshots
+      const analyticsScreenshots = await fetchAnalyticsScreenshots();
+      
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -398,6 +452,159 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Footer on last page
       const footerY = pageHeight - 25;
+      
+      // Add Analytics Screenshots Section if any exist
+      if (analyticsScreenshots.length > 0) {
+        // Add some space before analytics section
+        currentY += 20;
+        
+        // Check if we need a new page for analytics section
+        if (currentY > pageHeight - 100) {
+          pdf.addPage();
+          pageNumber++;
+          
+          // Add borders to new page
+          pdf.setFillColor(251, 194, 16);
+          pdf.rect(0, 0, 8, pageHeight, 'F');
+          pdf.setFillColor(4, 140, 212);
+          pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+          
+          // Header for analytics page
+          try {
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            
+            const loadAnalyticsPageLogo = new Promise((resolve) => {
+              logoImg.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  canvas.width = logoImg.width;
+                  canvas.height = logoImg.height;
+                  ctx.drawImage(logoImg, 0, 0);
+                  
+                  const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0);
+                  resolve(true);
+                } catch (error) {
+                  pdf.setFontSize(12);
+                  pdf.setTextColor(4, 140, 212);
+                  pdf.text('Nuance', margin, 20);
+                  resolve(true);
+                }
+              };
+              logoImg.onerror = () => {
+                pdf.setFontSize(12);
+                pdf.setTextColor(4, 140, 212);
+                pdf.text('Nuance', margin, 20);
+                resolve(true);
+              };
+              logoImg.src = '/pp.jpg';
+            });
+            
+            await loadAnalyticsPageLogo;
+          } catch (error) {
+            pdf.setFontSize(12);
+            pdf.setTextColor(4, 140, 212);
+            pdf.text('Nuance', margin, 20);
+          }
+          
+          pdf.setTextColor(128, 128, 128);
+          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+          pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+          
+          currentY = 40;
+        }
+        
+        // Analytics section title
+        pdf.setFontSize(18);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('📊 Additional Analytics Screenshots', margin, currentY);
+        
+        // Section divider
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, currentY + 5, pageWidth - margin, currentY + 5);
+        
+        currentY += 25;
+        
+        // Add analytics screenshots
+        for (let i = 0; i < analyticsScreenshots.length; i++) {
+          const screenshotUrl = analyticsScreenshots[i];
+          
+          try {
+            // Load and add screenshot
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            const loadScreenshot = new Promise((resolve) => {
+              img.onload = () => {
+                try {
+                  // Calculate image dimensions to fit page width
+                  const maxWidth = pageWidth - (2 * margin);
+                  const maxHeight = 120; // Max height for each screenshot
+                  
+                  let imgWidth = maxWidth;
+                  let imgHeight = (img.height / img.width) * maxWidth;
+                  
+                  // Scale down if too tall
+                  if (imgHeight > maxHeight) {
+                    imgHeight = maxHeight;
+                    imgWidth = (img.width / img.height) * maxHeight;
+                  }
+                  
+                  // Check if we need a new page
+                  if (currentY + imgHeight > pageHeight - 40) {
+                    pdf.addPage();
+                    pageNumber++;
+                    
+                    // Add borders to new page
+                    pdf.setFillColor(251, 194, 16);
+                    pdf.rect(0, 0, 8, pageHeight, 'F');
+                    pdf.setFillColor(4, 140, 212);
+                    pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+                    
+                    // Header for additional analytics pages
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(4, 140, 212);
+                    pdf.text('Nuance', margin, 20);
+                    pdf.setTextColor(128, 128, 128);
+                    pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+                    pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+                    
+                    currentY = 40;
+                  }
+                  
+                  // Create canvas and draw image
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  ctx.drawImage(img, 0, 0);
+                  
+                  const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                  pdf.addImage(imgDataUrl, 'JPEG', margin, currentY, imgWidth, imgHeight);
+                  
+                  currentY += imgHeight + 15; // Add spacing between images
+                  resolve(true);
+                } catch (error) {
+                  console.warn('Failed to add screenshot to PDF:', error);
+                  resolve(true);
+                }
+              };
+              img.onerror = () => {
+                console.warn('Failed to load screenshot:', screenshotUrl);
+                resolve(true);
+              };
+              img.src = screenshotUrl;
+            });
+            
+            await loadScreenshot;
+          } catch (error) {
+            console.warn('Error processing screenshot:', error);
+          }
+        }
+      }
       
       // Footer with logo
       try {
