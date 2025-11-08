@@ -152,7 +152,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
+      const margin = 15; // Reduced from 20 to 15 for ~12% more width
       
       // Calculate date ranges
       const currentDate = new Date();
@@ -349,7 +349,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Table header
       const tableStartY = 80;
-      const colWidths = [100, 40, 40]; // Keyword, Current Month, Previous Month
+      const colWidths = [110, 45, 45]; // Expanded widths for better use of space
       const rowHeight = 12;
       
       // Header background
@@ -526,9 +526,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         currentY += 20;
         
         // Add analytics screenshots vertically centered
-        const screenshotSpacing = 15;
+        const screenshotSpacing = 18; // Increased to 18px for better spacing
         const availableWidth = pageWidth - (2 * margin);
-        const maxScreenshotWidth = Math.min(availableWidth * 0.8, 150); // Max 150px width, 80% of available width
+        const maxScreenshotWidth = availableWidth * 0.9; // 90% of available content width
         
         for (let i = 0; i < analyticsScreenshots.length; i++) {
           const screenshotUrl = analyticsScreenshots[i];
@@ -542,8 +542,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               img.onload = () => {
                 try {
                   // Calculate image dimensions for vertical layout
-                  const maxWidth = maxScreenshotWidth;
-                  const maxHeight = 120; // Height for vertical layout
+                  const maxWidth = maxScreenshotWidth; // 90% of content width
+                  const maxHeight = 140; // Slightly increased max height
                   
                   let imgWidth = maxWidth;
                   let imgHeight = (img.height / img.width) * maxWidth;
@@ -555,7 +555,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   }
                   
                   // Calculate centered position
-                  const xPos = margin + (availableWidth - imgWidth) / 2; // Center horizontally
+                  const xPos = (pageWidth - imgWidth) / 2; // Perfect horizontal centering
                   const yPos = currentY + (i * (maxHeight + screenshotSpacing));
                   
                   // Check if we need a new page
@@ -591,7 +591,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   
                   const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                   const finalYPos = yPos > pageHeight - 40 ? 40 : yPos;
-                  const finalXPos = yPos > pageHeight - 40 ? margin + (availableWidth - imgWidth) / 2 : xPos;
+                  const finalXPos = yPos > pageHeight - 40 ? (pageWidth - imgWidth) / 2 : xPos; // Perfect centering on new pages too
                   pdf.addImage(imgDataUrl, 'JPEG', finalXPos, finalYPos, imgWidth, imgHeight);
                   
                   resolve(true);
@@ -614,7 +614,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         }
         
         // Update currentY to account for all screenshots
-        currentY += (analyticsScreenshots.length * (120 + screenshotSpacing)) + 10;
+        currentY += (analyticsScreenshots.length * (140 + screenshotSpacing)) + 10;
       }
       
       // Save the PDF
