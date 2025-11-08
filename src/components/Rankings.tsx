@@ -262,10 +262,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Yellow and Blue accent bars at bottom (matching page 2)
       pdf.setFillColor(251, 194, 16); // #fbc210 - Yellow
-      pdf.rect(0, pageHeight - 8, 8, 8, 'F');
-      pdf.rect(pageWidth - 8, 0, 8, pageHeight - 8, 'F'); // Right-side yellow accent
+      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
       pdf.setFillColor(4, 140, 212); // #048cd4 - Blue
-      pdf.rect(8, pageHeight - 8, pageWidth - 8, 8, 'F');
+      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
       
       // Footer Section (Page 1 only)
       const coverFooterY = pageHeight - 45;
@@ -289,6 +288,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Add borders to new page
       pdf.setFillColor(251, 194, 16);
       pdf.rect(0, 0, 8, pageHeight, 'F');
+      pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
       pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
       pdf.setFillColor(4, 140, 212);
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
@@ -351,19 +351,19 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Table header
       const tableStartY = 80;
-      const colWidths = [110, 45, 45]; // Expanded widths for better use of space
+      const colWidths = [115, 42, 42]; // Optimized column widths
       const rowHeight = 12;
       
       // Header background
       pdf.setFillColor(128, 128, 128);
-      pdf.rect(margin, tableStartY - 5, colWidths[0] + colWidths[1] + colWidths[2], rowHeight, 'F');
+      pdf.rect(margin, tableStartY - 5, colWidths[0] + colWidths[1] + colWidths[2], rowHeight + 2, 'F');
       
       // Header text
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
-      pdf.text('Keyword', margin + 5, tableStartY + 5);
-      pdf.text(currentMonthLabel, margin + colWidths[0] + 5, tableStartY + 5);
-      pdf.text(previousMonthLabel, margin + colWidths[0] + colWidths[1] + 5, tableStartY + 5);
+      pdf.text('Keyword', margin + 3, tableStartY + 5);
+      pdf.text(currentMonthLabel, margin + colWidths[0] + 3, tableStartY + 5);
+      pdf.text(previousMonthLabel, margin + colWidths[0] + colWidths[1] + 3, tableStartY + 5);
       
       let currentY = tableStartY + rowHeight + 5;
       let pageNumber = 1;
@@ -378,6 +378,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           // Add borders to new page
           pdf.setFillColor(251, 194, 16);
           pdf.rect(0, 0, 8, pageHeight, 'F');
+          pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
           pdf.setFillColor(4, 140, 212);
           pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
           
@@ -438,18 +439,18 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         pdf.setTextColor(0, 0, 0);
         pdf.setFontSize(10);
         const truncatedKeyword = keyword.text.length > 35 ? keyword.text.substring(0, 35) + '...' : keyword.text;
-        pdf.text(truncatedKeyword, margin + 2, currentY);
+        pdf.text(truncatedKeyword, margin + 3, currentY);
         
         // Current month rank
         const currentRankColor = getRankingColor(keyword.current_month_rank, keyword.previous_month_rank);
         pdf.setTextColor(currentRankColor[0], currentRankColor[1], currentRankColor[2]);
         const currentRankText = keyword.current_month_rank ? toOrdinal(keyword.current_month_rank) : '—';
-        pdf.text(currentRankText, margin + colWidths[0] + 5, currentY);
+        pdf.text(currentRankText, margin + colWidths[0] + 3, currentY);
         
         // Previous month rank
         pdf.setTextColor(0, 0, 0); // Always black for previous month
         const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
-        pdf.text(previousRankText, margin + colWidths[0] + colWidths[1] + 5, currentY);
+        pdf.text(previousRankText, margin + colWidths[0] + colWidths[1] + 3, currentY);
         
         currentY += rowHeight;
       }
@@ -466,6 +467,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         // Add borders to new page
         pdf.setFillColor(251, 194, 16);
         pdf.rect(0, 0, 8, pageHeight, 'F');
+        pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
         pdf.setFillColor(4, 140, 212);
         pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
         
@@ -528,14 +530,13 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         currentY += 20;
         
         // Add analytics screenshots with proper page overflow handling
-        const screenshotSpacing = 16; // Even vertical spacing as requested
+        const screenshotSpacing = 16; // Consistent 16px vertical spacing
         const availableWidth = pageWidth - (2 * margin);
         const maxScreenshotWidth = availableWidth * 0.9; // 90% of available content width
         
         let currentScreenshotY = currentY;
         
         for (const screenshotUrl of analyticsScreenshots) {
-          
           try {
             // Load and add screenshot
             const img = new Image();
@@ -544,7 +545,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             const loadScreenshot = new Promise((resolve) => {
               img.onload = () => {
                 try {
-                  // Calculate image dimensions for vertical layout
+                  // Calculate image dimensions
                   const maxWidth = maxScreenshotWidth; // 90% of content width
                   const maxHeight = 140; // Max height for images
                   
@@ -558,7 +559,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   }
                   
                   // Calculate centered position
-                  const xPos = (pageWidth - imgWidth) / 2; // Perfect horizontal centering
+                  const xPos = (pageWidth - imgWidth) / 2; // Center horizontally
                   
                   // Check if we need a new page
                   if (currentScreenshotY + imgHeight > pageHeight - 40) {
@@ -568,6 +569,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     // Add borders to new page
                     pdf.setFillColor(251, 194, 16);
                     pdf.rect(0, 0, 8, pageHeight, 'F');
+                    pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
                     pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
                     pdf.setFillColor(4, 140, 212);
                     pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
