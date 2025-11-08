@@ -4,6 +4,7 @@ export interface Client {
   domain: string;
   industry?: string;
   rank_type?: 'dubai' | 'qatar';
+  ga4_property_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -46,4 +47,41 @@ export interface RankSettings {
   gl: string;
   hl: string;
   device: string;
+}
+
+export interface GA4OverviewMetrics {
+  totalUsers: number;
+  sessions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+}
+
+export interface GA4TrafficSource {
+  name: string;
+  sessions: number;
+}
+
+export interface GA4AnalyticsData {
+  overview: GA4OverviewMetrics;
+  trafficSources: GA4TrafficSource[];
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
+export interface GA4Report {
+  totalUsers: number;
+  sessions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+  trafficSources: GA4TrafficSource[];
+}
+
+export interface GA4Summary {
+  totalUsers: number;
+  sessions: number;
+  engagementRate: number;
+  averageSessionDuration: number;
+  topTrafficSources: GA4TrafficSource[];
 }

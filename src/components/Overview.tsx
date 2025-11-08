@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Target, BarChart3, Users } from 'lucide-react';
 import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Client, Keyword } from '../types';
+import { fetchGA4Data, GA4AnalyticsData } from '../services/ga4';
+import toast from 'react-hot-toast';
 
 interface OverviewProps {
   selectedClient: Client | null;
@@ -10,6 +12,34 @@ interface OverviewProps {
 }
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
+  const [ga4Data, setGa4Data] = useState<GA4AnalyticsData | null>(null);
+  const [isLoadingGA4, setIsLoadingGA4] = useState(false);
+
+  useEffect(() => {
+    if (selectedClient) {
+      loadGA4Data();
+    } else {
+      setGa4Data(null);
+    }
+  }, [selectedClient]);
+
+  const loadGA4Data = async () => {
+    if (!selectedClient?.ga4_property_id) {
+      return;
+    }
+    
+    setIsLoadingGA4(true);
+    try {
+      const data = await fetchGA4Data(selectedClient.ga4_property_id);
+      setGa4Data(data);
+    } catch (error) {
+      console.error('Error loading GA4 data:', error);
+      // Don't show error toast for GA4 data - it's optional
+    } finally {
+      setIsLoadingGA4(false);
+    }
+  };
+
   const clientKeywords = selectedClient 
     ? keywords.filter(k => k.client_id === selectedClient.id)
     : keywords;
@@ -83,6 +113,115 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
           </div>
         )}
       </div>
+
+      {/* GA4 Analytics Section - Only show for selected client */}
+      {selectedClient && ga4Data && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Analytics Overview
+            </h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {ga4Data.dateRange.startDate} to {ga4Data.dateRange.endDate}
+            </span>
+          </div>
+
+          {/* GA4 Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {ga4Data.overview.totalUsers.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Sessions</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {ga4Data.overview.sessions.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Engagement Rate</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {(ga4Data.overview.engagementRate * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Session Duration</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {Math.round(ga4Data.overview.averageSessionDuration)}s
+                  </p>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
+                  <Target className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Traffic Sources Chart */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Traffic Sources</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={ga4Data.trafficSources}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#6b7280"
+                  fontSize={12}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#6b7280" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: '#f3f4f6',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#374151'
+                  }}
+                />
+                <Bar dataKey="sessions" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Loading state for GA4 */}
+      {selectedClient && isLoadingGA4 && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400">Loading analytics data...</p>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

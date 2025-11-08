@@ -12,6 +12,7 @@
     "deploy:ga4": "supabase functions deploy fetch-ga4-analytics --no-verify-jwt"
   },
   "dependencies": {
+    "@google-analytics/data": "^5.2.0",
     "@supabase/supabase-js": "^2.53.0",
     "date-fns": "^4.1.0",
     "html2canvas": "^1.4.1",
