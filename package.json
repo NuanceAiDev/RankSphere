@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:test": "supabase functions deploy test-ga4 --no-verify-jwt",
+    "deploy:ga4": "supabase functions deploy fetch-ga4-analytics --no-verify-jwt"
   },
   "dependencies": {
     "@google-analytics/data": "^5.2.0",
