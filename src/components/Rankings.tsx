@@ -527,13 +527,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         
         currentY += 20;
         
-        // Add analytics screenshots vertically centered
-        const screenshotSpacing = 18; // Increased to 18px for better spacing
+        // Add analytics screenshots with proper page overflow handling
+        const screenshotSpacing = 16; // Even vertical spacing as requested
         const availableWidth = pageWidth - (2 * margin);
         const maxScreenshotWidth = availableWidth * 0.9; // 90% of available content width
         
-        for (let i = 0; i < analyticsScreenshots.length; i++) {
-          const screenshotUrl = analyticsScreenshots[i];
+        let currentScreenshotY = currentY;
+        
+        for (const screenshotUrl of analyticsScreenshots) {
           
           try {
             // Load and add screenshot
@@ -545,7 +546,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 try {
                   // Calculate image dimensions for vertical layout
                   const maxWidth = maxScreenshotWidth; // 90% of content width
-                  const maxHeight = 140; // Slightly increased max height
+                  const maxHeight = 140; // Max height for images
                   
                   let imgWidth = maxWidth;
                   let imgHeight = (img.height / img.width) * maxWidth;
@@ -558,16 +559,16 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   
                   // Calculate centered position
                   const xPos = (pageWidth - imgWidth) / 2; // Perfect horizontal centering
-                  const yPos = currentY + (i * (maxHeight + screenshotSpacing));
                   
                   // Check if we need a new page
-                  if (yPos + imgHeight > pageHeight - 40) {
+                  if (currentScreenshotY + imgHeight > pageHeight - 40) {
                     pdf.addPage();
                     pageNumber++;
                     
                     // Add borders to new page
                     pdf.setFillColor(251, 194, 16);
                     pdf.rect(0, 0, 8, pageHeight, 'F');
+                    pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
                     pdf.setFillColor(4, 140, 212);
                     pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
                     
@@ -579,9 +580,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     
-                    // Reset position for new page
-                    const newYPos = 40 + (i * (maxHeight + screenshotSpacing));
-                    currentY = 40;
+                    // Reset Y position for new page
+                    currentScreenshotY = 40;
                   }
                   
                   // Create canvas and draw image
@@ -592,9 +592,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   ctx.drawImage(img, 0, 0);
                   
                   const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  const finalYPos = yPos > pageHeight - 40 ? 40 : yPos;
-                  const finalXPos = yPos > pageHeight - 40 ? (pageWidth - imgWidth) / 2 : xPos; // Perfect centering on new pages too
-                  pdf.addImage(imgDataUrl, 'JPEG', finalXPos, finalYPos, imgWidth, imgHeight);
+                  pdf.addImage(imgDataUrl, 'JPEG', xPos, currentScreenshotY, imgWidth, imgHeight);
+                  
+                  // Update Y position for next image
+                  currentScreenshotY += imgHeight + screenshotSpacing;
                   
                   resolve(true);
                 } catch (error) {
@@ -614,9 +615,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             console.warn('Error processing screenshot:', error);
           }
         }
-        
-        // Update currentY to account for all screenshots
-        currentY += (analyticsScreenshots.length * (140 + screenshotSpacing)) + 10;
       }
       
       // Save the PDF
