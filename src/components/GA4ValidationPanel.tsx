@@ -71,8 +71,8 @@ const requiredEnvVars = {
       // 2. Test Edge Function Connectivity
       console.log('🔍 Step 2: Testing Edge Function Connectivity...');
       try {
-        const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const functionsUrl = functionsUrl_FIX;
+        const anonKey = anonKey_FIX;
         
         if (!functionsUrl || !anonKey) {
           throw new Error('Missing Supabase configuration');
@@ -170,8 +170,8 @@ const requiredEnvVars = {
       // Test full analytics endpoint
       console.log('🔍 Step 5: Testing Full Analytics Endpoint...');
       try {
-        const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const functionsUrl = functionsUrl_FIX;
+        const anonKey = anonKey_FIX;
         
         const analyticsUrl = `${functionsUrl.replace(/\/$/, "")}/fetch-ga4-analytics?startDate=7daysAgo&endDate=today`;
         const analyticsResponse = await fetch(analyticsUrl, {
