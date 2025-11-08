@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 // We are bypassing the .env file to fix the 401 error
 
 export const supabaseUrl = 'https://ehbagbwhldczdyhpckbt.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoYmFnYndobGRjemR5aHBja2J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTM4MjgsImV4cCI6MjA3MDkyOTgyOH0.k09U97UbG9ZTTQXT4Ah37-1B2s01c8uYBXG7Uo6TdZU'; // <-- PASTE THE REAL KEY
+export const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoYmFnYndobGRjemR5aHBja2J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTM4MjgsImV4cCI6MjA3MDkyOTgyOH0.k09U97UbG9ZTTQXT4Ah37-1B2s01c8uYBXG7Uo6TdZU'; // <-- PASTE THE REAL KEY
 
 // --- END OF HARD-CODED FIX ---
 
