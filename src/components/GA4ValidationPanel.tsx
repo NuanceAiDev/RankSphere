@@ -181,7 +181,7 @@ const requiredEnvVars = {
           },
         });
 
-        const analyticsData = await response.json();
+        const analyticsData = await analyticsResponse.json();
         
         if (analyticsResponse.ok && analyticsData.ok && analyticsData.overview) {
           validationResults.dataFetch = {
