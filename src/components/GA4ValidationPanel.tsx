@@ -39,12 +39,17 @@ export function GA4ValidationPanel() {
     try {
       // 1. Validate Environment Variables
       console.log('🔍 Step 1: Validating Environment Variables...');
-      const requiredEnvVars = {
-        VITE_SUPABASE_FUNCTIONS_URL: import.meta.env.VITE_SUPABASE_FUNCTIONS_URL,
-        VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        VITE_GA4_PROPERTY_ID: import.meta.env.VITE_GA4_PROPERTY_ID
-      };
+// --- HARD-CODED FIX for 401 error ---
+const functionsUrl_FIX = 'https://ehbagbwhldczdyhpckbt.supabase.co/functions/v1';
+const anonKey_FIX = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoYmFnYndobGRjemR5aHBja2J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTM4MjgsImV4cCI6MjA3MDkyOTgyOH0.k09U97UbG9ZTTQXT4Ah37-1B2s01c8uYBXG7Uo6TdZU';
+const propertyId_FIX = '286170308'; // This is from your .env file
 
+const requiredEnvVars = {
+  VITE_SUPABASE_FUNCTIONS_URL: functionsUrl_FIX,
+  VITE_SUPABASE_ANON_KEY: anonKey_FIX,
+  VITE_GA4_PROPERTY_ID: propertyId_FIX
+};
+// --- END FIX ---
       const missingVars = Object.entries(requiredEnvVars)
         .filter(([key, value]) => !value)
         .map(([key]) => key);
