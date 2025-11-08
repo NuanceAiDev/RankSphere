@@ -607,5 +607,4 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       </div>
     </div>
-  );
 }
