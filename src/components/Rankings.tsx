@@ -457,71 +457,66 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Add Analytics Screenshots Section if any exist
       if (analyticsScreenshots.length > 0) {
-        // Add some space before analytics section
-        currentY += 20;
+        // Always start Website Traffic Report on a new page
+        pdf.addPage();
+        pageNumber++;
         
-        // Check if we need a new page for analytics section
-        if (currentY > pageHeight - 100) {
-          pdf.addPage();
-          pageNumber++;
+        // Add borders to new page
+        pdf.setFillColor(251, 194, 16);
+        pdf.rect(0, 0, 8, pageHeight, 'F');
+        pdf.setFillColor(4, 140, 212);
+        pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+        
+        // Header for analytics page
+        try {
+          const logoImg = new Image();
+          logoImg.crossOrigin = 'anonymous';
           
-          // Add borders to new page
-          pdf.setFillColor(251, 194, 16);
-          pdf.rect(0, 0, 8, pageHeight, 'F');
-          pdf.setFillColor(4, 140, 212);
-          pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-          
-          // Header for analytics page
-          try {
-            const logoImg = new Image();
-            logoImg.crossOrigin = 'anonymous';
-            
-            const loadAnalyticsPageLogo = new Promise((resolve) => {
-              logoImg.onload = () => {
-                try {
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  canvas.width = logoImg.width;
-                  canvas.height = logoImg.height;
-                  ctx.drawImage(logoImg, 0, 0);
-                  
-                  const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0);
-                  resolve(true);
-                } catch (error) {
-                  pdf.setFontSize(12);
-                  pdf.setTextColor(4, 140, 212);
-                  pdf.text('Nuance', margin, 20);
-                  resolve(true);
-                }
-              };
-              logoImg.onerror = () => {
+          const loadAnalyticsPageLogo = new Promise((resolve) => {
+            logoImg.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = logoImg.width;
+                canvas.height = logoImg.height;
+                ctx.drawImage(logoImg, 0, 0);
+                
+                const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0);
+                resolve(true);
+              } catch (error) {
                 pdf.setFontSize(12);
                 pdf.setTextColor(4, 140, 212);
                 pdf.text('Nuance', margin, 20);
                 resolve(true);
-              };
-              logoImg.src = '/pp.jpg';
-            });
-            
-            await loadAnalyticsPageLogo;
-          } catch (error) {
-            pdf.setFontSize(12);
-            pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance', margin, 20);
-          }
+              }
+            };
+            logoImg.onerror = () => {
+              pdf.setFontSize(12);
+              pdf.setTextColor(4, 140, 212);
+              pdf.text('Nuance', margin, 20);
+              resolve(true);
+            };
+            logoImg.src = '/pp.jpg';
+          });
           
-          pdf.setTextColor(128, 128, 128);
-          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
-          pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
-          
-          currentY = 40;
+          await loadAnalyticsPageLogo;
+        } catch (error) {
+          pdf.setFontSize(12);
+          pdf.setTextColor(4, 140, 212);
+          pdf.text('Nuance', margin, 20);
         }
+        
+        pdf.setTextColor(128, 128, 128);
+        pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+        pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+        
+        currentY = 50; // Start content lower on the page
         
         // Analytics section title
         pdf.setFontSize(18);
         pdf.setTextColor(0, 0, 0);
-        pdf.text('📊 Website Traffic Report', margin, currentY);
+        pdf.text('Website Traffic Report', margin, currentY);
         
         // Section divider
         pdf.setDrawColor(200, 200, 200);
@@ -530,16 +525,13 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         
         currentY += 20;
         
-        // Add analytics screenshots with optimized layout
-        const screenshotsPerRow = 2;
-        const screenshotSpacing = 10;
+        // Add analytics screenshots vertically centered
+        const screenshotSpacing = 15;
         const availableWidth = pageWidth - (2 * margin);
-        const screenshotWidth = (availableWidth - screenshotSpacing) / screenshotsPerRow;
+        const maxScreenshotWidth = Math.min(availableWidth * 0.8, 150); // Max 150px width, 80% of available width
         
         for (let i = 0; i < analyticsScreenshots.length; i++) {
           const screenshotUrl = analyticsScreenshots[i];
-          const col = i % screenshotsPerRow;
-          const row = Math.floor(i / screenshotsPerRow);
           
           try {
             // Load and add screenshot
@@ -549,9 +541,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             const loadScreenshot = new Promise((resolve) => {
               img.onload = () => {
                 try {
-                  // Calculate image dimensions for grid layout
-                  const maxWidth = screenshotWidth;
-                  const maxHeight = 100; // Reduced height for better layout
+                  // Calculate image dimensions for vertical layout
+                  const maxWidth = maxScreenshotWidth;
+                  const maxHeight = 120; // Height for vertical layout
                   
                   let imgWidth = maxWidth;
                   let imgHeight = (img.height / img.width) * maxWidth;
@@ -562,9 +554,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     imgWidth = (img.width / img.height) * maxHeight;
                   }
                   
-                  // Calculate position
-                  const xPos = margin + (col * (screenshotWidth + screenshotSpacing));
-                  const yPos = currentY + (row * (maxHeight + 15));
+                  // Calculate centered position
+                  const xPos = margin + (availableWidth - imgWidth) / 2; // Center horizontally
+                  const yPos = currentY + (i * (maxHeight + screenshotSpacing));
                   
                   // Check if we need a new page
                   if (yPos + imgHeight > pageHeight - 40) {
@@ -586,8 +578,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     
                     // Reset position for new page
-                    const newRow = Math.floor(i / screenshotsPerRow);
-                    const newYPos = 40 + (newRow * (maxHeight + 15));
+                    const newYPos = 40 + (i * (maxHeight + screenshotSpacing));
                     currentY = 40;
                   }
                   
@@ -600,7 +591,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   
                   const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                   const finalYPos = yPos > pageHeight - 40 ? 40 : yPos;
-                  const finalXPos = yPos > pageHeight - 40 ? margin + (col * (screenshotWidth + screenshotSpacing)) : xPos;
+                  const finalXPos = yPos > pageHeight - 40 ? margin + (availableWidth - imgWidth) / 2 : xPos;
                   pdf.addImage(imgDataUrl, 'JPEG', finalXPos, finalYPos, imgWidth, imgHeight);
                   
                   resolve(true);
@@ -623,8 +614,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         }
         
         // Update currentY to account for all screenshots
-        const totalRows = Math.ceil(analyticsScreenshots.length / screenshotsPerRow);
-        currentY += (totalRows * (100 + 15)) + 10;
+        currentY += (analyticsScreenshots.length * (120 + screenshotSpacing)) + 10;
       }
       
       // Save the PDF
