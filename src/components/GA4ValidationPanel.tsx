@@ -41,8 +41,8 @@ export function GA4ValidationPanel() {
       console.log('🔍 Step 1: Validating Environment Variables...');
 // --- HARD-CODED FIX for 401 error ---
 const functionsUrl_FIX = 'https://ehbagbwhldczdyhpckbt.supabase.co/functions/v1';
-const anonKey_FIX = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoYmFnYndobGRjemR5aHBja2J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTM4MjgsImV4cCI6MjA3MDkyOTgyOH0.k09U97UbG9ZTTQXT4Ah37-1B2s01c8uYBXG7Uo6TdZU';
-const propertyId_FIX = '286170308'; // This is from your .env file
+const anonKey_FIX = 'sb_publishable_Or6El8qoeBxHzgKp_ScxNg_qf9KDNwG'; // <-- PASTE THE NEW KEY
+const propertyId_FIX = '286170308';
 
 const requiredEnvVars = {
   VITE_SUPABASE_FUNCTIONS_URL: functionsUrl_FIX,
