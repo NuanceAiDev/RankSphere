@@ -577,7 +577,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     // Header for additional analytics pages
                     pdf.setFontSize(12);
                     pdf.setTextColor(4, 140, 212);
-                    pdf.text('Nuance', margin, 20);
+                    pdf.text('Nuance Digital', margin, 20);
                     pdf.setTextColor(128, 128, 128);
                     pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
