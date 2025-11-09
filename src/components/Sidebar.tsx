@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { Client } from '../types';
+import { Client, Keyword } from '../types';
 
 interface SidebarProps {
   clients: Client[];
+  keywords: Keyword[];
   selectedClient: Client | null;
   onSelectClient: (client: Client | null) => void;
   onAddClient: () => void;
@@ -14,6 +15,7 @@ interface SidebarProps {
 
 export function Sidebar({ 
   clients, 
+  keywords,
   selectedClient, 
   onSelectClient, 
   onAddClient, 
@@ -23,11 +25,45 @@ export function Sidebar({
   const { isDark, toggleTheme } = useTheme();
   const [hoveredClient, setHoveredClient] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [reportFilter, setReportFilter] = useState<'all' | 'generated' | 'pending'>('all');
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.domain.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Helper function to check if client has report generated this month
+  const hasReportThisMonth = (clientId: string): boolean => {
+    const currentMonth = new Date();
+    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    
+    const clientKeywords = keywords.filter(k => k.client_id === clientId);
+    
+    // Check if any keyword has been checked this month
+    return clientKeywords.some(keyword => {
+      if (!keyword.last_checked) return false;
+      const lastChecked = new Date(keyword.last_checked);
+      return lastChecked >= startOfMonth;
+    });
+  };
+
+  // Filter clients based on search term and report status
+  const filteredClients = clients.filter(client => {
+    // Search filter
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.domain.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Report status filter
+    if (reportFilter === 'all') return true;
+    
+    const hasReport = hasReportThisMonth(client.id);
+    if (reportFilter === 'generated') return hasReport;
+    if (reportFilter === 'pending') return !hasReport;
+    
+    return true;
+  });
+
+  // Get status indicator for client
+  const getClientStatusIndicator = (clientId: string): string => {
+    return hasReportThisMonth(clientId) ? '🟢' : '🔴';
+  };
 
   return (
     <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
@@ -88,6 +124,22 @@ export function Sidebar({
                 </h3>
               </div>
               
+              {/* Report Status Filter */}
+              <div className="mb-3">
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <select
+                    value={reportFilter}
+                    onChange={(e) => setReportFilter(e.target.value as 'all' | 'generated' | 'pending')}
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
+                  >
+                    <option value="all">All Clients</option>
+                    <option value="generated">Reports Generated (This Month)</option>
+                    <option value="pending">Reports Pending (This Month)</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Search Bar */}
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -120,7 +172,10 @@ export function Sidebar({
                         <Users className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{client.name}</div>
+                        <div className="font-medium truncate flex items-center gap-2">
+                          <span className="text-xs">{getClientStatusIndicator(client.id)}</span>
+                          {client.name}
+                        </div>
                         <div className="text-sm opacity-75 truncate">{client.domain}</div>
                       </div>
                     </button>
