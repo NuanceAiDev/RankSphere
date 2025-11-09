@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search, Filter } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Client, Keyword } from '../types';
-import { isReportDone, cleanupOldStatuses } from '../utils/reportStatus';
 
 interface SidebarProps {
   clients: Client[];
@@ -28,14 +27,16 @@ export function Sidebar({
   const [searchTerm, setSearchTerm] = useState('');
   const [reportFilter, setReportFilter] = useState<'all' | 'generated' | 'pending'>('all');
 
-  // Cleanup old statuses on component mount
-  React.useEffect(() => {
-    cleanupOldStatuses();
-  }, []);
-
   // Check if client has report done for current month
   const hasReportDoneThisMonth = (client: Client): boolean => {
-    return isReportDone(client.name);
+    if (!client.report_done_month) return false;
+    
+    const currentDate = new Date();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const currentYear = String(currentDate.getFullYear());
+    const currentMonthYear = `${currentMonth}-${currentYear}`;
+    
+    return client.report_done_month === currentMonthYear;
   };
 
   // Filter clients based on search term and report status
@@ -61,7 +62,7 @@ export function Sidebar({
     const client = clients.find(c => c.id === clientId);
     if (!client) return '🔴';
     
-    return isReportDone(client.name) ? '🟢' : '🔴';
+    return hasReportDoneThisMonth(client) ? '🟢' : '🔴';
   };
 
   return (
