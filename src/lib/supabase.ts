@@ -26,13 +26,15 @@ export const retryOperation = async <T>(
       const isRetryableError = 
         error?.message?.includes('schema cache') ||
         error?.message?.includes('PGRST002') ||
+        error?.message?.includes('column') ||
+        error?.message?.includes('does not exist') ||
         error?.code === 'PGRST002';
       
       if (attempt === maxRetries || !isRetryableError) {
         throw error;
       }
       
-      console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms...`, error.message);
+      console.warn(`Attempt ${attempt} failed (schema/column issue), retrying in ${delay}ms...`, error.message);
       await new Promise(resolve => setTimeout(resolve, delay * attempt));
     }
   }
