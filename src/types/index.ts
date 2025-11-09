@@ -5,6 +5,7 @@ export interface Client {
   industry?: string;
   rank_type?: 'dubai' | 'qatar';
   last_report_date?: string;
+  report_done_month?: string;
   created_at: string;
   updated_at: string;
 }
