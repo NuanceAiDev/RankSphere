@@ -23,6 +23,16 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
   const [fetchingKeywordId, setFetchingKeywordId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check if current date is within the allowed range for monthly refresh (27th to 13th)
+  const isMonthlyRefreshAllowed = (): boolean => {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    
+    // Allow from 27th of current month to 13th of next month
+    return dayOfMonth >= 27 || dayOfMonth <= 13;
+  };
+
+  const monthlyRefreshAllowed = isMonthlyRefreshAllowed();
   if (!selectedClient) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -371,8 +381,13 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           )}
           <button
             onClick={handleMonthlyRefresh}
-            disabled={isFetchingRanks || clientKeywords.length === 0}
-            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+            disabled={isFetchingRanks || clientKeywords.length === 0 || !monthlyRefreshAllowed}
+            title={!monthlyRefreshAllowed ? "Monthly refresh is available only between the 27th and 13th of each month." : ""}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 transform disabled:opacity-50 disabled:transform-none ${
+              monthlyRefreshAllowed 
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white hover:scale-105' 
+                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+            }`}
           >
             <RotateCcw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
             Monthly Refresh
