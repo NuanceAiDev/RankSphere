@@ -767,9 +767,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       }
       
       // Save the PDF
-      pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'MMM_yyyy')}.pdf`);
+      pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`);
       toast.success('Report generated successfully!');
-      
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report');
