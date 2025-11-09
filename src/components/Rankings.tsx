@@ -383,19 +383,21 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Table header
       const tableStartY = 80;
-      const colWidths = [105, 42, 42]; // Reduced keyword column to prevent overlap
+      const colWidths = [95, 40, 40]; // Further reduced to prevent right border overlap
       const rowHeight = 12;
       
       // Header background
-      pdf.setFillColor(128, 128, 128);
-      pdf.rect(margin + 8, tableStartY - 5, colWidths[0] + colWidths[1] + colWidths[2], rowHeight + 2, 'F');
+      pdf.setFillColor(128, 128, 128); 
+      const tableWidth = colWidths[0] + colWidths[1] + colWidths[2];
+      const tableStartX = margin + 8;
+      pdf.rect(tableStartX, tableStartY - 5, tableWidth, rowHeight + 2, 'F');
       
       // Header text
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
-      pdf.text('Keyword', margin + 8 + 3, tableStartY + 5);
-      pdf.text(previousMonthLabel, margin + 8 + colWidths[0] + 3, tableStartY + 5);
-      pdf.text(currentMonthLabel, margin + 8 + colWidths[0] + colWidths[1] + 3, tableStartY + 5);
+      pdf.text('Keyword', tableStartX + 3, tableStartY + 5);
+      pdf.text(previousMonthLabel, tableStartX + colWidths[0] + 3, tableStartY + 5);
+      pdf.text(currentMonthLabel, tableStartX + colWidths[0] + colWidths[1] + 3, tableStartY + 5);
       
       let currentY = tableStartY + rowHeight + 5;
       let pageNumber = 1;
@@ -464,25 +466,25 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         // Row background (alternating)
         if (index % 2 === 0) {
           pdf.setFillColor(245, 245, 245);
-          pdf.rect(margin + 8, currentY - 8, colWidths[0] + colWidths[1] + colWidths[2], rowHeight, 'F');
+          pdf.rect(tableStartX, currentY - 8, tableWidth, rowHeight, 'F');
         }
         
         // Keyword name
         pdf.setTextColor(0, 0, 0);
         pdf.setFontSize(10);
-        const truncatedKeyword = keyword.text.length > 30 ? keyword.text.substring(0, 30) + '...' : keyword.text;
-        pdf.text(truncatedKeyword, margin + 8 + 3, currentY);
+        const truncatedKeyword = keyword.text.length > 25 ? keyword.text.substring(0, 25) + '...' : keyword.text;
+        pdf.text(truncatedKeyword, tableStartX + 3, currentY);
         
         // Previous month rank
         pdf.setTextColor(0, 0, 0); // Always black for previous month
         const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
-        pdf.text(previousRankText, margin + 8 + colWidths[0] + 3, currentY);
+        pdf.text(previousRankText, tableStartX + colWidths[0] + 3, currentY);
         
         // Current month rank
         const currentRankColor = getRankingColor(keyword.current_month_rank, keyword.previous_month_rank);
         pdf.setTextColor(currentRankColor[0], currentRankColor[1], currentRankColor[2]);
         const currentRankText = keyword.current_month_rank ? toOrdinal(keyword.current_month_rank) : '—';
-        pdf.text(currentRankText, margin + 8 + colWidths[0] + colWidths[1] + 3, currentY);
+        pdf.text(currentRankText, tableStartX + colWidths[0] + colWidths[1] + 3, currentY);
         
         currentY += rowHeight;
       }
