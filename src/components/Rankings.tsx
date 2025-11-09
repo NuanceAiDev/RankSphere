@@ -16,6 +16,46 @@ interface RankingsProps {
 
 export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isMarkingDone, setIsMarkingDone] = useState(false);
+
+  // Check if client has report marked done for current month
+  const hasReportDoneThisMonth = (): boolean => {
+    if (!selectedClient?.report_done_month) return false;
+    
+    const currentDate = new Date();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const currentYear = String(currentDate.getFullYear());
+    const currentMonthYear = `${currentMonth}-${currentYear}`;
+    
+    return selectedClient.report_done_month === currentMonthYear;
+  };
+
+  const handleMarkAsDone = async () => {
+    if (!selectedClient) return;
+    
+    setIsMarkingDone(true);
+    try {
+      const currentDate = new Date();
+      const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const currentYear = String(currentDate.getFullYear());
+      const monthYear = `${currentMonth}-${currentYear}`;
+      
+      const { error } = await supabase
+        .from('clients')
+        .update({ report_done_month: monthYear })
+        .eq('id', selectedClient.id);
+
+      if (error) throw error;
+
+      toast.success('Report marked as done!');
+      onClientUpdated(); // Refresh client data to update sidebar indicators
+    } catch (error) {
+      console.error('Error marking report as done:', error);
+      toast.error('Failed to mark report as done');
+    } finally {
+      setIsMarkingDone(false);
+    }
+  };
 
   const generateClientSlug = (clientName: string): string => {
     return clientName
@@ -727,7 +767,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       }
       
       // Save the PDF
-      pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`);
+      const fileName = `${selectedClient.name.replace(/[^a-zA-Z0-9]/g, '_')}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`;
+      pdf.save(fileName);
+      
       toast.success('Report generated successfully!');
     } catch (error) {
       console.error('Error generating report:', error);
