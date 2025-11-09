@@ -435,7 +435,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   ctx.drawImage(logoImg, 0, 0);
                   
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                   resolve(true);
                 } catch (error) {
                   pdf.text('Nuance Digital', margin, 20);
@@ -599,7 +599,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const screenshotSpacing = 18; // Consistent 18px vertical spacing between images
         const availableWidth = pageWidth - (2 * margin);
         const maxScreenshotWidth = availableWidth * 0.9; // 90% of available content width
-        const maxScreenshotHeight = 120; // Max height for each image
+        const maxScreenshotHeight = 84; // Max height for each image
         const imagesPerPage = 2; // Exactly 2 images per page
         
         let currentScreenshotY = currentY;
@@ -665,7 +665,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                             ctx.drawImage(logoImg, 0, 0);
                             
                             const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                            pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
+                            pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                             resolve(true);
                           } catch (error) {
                             pdf.text('Nuance Digital', margin, 20);
