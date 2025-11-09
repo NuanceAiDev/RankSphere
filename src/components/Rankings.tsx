@@ -38,19 +38,35 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
     try {
       // Mark report as done in localStorage
       markReportAsDone(selectedClient.name);
-        file.name !== '.keep' && 
-        /\.(jpg|jpeg|png|webp)$/i.test(file.name)
-      );
+      setReportDone(true);
+      toast.success('✅ Report marked as done!');
+    } catch (error) {
+      console.error('Error marking report as done:', error);
+      toast.error('❌ Failed to mark report as done');
+    } finally {
+      setIsMarkingDone(false);
+    }
+  };
 
-      const urls = imageFiles.map(file => {
-        const { data } = supabase.storage
-          .from('analytics_screenshots')
-          .getPublicUrl(`${folderPath}/${file.name}`);
-        // Add cache busting parameter to ensure fresh images in reports
-        const separator = data.publicUrl.includes('?') ? '&' : '?';
-        return `${data.publicUrl}${separator}t=${Date.now()}`;
-      });
+  // Helper function to convert number to ordinal (1st, 2nd, 3rd, etc.)
+  const toOrdinal = (num: number): string => {
+    const suffixes = ['th', 'st', 'nd', 'rd'];
+    const v = num % 100;
+    return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+  };
 
+  // Helper function to get ranking color
+  const getRankingColor = (currentRank: number | null, previousRank: number | null): [number, number, number] => {
+    if (!currentRank) return [128, 128, 128]; // Gray for no rank
+    
+    if (previousRank && currentRank < previousRank) {
+      return [16, 185, 129]; // Green for improvement
+    } else if (previousRank && currentRank > previousRank) {
+      return [239, 68, 68]; // Red for decline
+    }
+    
+    return [0, 0, 0]; // Black for no change or first time
+  };
 
   if (!selectedClient) {
     return (
@@ -109,18 +125,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       keywordsWithData: clientKeywords.filter(k => k.current_month_rank).length
     }
   ];
-
-  // Helper function to convert number to ordinal (1st, 2nd, 3rd, etc.)
-  const toOrdinal = (num: number): string => {
-    const suffixes = ['th', 'st', 'nd', 'rd'];
-    const v = num % 100;
-    } catch (error) {
-      console.error('Error marking report as done:', error);
-      toast.error('❌ Failed to mark report as done');
-    } finally {
-      setIsMarkingDone(false);
-    }
-  };
 
   const generateReport = async () => {
     setIsGeneratingReport(true);
