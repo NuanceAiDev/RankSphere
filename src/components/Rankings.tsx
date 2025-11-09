@@ -16,46 +16,6 @@ interface RankingsProps {
 
 export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [isMarkingDone, setIsMarkingDone] = useState(false);
-
-  // Check if client has report marked done for current month
-  const hasReportDoneThisMonth = (): boolean => {
-    if (!selectedClient?.report_done_month) return false;
-    
-    const currentDate = new Date();
-    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const currentYear = String(currentDate.getFullYear());
-    const currentMonthYear = `${currentMonth}-${currentYear}`;
-    
-    return selectedClient.report_done_month === currentMonthYear;
-  };
-
-  const handleMarkAsDone = async () => {
-    if (!selectedClient) return;
-    
-    setIsMarkingDone(true);
-    try {
-      const currentDate = new Date();
-      const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-      const currentYear = String(currentDate.getFullYear());
-      const monthYear = `${currentMonth}-${currentYear}`;
-      
-      const { error } = await supabase
-        .from('clients')
-        .update({ report_done_month: monthYear })
-        .eq('id', selectedClient.id);
-
-      if (error) throw error;
-
-      toast.success('Report marked as done!');
-      onClientUpdated(); // Refresh client data to update sidebar indicators
-    } catch (error) {
-      console.error('Error marking report as done:', error);
-      toast.error('Failed to mark report as done');
-    } finally {
-      setIsMarkingDone(false);
-    }
-  };
 
   const generateClientSlug = (clientName: string): string => {
     return clientName
@@ -762,6 +722,13 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             await loadScreenshot;
           } catch (error) {
             console.warn('Error processing screenshot:', error);
+          }
+        }
+      }
+      
+      // Save the PDF
+      pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`);
+      toast.success('Report generated successfully!');
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report');
@@ -776,27 +743,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Rankings for {selectedClient.name}
         </h1>
-        <div className="flex gap-3">
-          <button
-            onClick={handleMarkAsDone}
-            disabled={isMarkingDone || hasReportDoneThisMonth()}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none ${
-              hasReportDoneThisMonth()
-                ? 'bg-green-500 text-white cursor-not-allowed'
-                : 'bg-gray-500 hover:bg-blue-500 text-white'
-            }`}
-          >
-            {hasReportDoneThisMonth() ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
-          </button>
-          <button
-            onClick={generateReport}
-            disabled={isGeneratingReport || clientKeywords.length === 0}
-            className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
-          >
-            <Download className="w-4 h-4" />
-            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
-          </button>
-        </div>
+        <button
+          onClick={generateReport}
+          disabled={isGeneratingReport || clientKeywords.length === 0}
+          className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+        >
+          <Download className="w-4 h-4" />
+          {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+        </button>
       </div>
 
       <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
