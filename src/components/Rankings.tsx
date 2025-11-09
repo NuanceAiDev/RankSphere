@@ -389,7 +389,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Header background
       pdf.setFillColor(128, 128, 128); 
       const tableWidth = colWidths[0] + colWidths[1] + colWidths[2];
-      const tableStartX = margin + 8;
+      const tableStartX = margin + 4;
       pdf.rect(tableStartX, tableStartY - 5, tableWidth, rowHeight + 2, 'F');
       
       // Header text
