@@ -446,7 +446,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 pdf.text('Nuance Digital', margin, 20);
                 resolve(true);
               };
-              logoImg.src = '/pp-new.png';
+              logoImg.src = '/pp.jpg';
             });
             
             await loadAdditionalPageLogo;
@@ -676,7 +676,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                           pdf.text('Nuance Digital', margin, 20);
                           resolve(true);
                         };
-                        logoImg.src = '/pp-new.png';
+                        logoImg.src = '/pp.jpg';
                       });
                       
                       await loadContinuationLogo;
