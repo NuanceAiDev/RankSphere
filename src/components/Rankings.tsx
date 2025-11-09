@@ -114,35 +114,72 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   const toOrdinal = (num: number): string => {
     const suffixes = ['th', 'st', 'nd', 'rd'];
     const v = num % 100;
-    return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
-  };
-
-  // Helper function to get ranking color based on change
-  const getRankingColor = (current: number | null, previous: number | null): [number, number, number] => {
-    if (!current || !previous) return [0, 0, 0]; // Black for no data
-    
-    if (previous > current) return [0, 128, 0]; // Green for improvement
-    if (previous < current) return [255, 0, 0]; // Red for decline
-    return [128, 128, 128]; // Gray for no change
+    } catch (error) {
+      console.error('Error marking report as done:', error);
+      toast.error('❌ Failed to mark report as done');
+    } finally {
+      setIsMarkingDone(false);
+    }
   };
 
   const generateReport = async () => {
     setIsGeneratingReport(true);
     try {
       // Fetch analytics screenshots
+      const fetchAnalyticsScreenshots = async (): Promise<string[]> => {
+        try {
+          const clientSlug = selectedClient.name
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim();
+          
+          const monthPath = format(new Date(), 'yyyy-MM');
+          const folderPath = `${clientSlug}/${monthPath}`;
+
+          const { data: files, error } = await supabase.storage
+            .from('analytics_screenshots')
+            .list(folderPath);
+
+          if (error || !files) {
+            console.warn('No analytics screenshots found:', error);
+            return [];
+          }
+
+          const imageFiles = files.filter(file => 
+            file.name !== '.keep' && 
+            /\.(jpg|jpeg|png|webp)$/i.test(file.name)
+          );
+
+          const urls = imageFiles.map(file => {
+            const { data } = supabase.storage
+              .from('analytics_screenshots')
+              .getPublicUrl(`${folderPath}/${file.name}`);
+            // Add cache busting parameter to ensure fresh images in reports
+            const separator = data.publicUrl.includes('?') ? '&' : '?';
+            return `${data.publicUrl}${separator}t=${Date.now()}`;
+          });
+
+          return urls;
+        } catch (error) {
+          console.warn('Error fetching analytics screenshots:', error);
+          return [];
+        }
+      };
+
       const analyticsScreenshots = await fetchAnalyticsScreenshots();
       
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15; // Reduced from 20 to 15 for ~12% more width
+      const margin = 15;
       
       // Calculate date ranges
       const currentDate = new Date();
       const currentMonth = startOfMonth(currentDate);
       const previousMonth = startOfMonth(subMonths(currentDate, 1));
       const currentMonthEnd = endOfMonth(currentDate);
-      const previousMonthEnd = endOfMonth(previousMonth);
       
       const currentMonthLabel = format(currentMonth, 'MMM-yy');
       const previousMonthLabel = format(previousMonth, 'MMM-yy');
@@ -151,28 +188,23 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Header Section with actual logo
       try {
-        // Load and add the Nuance Digital logo
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
-        // Use Promise.then() instead of await to avoid transpilation issues
         const loadLogo = new Promise((resolve) => {
           logoImg.onload = async () => {
             try {
-              // Create canvas to convert image to data URL
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
               canvas.width = logoImg.width;
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
               
-              // Add logo to PDF (top-left, professional size)
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0); // Auto height to maintain aspect ratio
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
               resolve(true);
             } catch (error) {
               console.warn('Logo processing failed:', error);
-              // Fallback to text
               pdf.setFontSize(14);
               pdf.setTextColor(4, 140, 212);
               pdf.text('Nuance Digital', margin, 35);
@@ -181,7 +213,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           };
           logoImg.onerror = async () => {
             console.warn('Logo loading failed, using text fallback');
-            // Fallback to text
             pdf.setFontSize(14);
             pdf.setTextColor(4, 140, 212);
             pdf.text('Nuance Digital', margin, 35);
@@ -193,28 +224,27 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         await loadLogo;
       } catch (error) {
         console.warn('Logo loading error:', error);
-        // Fallback to text
         pdf.setFontSize(14);
         pdf.setTextColor(4, 140, 212);
         pdf.text('Nuance Digital', margin, 35);
       }
       
-      // Title section (top-right) - clean header with proper spacing
+      // Title section (top-right)
       pdf.setFontSize(18);
-      pdf.setTextColor(4, 140, 212); // #048cd4
+      pdf.setTextColor(4, 140, 212);
       const titleX = pageWidth - margin;
       pdf.text('Nuance Digital Solutions', titleX, 25, { align: 'right' });
       
       pdf.setFontSize(14);
-      pdf.setTextColor(85, 85, 85); // #555555
+      pdf.setTextColor(85, 85, 85);
       pdf.text('Monthly SEO Report', titleX, 40, { align: 'right' });
       
-      // Header divider line - thin and subtle
-      pdf.setDrawColor(224, 224, 224); // #e0e0e0
+      // Header divider line
+      pdf.setDrawColor(224, 224, 224);
       pdf.setLineWidth(0.5);
       pdf.line(margin, 55, pageWidth - margin, 55);
       
-      // Report Information Section (Centered) - reduced spacing
+      // Report Information Section (Centered)
       const centerX = pageWidth / 2;
       const infoStartY = 90;
       
@@ -231,7 +261,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.setTextColor(0, 0, 0);
       pdf.text('Website:', centerX - 50, infoStartY + 20, { fontStyle: 'bold' });
       pdf.setFontSize(14);
-      pdf.setTextColor(4, 140, 212); // #048cd4
+      pdf.setTextColor(4, 140, 212);
       pdf.text(`https://${selectedClient.domain}`, centerX + 10, infoStartY + 20, { fontStyle: 'bold' });
       
       // Report Period
@@ -243,26 +273,24 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
       pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
       
-      // Yellow and Blue accent bars at bottom (matching page 2)
-      pdf.setFillColor(251, 194, 16); // #fbc210 - Yellow
+      // Accent bars at bottom
+      pdf.setFillColor(251, 194, 16);
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-      pdf.setFillColor(4, 140, 212); // #048cd4 - Blue
+      pdf.setFillColor(4, 140, 212);
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
       
-      // Footer Section (Page 1 only)
+      // Footer Section
       const coverFooterY = pageHeight - 45;
       
-      // Updated Tagline - "Helping Your Business Grow"
       pdf.setFontSize(14);
-      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.setTextColor(102, 102, 102);
       pdf.text('Helping Your Business Grow', centerX, coverFooterY, { 
         align: 'center',
         fontStyle: 'bolditalic'
       });
       
-      // Prepared by
       pdf.setFontSize(10);
-      pdf.setTextColor(102, 102, 102); // #666666
+      pdf.setTextColor(102, 102, 102);
       pdf.text('Prepared by Nuance Digital Solutions', centerX, coverFooterY + 12, { align: 'center' });
       
       // Add new page for table
@@ -271,14 +299,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Add borders to new page
       pdf.setFillColor(251, 194, 16);
       pdf.rect(0, 0, 8, pageHeight, 'F');
-      pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
-      pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
+      pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F');
       pdf.setFillColor(4, 140, 212);
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
       
       // Header with logo and client info
       try {
-        // Add smaller logo for table pages
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
         
@@ -292,44 +318,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0); // Auto height to maintain aspect ratio
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
               resolve(true);
             } catch (error) {
               pdf.setFontSize(12);
               pdf.setTextColor(4, 140, 212);
-              // Add logo instead of text
-              try {
-                const logoImg = new Image();
-                logoImg.crossOrigin = 'anonymous';
-                
-                const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = async () => {
-                    try {
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
-                      canvas.width = logoImg.width;
-                      canvas.height = logoImg.height;
-                      ctx.drawImage(logoImg, 0, 0);
-                      
-                      const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                      pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
-                      resolve(true);
-                    } catch (error) {
-                      pdf.text('Nuance', margin + 8, 20);
-                      resolve(true);
-                    }
-                  };
-                  logoImg.onerror = async () => {
-                    pdf.text('Nuance', margin + 8, 20);
-                    resolve(true);
-                  };
-                  logoImg.src = '/pp.jpg';
-                });
-                
-                await loadFallbackLogo;
-              } catch (error) {
-                pdf.text('Nuance', margin + 8, 20);
-              }
+              pdf.text('Nuance', margin, 20);
               resolve(true);
             }
           };
@@ -351,8 +345,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       pdf.setTextColor(128, 128, 128);
       pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
-      
-      // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
       
       // Google Ranking section
@@ -366,7 +358,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Table header
       const tableStartY = 80;
-      const colWidths = [95, 40, 40]; // Further reduced to prevent right border overlap
+      const colWidths = [95, 40, 40];
       const rowHeight = 12;
       
       // Header background
@@ -395,49 +387,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           // Add borders to new page
           pdf.setFillColor(251, 194, 16);
           pdf.rect(0, 0, 8, pageHeight, 'F');
-          pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
+          pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F');
           pdf.setFillColor(4, 140, 212);
           pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
           
           // Header for additional pages
           pdf.setFontSize(12);
           pdf.setTextColor(4, 140, 212);
-          
-          // Add logo to additional pages
-          try {
-            const logoImg = new Image();
-            logoImg.crossOrigin = 'anonymous';
-            
-            const loadAdditionalPageLogo = new Promise((resolve) => {
-              logoImg.onload = async () => {
-                try {
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  canvas.width = logoImg.width;
-                  canvas.height = logoImg.height;
-                  ctx.drawImage(logoImg, 0, 0);
-                  
-                  const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
-                  resolve(true);
-                } catch (error) {
-                  pdf.text('Nuance Digital', margin, 20);
-                  resolve(true);
-                }
-              };
-              logoImg.onerror = async () => {
-                pdf.text('Nuance Digital', margin, 20);
-                resolve(true);
-              };
-              logoImg.src = '/pp.jpg';
-            });
-            
-            await loadAdditionalPageLogo;
-          } catch (error) {
-            pdf.setFontSize(12);
-            pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance Digital', margin, 20);
-          }
+          pdf.text('Nuance Digital', margin, 20);
           
           pdf.setTextColor(128, 128, 128);
           pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
@@ -459,7 +416,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         pdf.text(truncatedKeyword, tableStartX + 3, currentY);
         
         // Previous month rank
-        pdf.setTextColor(0, 0, 0); // Always black for previous month
+        pdf.setTextColor(0, 0, 0);
         const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
         pdf.text(previousRankText, tableStartX + colWidths[0] + 3, currentY);
         
@@ -472,99 +429,28 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         currentY += rowHeight;
       }
       
-      // Footer on last page
-      const footerY = pageHeight - 25;
-      
       // Add Analytics Screenshots Section if any exist
       if (analyticsScreenshots.length > 0) {
-        // Always start Website Traffic Report on a new page
         pdf.addPage();
         pageNumber++;
         
         // Add borders to new page
         pdf.setFillColor(251, 194, 16);
         pdf.rect(0, 0, 8, pageHeight, 'F');
-        pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
+        pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F');
         pdf.setFillColor(4, 140, 212);
         pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
         
         // Header for analytics page
-        try {
-          const logoImg = new Image();
-          logoImg.crossOrigin = 'anonymous';
-          
-          const loadAnalyticsPageLogo = new Promise((resolve) => {
-            logoImg.onload = async () => {
-              try {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = logoImg.width;
-                canvas.height = logoImg.height;
-                ctx.drawImage(logoImg, 0, 0);
-                
-                const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
-                resolve(true);
-              } catch (error) {
-                pdf.setFontSize(12);
-                pdf.setTextColor(4, 140, 212);
-                pdf.text('Nuance', margin, 20);
-                resolve(true);
-              }
-            };
-            logoImg.onerror = async () => {
-              pdf.setFontSize(12);
-              pdf.setTextColor(4, 140, 212);
-              // Add logo instead of text
-              try {
-                const logoImg = new Image();
-                logoImg.src = '/pp.jpg';
-                
-                const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = async () => {
-                    try {
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
-                      canvas.width = logoImg.width;
-                      canvas.height = logoImg.height;
-                      ctx.drawImage(logoImg, 0, 0);
-                      
-                      const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                      pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
-                      resolve(true);
-                    } catch (error) {
-                      pdf.text('Nuance', margin + 8, 20);
-                      resolve(true);
-                    }
-                  };
-                  logoImg.onerror = async () => {
-                    pdf.text('Nuance', margin + 8, 20);
-                    resolve(true);
-                  };
-                  logoImg.src = '/pp.jpg';
-                });
-                
-                await loadFallbackLogo;
-              } catch (error) {
-                pdf.text('Nuance Digital', margin, 20);
-              }
-              resolve(true);
-            };
-            logoImg.src = '/pp.jpg';
-          });
-          
-          await loadAnalyticsPageLogo;
-        } catch (error) {
-          pdf.setFontSize(12);
-          pdf.setTextColor(4, 140, 212);
-          pdf.text('Nuance', margin, 20);
-        }
+        pdf.setFontSize(12);
+        pdf.setTextColor(4, 140, 212);
+        pdf.text('Nuance', margin, 20);
         
         pdf.setTextColor(128, 128, 128);
         pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
         pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         
-        currentY = 50; // Start content lower on the page
+        currentY = 50;
         
         // Analytics section title
         pdf.setFontSize(18);
@@ -578,12 +464,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         
         currentY += 20;
         
-        // Add analytics screenshots with proper page overflow handling
-        const screenshotSpacing = 18; // Consistent 18px vertical spacing between images
+        // Add analytics screenshots
+        const screenshotSpacing = 18;
         const availableWidth = pageWidth - (2 * margin);
-        const maxScreenshotWidth = availableWidth; // 90% of available content width
-        const maxScreenshotHeight = 84; // Max height for each image
-        const imagesPerPage = 2; // Exactly 2 images per page
+        const maxScreenshotWidth = availableWidth;
+        const maxScreenshotHeight = 84;
+        const imagesPerPage = 2;
         
         let currentScreenshotY = currentY;
         let imagesOnCurrentPage = 0;
@@ -592,30 +478,25 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           const screenshotUrl = analyticsScreenshots[i];
           
           try {
-            // Load and add screenshot
             const img = new Image();
             img.crossOrigin = 'anonymous';
             
             const loadScreenshot = new Promise((resolve) => {
               img.onload = async () => {
                 try {
-                  // Calculate image dimensions
-                  const maxWidth = maxScreenshotWidth; // 90% of content width
-                  const maxHeight = maxScreenshotHeight; // Max height for images
+                  const maxWidth = maxScreenshotWidth;
+                  const maxHeight = maxScreenshotHeight;
                   
                   let imgWidth = maxWidth;
                   let imgHeight = (img.height / img.width) * maxWidth;
                   
-                  // Scale down if too tall
                   if (imgHeight > maxHeight) {
                     imgHeight = maxHeight;
                     imgWidth = (img.width / img.height) * maxHeight;
                   }
                   
-                  // Calculate centered position
-                  const xPos = (pageWidth - imgWidth) / 2; // Center horizontally
+                  const xPos = (pageWidth - imgWidth) / 2;
                   
-                  // Check if we need a new page (when we have 2 images or exceed page height)
                   if (imagesOnCurrentPage >= imagesPerPage || currentScreenshotY + imgHeight > pageHeight - 40) {
                     pdf.addPage();
                     pageNumber++;
@@ -624,58 +505,21 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     // Add borders to new page
                     pdf.setFillColor(251, 194, 16);
                     pdf.rect(0, 0, 8, pageHeight, 'F');
-                    pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
-                    pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
+                    pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F');
                     pdf.setFillColor(4, 140, 212);
                     pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
                     
-                    // Header for additional analytics pages
                     pdf.setFontSize(12);
                     pdf.setTextColor(4, 140, 212);
-                    
-                    // Add logo to additional analytics pages
-                    try {
-                      const logoImg = new Image();
-                      logoImg.crossOrigin = 'anonymous';
-                      
-                      const loadContinuationLogo = new Promise((resolve) => {
-                        logoImg.onload = () => {
-                          try {
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = logoImg.width;
-                            canvas.height = logoImg.height;
-                            ctx.drawImage(logoImg, 0, 0);
-                            
-                            const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                            pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
-                            resolve(true);
-                          } catch (error) {
-                            pdf.text('Nuance Digital', margin, 20);
-                            resolve(true);
-                          }
-                        };
-                        logoImg.onerror = () => {
-                          pdf.text('Nuance Digital', margin, 20);
-                          resolve(true);
-                        };
-                        logoImg.src = '/pp.jpg';
-                      });
-                      
-                      await loadContinuationLogo;
-                    } catch (error) {
-                      pdf.text('Nuance Digital', margin, 20);
-                    }
+                    pdf.text('Nuance Digital', margin, 20);
                     
                     pdf.setTextColor(128, 128, 128);
                     pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     
-                    // Reset Y position for new page
                     currentScreenshotY = 40;
                   }
                   
-                  // Create canvas and draw image
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
                   canvas.width = img.width;
@@ -685,7 +529,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                   pdf.addImage(imgDataUrl, 'JPEG', xPos, currentScreenshotY, imgWidth, imgHeight);
                   
-                  // Update Y position for next image
                   currentScreenshotY += imgHeight + screenshotSpacing;
                   imagesOnCurrentPage++;
                   
@@ -700,9 +543,23 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 resolve(true);
               };
               img.src = screenshotUrl;
+            });
+            
+            await loadScreenshot;
+          } catch (error) {
+            console.warn('Screenshot processing error:', error);
+          }
+        }
+      }
+      
+      // Save the PDF
+      const fileName = `${selectedClient.name.replace(/[^a-zA-Z0-9]/g, '_')}_SEO_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('📄 Report generated successfully!');
     } catch (error) {
-      console.error('Error marking report as done:', error);
-      toast.error('❌ Failed to mark report as done');
+      console.error('Error generating report:', error);
+      toast.error('Failed to generate report');
     } finally {
       setIsGeneratingReport(false);
     }
