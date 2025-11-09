@@ -309,51 +309,19 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0); // Auto height to maintain aspect ratio
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               pdf.setFontSize(12);
               pdf.setTextColor(4, 140, 212);
-              // Add logo instead of text
-              try {
-                const logoImg = new Image();
-                logoImg.crossOrigin = 'anonymous';
-                
-                const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = async () => {
-                    try {
-                      const canvas = document.createElement('canvas');
-                      const ctx = canvas.getContext('2d');
-                      canvas.width = logoImg.width;
-                      canvas.height = logoImg.height;
-                      ctx.drawImage(logoImg, 0, 0);
-                      
-                      const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                      pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
-                      resolve(true);
-                    } catch (error) {
-                      pdf.text('Nuance', margin + 8, 20);
-                      resolve(true);
-                    }
-                  };
-                  logoImg.onerror = async () => {
-                    pdf.text('Nuance', margin + 8, 20);
-                    resolve(true);
-                  };
-                  logoImg.src = '/pp.jpg';
-                });
-                
-                await loadFallbackLogo;
-              } catch (error) {
-                pdf.text('Nuance', margin + 8, 20);
-              }
+              pdf.text('Nuance Digital', margin, 20);
               resolve(true);
             }
           };
           logoImg.onerror = async () => {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance', margin, 20);
+            pdf.text('Nuance Digital', margin, 20);
             resolve(true);
           };
           logoImg.src = '/pp.jpg';
@@ -520,7 +488,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 ctx.drawImage(logoImg, 0, 0);
                 
                 const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
+                pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                 resolve(true);
               } catch (error) {
                 pdf.setFontSize(12);
@@ -535,7 +503,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               // Add logo instead of text
               try {
                 const logoImg = new Image();
-            logoImg.src = '/pp-new.png';
+            logoImg.src = '/pp.jpg';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
@@ -567,7 +535,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               }
               resolve(true);
             };
-            logoImg.src = '/pp-new.png';
+            logoImg.src = '/pp.jpg';
           });
           
           await loadAnalyticsPageLogo;
