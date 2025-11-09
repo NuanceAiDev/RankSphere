@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// --- START OF HARD-CODED FIX ---
+// We are bypassing the .env file to fix the 401 error
+
+export const supabaseUrl = 'https://ehbagbwhldczdyhpckbt.supabase.co';
+export const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoYmFnYndobGRjemR5aHBja2J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTM4MjgsImV4cCI6MjA3MDkyOTgyOH0.k09U97UbG9ZTTQXT4Ah37-1B2s01c8uYBXG7Uo6TdZU'; // <-- PASTE THE REAL KEY
+
+// --- END OF HARD-CODED FIX ---
 
 console.log('=== SUPABASE INITIALIZATION ===');
 console.log('URL:', supabaseUrl);
@@ -36,35 +41,18 @@ export const retryOperation = async <T>(
 
 // Create a mock client when environment variables are not configured
 const createSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your_supabase_project_url_here') || supabaseAnonKey.includes('your_supabase_anon_key_here')) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Supabase environment variables not configured. Using mock client.');
     // Return a mock client that throws helpful errors
     return {
       from: () => ({
-        select: () => ({
-          eq: function() { return this; },
-          order: function() { return this; },
-          single: function() { return this; },
-          then: (resolve: any) => resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') })
-        }),
-        insert: () => ({
-          eq: function() { return this; },
-          order: function() { return this; },
-          single: function() { return this; },
-          then: (resolve: any) => resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') })
-        }),
-        update: () => ({
-          eq: function() { return this; },
-          order: function() { return this; },
-          single: function() { return this; },
-          then: (resolve: any) => resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') })
-        }),
-        delete: () => ({
-          eq: function() { return this; },
-          order: function() { return this; },
-          single: function() { return this; },
-          then: (resolve: any) => resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') })
-        })
+        select: () => Promise.resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
+        eq: function() { return this; },
+        order: function() { return this; },
+        single: function() { return this; }
       })
     } as any;
   }
