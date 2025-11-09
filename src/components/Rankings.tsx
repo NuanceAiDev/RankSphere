@@ -300,7 +300,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         logoImg.crossOrigin = 'anonymous';
         
         const loadPageLogo = new Promise((resolve) => {
-          logoImg.onload = () => {
+          logoImg.onload = async () => {
             try {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
@@ -309,29 +309,61 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               ctx.drawImage(logoImg, 0, 0);
               
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0); // Increased width for better visibility
+              pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0); // Auto height to maintain aspect ratio
               resolve(true);
             } catch (error) {
               pdf.setFontSize(12);
               pdf.setTextColor(4, 140, 212);
-              pdf.text('Nuance Digital', margin, 20);
+              // Add logo instead of text
+              try {
+                const logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                
+                const loadFallbackLogo = new Promise((resolve) => {
+                  logoImg.onload = async () => {
+                    try {
+                      const canvas = document.createElement('canvas');
+                      const ctx = canvas.getContext('2d');
+                      canvas.width = logoImg.width;
+                      canvas.height = logoImg.height;
+                      ctx.drawImage(logoImg, 0, 0);
+                      
+                      const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                      pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
+                      resolve(true);
+                    } catch (error) {
+                      pdf.text('Nuance', margin + 8, 20);
+                      resolve(true);
+                    }
+                  };
+                  logoImg.onerror = async () => {
+                    pdf.text('Nuance', margin + 8, 20);
+                    resolve(true);
+                  };
+                  logoImg.src = '/pp.jpg';
+                });
+                
+                await loadFallbackLogo;
+              } catch (error) {
+                pdf.text('Nuance', margin + 8, 20);
+              }
               resolve(true);
             }
           };
-          logoImg.onerror = () => {
+          logoImg.onerror = async () => {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance Digital', margin, 20);
+            pdf.text('Nuance', margin, 20);
             resolve(true);
           };
-          logoImg.src = '/pp-new.png'; // Use the reliable PNG file
+          logoImg.src = '/pp.jpg';
         });
         
         await loadPageLogo;
       } catch (error) {
         pdf.setFontSize(12);
         pdf.setTextColor(4, 140, 212);
-        pdf.text('Nuance Digital', margin, 20);
+        pdf.text('Nuance', margin, 20);
       }
       
       pdf.setTextColor(128, 128, 128);
@@ -351,19 +383,19 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Table header
       const tableStartY = 80;
-      const colWidths = [90, 45, 45]; // Adjusted widths to prevent border overlap
+      const colWidths = [105, 42, 42]; // Reduced keyword column to prevent overlap
       const rowHeight = 12;
       
       // Header background
       pdf.setFillColor(128, 128, 128);
-      pdf.rect(margin + 20, tableStartY - 5, colWidths[0] + colWidths[1] + colWidths[2], rowHeight + 2, 'F');
+      pdf.rect(margin + 8, tableStartY - 5, colWidths[0] + colWidths[1] + colWidths[2], rowHeight + 2, 'F');
       
       // Header text
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
-      pdf.text('Keyword', margin + 20 + 3, tableStartY + 5);
-      pdf.text(previousMonthLabel, margin + 20 + colWidths[0] + 3, tableStartY + 5);
-      pdf.text(currentMonthLabel, margin + 20 + colWidths[0] + colWidths[1] + 3, tableStartY + 5);
+      pdf.text('Keyword', margin + 8 + 3, tableStartY + 5);
+      pdf.text(previousMonthLabel, margin + 8 + colWidths[0] + 3, tableStartY + 5);
+      pdf.text(currentMonthLabel, margin + 8 + colWidths[0] + colWidths[1] + 3, tableStartY + 5);
       
       let currentY = tableStartY + rowHeight + 5;
       let pageNumber = 1;
@@ -388,7 +420,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             logoImg.crossOrigin = 'anonymous';
             
             const loadAdditionalPageLogo = new Promise((resolve) => {
-              logoImg.onload = () => {
+              logoImg.onload = async () => {
                 try {
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
@@ -397,29 +429,29 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   ctx.drawImage(logoImg, 0, 0);
                   
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0); // Increased width for better visibility
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0); // Auto height to maintain aspect ratio
                   resolve(true);
                 } catch (error) {
                   pdf.setFontSize(12);
                   pdf.setTextColor(4, 140, 212);
-                  pdf.text('Nuance Digital', margin, 20);
+                  pdf.text('Nuance', margin, 20);
                   resolve(true);
                 }
               };
-              logoImg.onerror = () => {
+              logoImg.onerror = async () => {
                 pdf.setFontSize(12);
                 pdf.setTextColor(4, 140, 212);
-                pdf.text('Nuance Digital', margin, 20);
+                pdf.text('Nuance', margin, 20);
                 resolve(true);
               };
-              logoImg.src = '/pp-new.png'; // Use the reliable PNG file
+              logoImg.src = '/pp.jpg';
             });
             
             await loadAdditionalPageLogo;
           } catch (error) {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance Digital', margin, 20);
+            pdf.text('Nuance', margin, 20);
           }
           
           pdf.setTextColor(128, 128, 128);
@@ -432,25 +464,25 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         // Row background (alternating)
         if (index % 2 === 0) {
           pdf.setFillColor(245, 245, 245);
-          pdf.rect(margin + 20, currentY - 8, colWidths[0] + colWidths[1] + colWidths[2], rowHeight, 'F');
+          pdf.rect(margin + 8, currentY - 8, colWidths[0] + colWidths[1] + colWidths[2], rowHeight, 'F');
         }
         
         // Keyword name
         pdf.setTextColor(0, 0, 0);
         pdf.setFontSize(10);
-        const truncatedKeyword = keyword.text.length > 25 ? keyword.text.substring(0, 25) + '...' : keyword.text;
-        pdf.text(truncatedKeyword, margin + 20 + 3, currentY);
+        const truncatedKeyword = keyword.text.length > 30 ? keyword.text.substring(0, 30) + '...' : keyword.text;
+        pdf.text(truncatedKeyword, margin + 8 + 3, currentY);
         
         // Previous month rank
         pdf.setTextColor(0, 0, 0); // Always black for previous month
         const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
-        pdf.text(previousRankText, margin + 20 + colWidths[0] + 3, currentY);
+        pdf.text(previousRankText, margin + 8 + colWidths[0] + 3, currentY);
         
         // Current month rank
         const currentRankColor = getRankingColor(keyword.current_month_rank, keyword.previous_month_rank);
         pdf.setTextColor(currentRankColor[0], currentRankColor[1], currentRankColor[2]);
         const currentRankText = keyword.current_month_rank ? toOrdinal(keyword.current_month_rank) : '—';
-        pdf.text(currentRankText, margin + 20 + colWidths[0] + colWidths[1] + 3, currentY);
+        pdf.text(currentRankText, margin + 8 + colWidths[0] + colWidths[1] + 3, currentY);
         
         currentY += rowHeight;
       }
@@ -477,7 +509,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           logoImg.crossOrigin = 'anonymous';
           
           const loadAnalyticsPageLogo = new Promise((resolve) => {
-            logoImg.onload = () => {
+            logoImg.onload = async () => {
               try {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -486,29 +518,61 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 ctx.drawImage(logoImg, 0, 0);
                 
                 const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0); // Increased width for better visibility
+                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0);
                 resolve(true);
               } catch (error) {
                 pdf.setFontSize(12);
                 pdf.setTextColor(4, 140, 212);
-                pdf.text('Nuance Digital', margin, 20);
+                pdf.text('Nuance', margin, 20);
                 resolve(true);
               }
             };
-            logoImg.onerror = () => {
+            logoImg.onerror = async () => {
               pdf.setFontSize(12);
               pdf.setTextColor(4, 140, 212);
-              pdf.text('Nuance Digital', margin, 20);
+              // Add logo instead of text
+              try {
+                const logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                
+                const loadFallbackLogo = new Promise((resolve) => {
+                  logoImg.onload = async () => {
+                    try {
+                      const canvas = document.createElement('canvas');
+                      const ctx = canvas.getContext('2d');
+                      canvas.width = logoImg.width;
+                      canvas.height = logoImg.height;
+                      ctx.drawImage(logoImg, 0, 0);
+                      
+                      const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                      pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
+                      resolve(true);
+                    } catch (error) {
+                      pdf.text('Nuance', margin + 8, 20);
+                      resolve(true);
+                    }
+                  };
+                  logoImg.onerror = async () => {
+                    pdf.text('Nuance', margin + 8, 20);
+                    resolve(true);
+                  };
+                  logoImg.src = '/pp.jpg';
+                });
+                
+                await loadFallbackLogo;
+              } catch (error) {
+                pdf.text('Nuance', margin + 8, 20);
+              }
               resolve(true);
             };
-            logoImg.src = '/pp-new.png'; // Use the reliable PNG file
+            logoImg.src = '/pp.jpg';
           });
           
           await loadAnalyticsPageLogo;
         } catch (error) {
           pdf.setFontSize(12);
           pdf.setTextColor(4, 140, 212);
-          pdf.text('Nuance Digital', margin, 20);
+          pdf.text('Nuance', margin, 20);
         }
         
         pdf.setTextColor(128, 128, 128);
@@ -577,7 +641,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     // Header for additional analytics pages
                     pdf.setFontSize(12);
                     pdf.setTextColor(4, 140, 212);
-                    pdf.text('Nuance Digital', margin, 20);
+                    pdf.text('Nuance', margin, 20);
                     pdf.setTextColor(128, 128, 128);
                     pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
