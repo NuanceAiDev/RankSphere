@@ -29,17 +29,14 @@ export function Sidebar({
 
   // Helper function to check if client has report generated this month
   const hasReportThisMonth = (clientId: string): boolean => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client?.last_report_date) return false;
+    
     const currentMonth = new Date();
     const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const lastReportDate = new Date(client.last_report_date);
     
-    const clientKeywords = keywords.filter(k => k.client_id === clientId);
-    
-    // Check if any keyword has been checked this month
-    return clientKeywords.some(keyword => {
-      if (!keyword.last_checked) return false;
-      const lastChecked = new Date(keyword.last_checked);
-      return lastChecked >= startOfMonth;
-    });
+    return lastReportDate >= startOfMonth;
   };
 
   // Filter clients based on search term and report status
