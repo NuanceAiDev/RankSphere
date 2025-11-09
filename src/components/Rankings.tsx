@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
-import { supabase, refreshSupabaseSchema } from '../lib/supabase';
+import { markReportAsDone, isReportDone } from '../utils/reportStatus';
 
 interface RankingsProps {
   selectedClient: Client | null;
@@ -17,82 +17,34 @@ interface RankingsProps {
 export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
+
+  // Check report status when client changes
+  React.useEffect(() => {
+    if (selectedClient) {
+      setReportDone(isReportDone(selectedClient.id));
+    } else {
+      setReportDone(false);
+    }
+  }, [selectedClient]);
 
   // Check if client has report marked done for current month
-  const hasReportDoneThisMonth = (): boolean => {
-    if (!selectedClient?.report_done_month) return false;
-    
-    const currentDate = new Date();
-    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const currentYear = String(currentDate.getFullYear());
-    const currentMonthYear = `${currentMonth}-${currentYear}`;
-    
-    return selectedClient.report_done_month === currentMonthYear;
-  };
+  const hasReportDoneThisMonth = (): boolean => reportDone;
 
   const handleMarkAsDone = async () => {
     if (!selectedClient) return;
     
     setIsMarkingDone(true);
     try {
-      const currentDate = new Date();
-      const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-      const currentYear = String(currentDate.getFullYear());
-      const monthYear = `${currentMonth}-${currentYear}`;
+      // Mark report as done in localStorage
+      markReportAsDone(selectedClient.id);
+      setReportDone(true);
       
-      // First attempt
-      let { data, error } = await supabase
-        .from('clients')
-        .update({ report_done_month: monthYear })
-        .eq('id', selectedClient.id)
-        .select();
-
-      // If schema cache error, refresh and retry
-      if (error && (error.message?.includes('schema cache') || error.message?.includes('column'))) {
-        console.log('Schema cache issue detected, refreshing...');
-        await refreshSupabaseSchema();
-        
-        // Wait a moment for cache to clear
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Retry the update
-        const retryResult = await supabase
-          .from('clients')
-          .update({ report_done_month: monthYear })
-          .eq('id', selectedClient.id)
-          .select();
-        
-        data = retryResult.data;
-        error = retryResult.error;
-      }
-
-      if (error) {
-        console.error('Supabase update error:', error);
-        
-        // Handle specific error types
-        if (error.message?.includes('column') || error.message?.includes('schema cache')) {
-          toast.error('❌ Update failed: Schema cache issue - please refresh the page');
-        } else if (error.message?.includes('permission denied') || error.code === 'PGRST301') {
-          toast.error('❌ Update failed: Permission denied');
-        } else if (error.message?.includes('JWT')) {
-          toast.error('❌ Update failed: Authentication required');
-        } else {
-          toast.error(`❌ Update failed: ${error.message || 'Unknown error — check Supabase logs'}`);
-        }
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        toast.error('❌ Update failed: No rows affected');
-        return;
-      }
-
       toast.success('Report marked as done!');
       onClientUpdated(); // Refresh client data to update sidebar indicators
     } catch (error) {
       console.error('Error marking report as done:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`❌ Update failed: ${errorMessage}`);
+      toast.error('❌ Failed to mark report as done');
     } finally {
       setIsMarkingDone(false);
     }
