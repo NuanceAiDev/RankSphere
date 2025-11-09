@@ -32,11 +32,11 @@ export function Sidebar({
     const client = clients.find(c => c.id === clientId);
     if (!client?.last_report_date) return false;
     
-    const currentMonth = new Date();
-    const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
     const lastReportDate = new Date(client.last_report_date);
     
-    return lastReportDate >= startOfMonth;
+    return lastReportDate.getMonth() === currentMonth && lastReportDate.getFullYear() === currentYear;
   };
 
   // Filter clients based on search term and report status
