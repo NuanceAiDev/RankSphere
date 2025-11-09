@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
-import { markReportAsDone, isReportDone } from '../utils/reportStatus';
+import { supabase } from '../lib/supabase';
 
 interface RankingsProps {
   selectedClient: Client | null;
@@ -16,39 +16,8 @@ interface RankingsProps {
 
 export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
   const [isMarkingDone, setIsMarkingDone] = useState(false);
-  const [reportDone, setReportDone] = useState(false);
-
-  // Check report status when client changes
-  React.useEffect(() => {
-    if (selectedClient) {
-      setReportDone(isReportDone(selectedClient.id));
-    } else {
-      setReportDone(false);
-    }
-  }, [selectedClient]);
-
-  // Check if client has report marked done for current month
-  const hasReportDoneThisMonth = (): boolean => reportDone;
-
-  const handleMarkAsDone = async () => {
-    if (!selectedClient) return;
-    
-    setIsMarkingDone(true);
-    try {
-      // Mark report as done in localStorage
-      markReportAsDone(selectedClient.id);
-      setReportDone(true);
-      
-      toast.success('Report marked as done!');
-      onClientUpdated(); // Refresh client data to update sidebar indicators
-    } catch (error) {
-      console.error('Error marking report as done:', error);
-      toast.error('❌ Failed to mark report as done');
-    } finally {
-      setIsMarkingDone(false);
-    }
-  };
 
   const generateClientSlug = (clientName: string): string => {
     return clientName
@@ -99,6 +68,45 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
     } catch (error) {
       console.error('Error fetching analytics screenshots:', error);
       return [];
+    }
+  };
+
+  // Check if client has report marked done for current month
+  const hasReportDoneThisMonth = (): boolean => {
+    if (!selectedClient?.report_done_month) return false;
+    
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const currentMonthYear = `${currentYear}-${currentMonth}`;
+    
+    return selectedClient.report_done_month === currentMonthYear;
+  };
+
+  const handleMarkAsDone = async () => {
+    if (!selectedClient) return;
+    
+    setIsMarkingDone(true);
+    try {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const monthYear = `${currentYear}-${currentMonth}`;
+      
+      const { error } = await supabase
+        .from('clients')
+        .update({ report_done_month: monthYear })
+        .eq('id', selectedClient.id);
+
+      if (error) throw error;
+
+      toast.success('✅ Marked as Done');
+      onClientUpdated(); // Refresh client data to update sidebar indicators
+    } catch (error) {
+      console.error('Error marking report as done:', error);
+      toast.error('Failed to mark report as done');
+    } finally {
+      setIsMarkingDone(false);
     }
   };
 
