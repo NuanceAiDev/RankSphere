@@ -40,39 +40,18 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const currentYear = String(currentDate.getFullYear());
       const monthYear = `${currentMonth}-${currentYear}`;
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('clients')
         .update({ report_done_month: monthYear })
-        .eq('id', selectedClient.id)
-        .select();
+        .eq('id', selectedClient.id);
 
-      if (error) {
-        console.error('Supabase update error:', error);
-        
-        // Handle specific error types
-        if (error.message?.includes('column') && error.message?.includes('does not exist')) {
-          toast.error('❌ Update failed: Missing column in database');
-        } else if (error.message?.includes('permission denied') || error.code === 'PGRST301') {
-          toast.error('❌ Update failed: Permission denied');
-        } else if (error.message?.includes('JWT')) {
-          toast.error('❌ Update failed: Authentication required');
-        } else {
-          toast.error(`❌ Update failed: ${error.message || 'Unknown error'}`);
-        }
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        toast.error('❌ Update failed: No rows affected');
-        return;
-      }
+      if (error) throw error;
 
       toast.success('Report marked as done!');
       onClientUpdated(); // Refresh client data to update sidebar indicators
     } catch (error) {
       console.error('Error marking report as done:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      toast.error(`❌ Update failed: ${errorMessage}`);
+      toast.error('Failed to mark report as done');
     } finally {
       setIsMarkingDone(false);
     }
