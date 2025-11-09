@@ -16,8 +16,15 @@ interface RankingsProps {
 
 export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-
   const [isMarkingDone, setIsMarkingDone] = useState(false);
+  const [isReportDone, setIsReportDone] = useState(false);
+
+  // Update local state when selectedClient changes
+  useEffect(() => {
+    if (selectedClient) {
+      setIsReportDone(hasReportDoneThisMonth());
+    }
+  }, [selectedClient]);
 
   const generateClientSlug = (clientName: string): string => {
     return clientName
@@ -100,6 +107,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
       if (error) throw error;
 
+      // Immediately update local state
+      setIsReportDone(true);
       toast.success('✅ Marked as Done');
       onClientUpdated(); // Refresh client data to update sidebar indicators
     } catch (error) {
@@ -787,14 +796,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         <div className="flex gap-3">
           <button
             onClick={handleMarkAsDone}
-            disabled={isMarkingDone || hasReportDoneThisMonth()}
+            disabled={isMarkingDone || isReportDone}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none ${
-              hasReportDoneThisMonth()
+              isReportDone
                 ? 'bg-green-500 text-white cursor-not-allowed'
                 : 'bg-gray-500 hover:bg-blue-500 text-white'
             }`}
           >
-            {hasReportDoneThisMonth() ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
+            {isReportDone ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
           </button>
           <button
             onClick={generateReport}
