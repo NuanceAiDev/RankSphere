@@ -174,7 +174,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         
         // Use Promise.then() instead of await to avoid transpilation issues
         const loadLogo = new Promise((resolve) => {
-          logoImg.onload = async () => {
+          logoImg.onload = () => {
             try {
               // Create canvas to convert image to data URL
               const canvas = document.createElement('canvas');
@@ -196,7 +196,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               resolve(true);
             }
           };
-          logoImg.onerror = async () => {
+          logoImg.onerror = () => {
             console.warn('Logo loading failed, using text fallback');
             // Fallback to text
             pdf.setFontSize(14);
@@ -300,7 +300,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         logoImg.crossOrigin = 'anonymous';
         
         const loadPageLogo = new Promise((resolve) => {
-          logoImg.onload = async () => {
+          logoImg.onload = () => {
             try {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
@@ -320,7 +320,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 logoImg.crossOrigin = 'anonymous';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = async () => {
+                  logoImg.onload = () => {
                     try {
                       const canvas = document.createElement('canvas');
                       const ctx = canvas.getContext('2d');
@@ -336,7 +336,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       resolve(true);
                     }
                   };
-                  logoImg.onerror = async () => {
+                  logoImg.onerror = () => {
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
@@ -350,7 +350,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               resolve(true);
             }
           };
-          logoImg.onerror = async () => {
+          logoImg.onerror = () => {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
             pdf.text('Nuance', margin, 20);
@@ -420,7 +420,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             logoImg.crossOrigin = 'anonymous';
             
             const loadAdditionalPageLogo = new Promise((resolve) => {
-              logoImg.onload = async () => {
+              logoImg.onload = () => {
                 try {
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
@@ -438,7 +438,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   resolve(true);
                 }
               };
-              logoImg.onerror = async () => {
+              logoImg.onerror = () => {
                 pdf.setFontSize(12);
                 pdf.setTextColor(4, 140, 212);
                 pdf.text('Nuance', margin, 20);
@@ -509,7 +509,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           logoImg.crossOrigin = 'anonymous';
           
           const loadAnalyticsPageLogo = new Promise((resolve) => {
-            logoImg.onload = async () => {
+            logoImg.onload = () => {
               try {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -527,7 +527,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 resolve(true);
               }
             };
-            logoImg.onerror = async () => {
+            logoImg.onerror = () => {
               pdf.setFontSize(12);
               pdf.setTextColor(4, 140, 212);
               // Add logo instead of text
@@ -536,7 +536,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 logoImg.crossOrigin = 'anonymous';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = async () => {
+                  logoImg.onload = () => {
                     try {
                       const canvas = document.createElement('canvas');
                       const ctx = canvas.getContext('2d');
@@ -552,7 +552,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       resolve(true);
                     }
                   };
-                  logoImg.onerror = async () => {
+                  logoImg.onerror = () => {
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
@@ -607,7 +607,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             img.crossOrigin = 'anonymous';
             
             const loadScreenshot = new Promise((resolve) => {
-              img.onload = async () => {
+              img.onload = () => {
                 try {
                   // Calculate image dimensions
                   const maxWidth = maxScreenshotWidth; // 90% of content width
@@ -669,7 +669,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   resolve(true);
                 }
               };
-              img.onerror = async () => {
+              img.onerror = () => {
                 console.warn('Failed to load screenshot:', screenshotUrl);
                 resolve(true);
               };
