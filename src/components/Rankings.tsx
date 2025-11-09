@@ -535,7 +535,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               // Add logo instead of text
               try {
                 const logoImg = new Image();
-                logoImg.src = '/pp-new.png';
+                logoImg.src = '/pp.jpg';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
