@@ -32,9 +32,9 @@ export function Sidebar({
     if (!client.report_done_month) return false;
     
     const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
     const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const currentYear = String(currentDate.getFullYear());
-    const currentMonthYear = `${currentMonth}-${currentYear}`;
+    const currentMonthYear = `${currentYear}-${currentMonth}`;
     
     return client.report_done_month === currentMonthYear;
   };
