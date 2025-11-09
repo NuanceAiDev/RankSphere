@@ -41,13 +41,30 @@ const createSupabaseClient = () => {
     // Return a mock client that throws helpful errors
     return {
       from: () => ({
-        select: () => Promise.resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        eq: function() { return this; },
-        order: function() { return this; },
-        single: function() { return this; }
+        select: () => ({
+          eq: function() { return this; },
+          order: function() { return this; },
+          single: function() { return this; },
+          then: (resolve: any) => resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') })
+        }),
+        insert: () => ({
+          eq: function() { return this; },
+          order: function() { return this; },
+          single: function() { return this; },
+          then: (resolve: any) => resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') })
+        }),
+        update: () => ({
+          eq: function() { return this; },
+          order: function() { return this; },
+          single: function() { return this; },
+          then: (resolve: any) => resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') })
+        }),
+        delete: () => ({
+          eq: function() { return this; },
+          order: function() { return this; },
+          single: function() { return this; },
+          then: (resolve: any) => resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') })
+        })
       })
     } as any;
   }
