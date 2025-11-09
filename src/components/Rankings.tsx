@@ -596,13 +596,18 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         currentY += 20;
         
         // Add analytics screenshots with proper page overflow handling
-        const screenshotSpacing = 16; // Consistent 16px vertical spacing
+        const screenshotSpacing = 18; // Consistent 18px vertical spacing between images
         const availableWidth = pageWidth - (2 * margin);
         const maxScreenshotWidth = availableWidth * 0.9; // 90% of available content width
+        const maxScreenshotHeight = 120; // Max height for each image
+        const imagesPerPage = 2; // Exactly 2 images per page
         
         let currentScreenshotY = currentY;
+        let imagesOnCurrentPage = 0;
         
-        for (const screenshotUrl of analyticsScreenshots) {
+        for (let i = 0; i < analyticsScreenshots.length; i++) {
+          const screenshotUrl = analyticsScreenshots[i];
+          
           try {
             // Load and add screenshot
             const img = new Image();
@@ -613,7 +618,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 try {
                   // Calculate image dimensions
                   const maxWidth = maxScreenshotWidth; // 90% of content width
-                  const maxHeight = 140; // Max height for images
+                  const maxHeight = maxScreenshotHeight; // Max height for images
                   
                   let imgWidth = maxWidth;
                   let imgHeight = (img.height / img.width) * maxWidth;
@@ -627,10 +632,11 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   // Calculate centered position
                   const xPos = (pageWidth - imgWidth) / 2; // Center horizontally
                   
-                  // Check if we need a new page
-                  if (currentScreenshotY + imgHeight > pageHeight - 40) {
+                  // Check if we need a new page (when we have 2 images or exceed page height)
+                  if (imagesOnCurrentPage >= imagesPerPage || currentScreenshotY + imgHeight > pageHeight - 40) {
                     pdf.addPage();
                     pageNumber++;
+                    imagesOnCurrentPage = 0;
                     
                     // Add borders to new page
                     pdf.setFillColor(251, 194, 16);
@@ -698,6 +704,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   
                   // Update Y position for next image
                   currentScreenshotY += imgHeight + screenshotSpacing;
+                  imagesOnCurrentPage++;
                   
                   resolve(true);
                 } catch (error) {
