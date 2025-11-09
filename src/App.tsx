@@ -43,7 +43,8 @@ function App() {
       if (errorMessage.includes('schema cache') || errorMessage.includes('PGRST002')) {
         toast.error('Database is initializing. Please wait a moment and refresh the page.');
       } else if (errorMessage.includes('not configured')) {
-        toast.error('Please connect to Supabase first');
+        // Silently handle unconfigured state - don't show error toast
+        console.log('Supabase not configured - using empty state');
       } else {
         toast.error('Failed to load clients. Please check your connection.');
       }
@@ -67,7 +68,8 @@ function App() {
       if (errorMessage.includes('schema cache') || errorMessage.includes('PGRST002')) {
         toast.error('Database is initializing. Please wait a moment and refresh the page.');
       } else if (errorMessage.includes('not configured')) {
-        toast.error('Please connect to Supabase first');
+        // Silently handle unconfigured state - don't show error toast
+        console.log('Supabase not configured - using empty state');
       } else {
         toast.error('Failed to load keywords. Please check your connection.');
       }
