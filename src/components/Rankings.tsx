@@ -320,7 +320,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 logoImg.crossOrigin = 'anonymous';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = () => {
+                  logoImg.onload = async () => {
                     try {
                       const canvas = document.createElement('canvas');
                       const ctx = canvas.getContext('2d');
@@ -336,7 +336,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       resolve(true);
                     }
                   };
-                  logoImg.onerror = () => {
+                  logoImg.onerror = async () => {
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
@@ -536,7 +536,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 logoImg.crossOrigin = 'anonymous';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
-                  logoImg.onload = () => {
+                  logoImg.onload = async () => {
                     try {
                       const canvas = document.createElement('canvas');
                       const ctx = canvas.getContext('2d');
@@ -552,7 +552,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       resolve(true);
                     }
                   };
-                  logoImg.onerror = () => {
+                  logoImg.onerror = async () => {
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
