@@ -51,12 +51,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         return `${data.publicUrl}${separator}t=${Date.now()}`;
       });
 
-      return urls;
-    } catch (error) {
-      console.error('Error fetching analytics screenshots:', error);
-      return [];
-    }
-  };
 
   if (!selectedClient) {
     return (
