@@ -767,9 +767,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       }
       
       // Save the PDF
-      const fileName = `${selectedClient.name.replace(/[^a-zA-Z0-9]/g, '_')}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`;
-      pdf.save(fileName);
-      
+      pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`);
       toast.success('Report generated successfully!');
     } catch (error) {
       console.error('Error generating report:', error);
@@ -785,14 +783,27 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Rankings for {selectedClient.name}
         </h1>
-        <button
-          onClick={generateReport}
-          disabled={isGeneratingReport || clientKeywords.length === 0}
-          className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
-        >
-          <Download className="w-4 h-4" />
-          {isGeneratingReport ? 'Generating...' : 'Generate Report'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleMarkAsDone}
+            disabled={isMarkingDone || hasReportDoneThisMonth()}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none ${
+              hasReportDoneThisMonth()
+                ? 'bg-green-500 text-white cursor-not-allowed'
+                : 'bg-gray-500 hover:bg-blue-500 text-white'
+            }`}
+          >
+            {hasReportDoneThisMonth() ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
+          </button>
+          <button
+            onClick={generateReport}
+            disabled={isGeneratingReport || clientKeywords.length === 0}
+            className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+          >
+            <Download className="w-4 h-4" />
+            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+          </button>
+        </div>
       </div>
 
       <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
