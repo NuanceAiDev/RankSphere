@@ -678,7 +678,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       pdf.text('Nuance Digital', margin, 20);
                     }
                     
-                    pdf.setTextColor(128, 128, 128);
+                     logoImg.src = '/pp.jpg';
                     pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     
