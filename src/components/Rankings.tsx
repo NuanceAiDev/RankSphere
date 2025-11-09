@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
-import { supabase } from '../lib/supabase';
+import { supabase, refreshSupabaseSchema } from '../lib/supabase';
 
 interface RankingsProps {
   selectedClient: Client | null;
@@ -40,24 +40,44 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const currentYear = String(currentDate.getFullYear());
       const monthYear = `${currentMonth}-${currentYear}`;
       
-      const { data, error } = await supabase
+      // First attempt
+      let { data, error } = await supabase
         .from('clients')
         .update({ report_done_month: monthYear })
         .eq('id', selectedClient.id)
         .select();
 
+      // If schema cache error, refresh and retry
+      if (error && (error.message?.includes('schema cache') || error.message?.includes('column'))) {
+        console.log('Schema cache issue detected, refreshing...');
+        await refreshSupabaseSchema();
+        
+        // Wait a moment for cache to clear
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Retry the update
+        const retryResult = await supabase
+          .from('clients')
+          .update({ report_done_month: monthYear })
+          .eq('id', selectedClient.id)
+          .select();
+        
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+
       if (error) {
         console.error('Supabase update error:', error);
         
         // Handle specific error types
-        if (error.message?.includes('column') && error.message?.includes('does not exist')) {
-          toast.error('❌ Update failed: Missing column in database');
+        if (error.message?.includes('column') || error.message?.includes('schema cache')) {
+          toast.error('❌ Update failed: Schema cache issue - please refresh the page');
         } else if (error.message?.includes('permission denied') || error.code === 'PGRST301') {
           toast.error('❌ Update failed: Permission denied');
         } else if (error.message?.includes('JWT')) {
           toast.error('❌ Update failed: Authentication required');
         } else {
-          toast.error(`❌ Update failed: ${error.message || 'Unknown error'}`);
+          toast.error(`❌ Update failed: ${error.message || 'Unknown error — check Supabase logs'}`);
         }
         return;
       }

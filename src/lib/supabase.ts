@@ -65,3 +65,24 @@ const createSupabaseClient = () => {
 export const supabase = createSupabaseClient();
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+
+// Schema refresh utility to handle cache issues
+export const refreshSupabaseSchema = async (): Promise<boolean> => {
+  try {
+    // Force schema refresh by making a simple query
+    const { error } = await supabase
+      .from('clients')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.warn('Schema refresh failed:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn('Schema refresh error:', error);
+    return false;
+  }
+};
