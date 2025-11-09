@@ -22,7 +22,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   // Check report status when client changes
   React.useEffect(() => {
     if (selectedClient) {
-      setReportDone(isReportDone(selectedClient.id));
+      setReportDone(isReportDone(selectedClient.name));
     } else {
       setReportDone(false);
     }
@@ -37,51 +37,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
     setIsMarkingDone(true);
     try {
       // Mark report as done in localStorage
-      markReportAsDone(selectedClient.id);
-      setReportDone(true);
-      
-      toast.success('Report marked as done!');
-      onClientUpdated(); // Refresh client data to update sidebar indicators
-    } catch (error) {
-      console.error('Error marking report as done:', error);
-      toast.error('❌ Failed to mark report as done');
-    } finally {
-      setIsMarkingDone(false);
-    }
-  };
-
-  const generateClientSlug = (clientName: string): string => {
-    return clientName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-
-  const getCurrentMonthPath = (): string => {
-    return format(new Date(), 'yyyy-MM');
-  };
-
-  const fetchAnalyticsScreenshots = async (): Promise<string[]> => {
-    if (!selectedClient) return [];
-
-    try {
-      const clientSlug = generateClientSlug(selectedClient.name);
-      const monthPath = getCurrentMonthPath();
-      const folderPath = `${clientSlug}/${monthPath}`;
-
-      const { data: files, error } = await supabase.storage
-        .from('analytics_screenshots')
-        .list(folderPath);
-
-      if (error || !files) {
-        console.warn('No analytics screenshots found:', error);
-        return [];
-      }
-
-      // Filter out .keep files and get public URLs
-      const imageFiles = files.filter(file => 
+      markReportAsDone(selectedClient.name);
         file.name !== '.keep' && 
         /\.(jpg|jpeg|png|webp)$/i.test(file.name)
       );
@@ -750,21 +706,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 resolve(true);
               };
               img.src = screenshotUrl;
-            });
-            
-            await loadScreenshot;
-          } catch (error) {
-            console.warn('Error processing screenshot:', error);
-          }
-        }
-      }
-      
-      // Save the PDF
-      pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`);
-      toast.success('Report generated successfully!');
     } catch (error) {
-      console.error('Error generating report:', error);
-      toast.error('Failed to generate report');
+      console.error('Error marking report as done:', error);
+      toast.error('❌ Failed to mark report as done');
     } finally {
       setIsGeneratingReport(false);
     }

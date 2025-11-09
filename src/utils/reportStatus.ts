@@ -1,11 +1,9 @@
-// Report status management using localStorage
-export interface ReportStatus {
-  clientId: string;
-  month: string; // Format: YYYY-MM
-  markedAt: string; // ISO timestamp
+// Report status management using localStorage with client slug keys
+export interface ReportDoneClients {
+  [clientSlug: string]: string; // clientSlug -> month (YYYY-MM)
 }
 
-const STORAGE_KEY = 'nuance_report_status';
+const STORAGE_KEY = 'report_done_clients';
 
 export const getCurrentMonth = (): string => {
   const now = new Date();
@@ -14,58 +12,64 @@ export const getCurrentMonth = (): string => {
   return `${year}-${month}`;
 };
 
-export const getReportStatuses = (): ReportStatus[] => {
+export const generateClientSlug = (clientName: string): string => {
+  return clientName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
+};
+
+export const getReportDoneClients = (): ReportDoneClients => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    return stored ? JSON.parse(stored) : {};
   } catch (error) {
-    console.warn('Failed to load report statuses from localStorage:', error);
-    return [];
+    console.warn('Failed to load report done clients from localStorage:', error);
+    return {};
   }
 };
 
-export const saveReportStatuses = (statuses: ReportStatus[]): void => {
+export const saveReportDoneClients = (clients: ReportDoneClients): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(statuses));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
   } catch (error) {
-    console.warn('Failed to save report statuses to localStorage:', error);
+    console.warn('Failed to save report done clients to localStorage:', error);
   }
 };
 
-export const markReportAsDone = (clientId: string): void => {
+export const markReportAsDone = (clientName: string): void => {
   const currentMonth = getCurrentMonth();
-  const statuses = getReportStatuses();
+  const clientSlug = generateClientSlug(clientName);
+  const clients = getReportDoneClients();
   
-  // Remove any existing status for this client and month
-  const filteredStatuses = statuses.filter(
-    status => !(status.clientId === clientId && status.month === currentMonth)
-  );
+  // Add client with current month
+  clients[clientSlug] = currentMonth;
   
-  // Add new status
-  const newStatus: ReportStatus = {
-    clientId,
-    month: currentMonth,
-    markedAt: new Date().toISOString()
-  };
-  
-  filteredStatuses.push(newStatus);
-  saveReportStatuses(filteredStatuses);
+  saveReportDoneClients(clients);
 };
 
-export const isReportDone = (clientId: string): boolean => {
+export const isReportDone = (clientName: string): boolean => {
   const currentMonth = getCurrentMonth();
-  const statuses = getReportStatuses();
+  const clientSlug = generateClientSlug(clientName);
+  const clients = getReportDoneClients();
   
-  return statuses.some(
-    status => status.clientId === clientId && status.month === currentMonth
-  );
+  return clients[clientSlug] === currentMonth;
 };
 
 export const cleanupOldStatuses = (): void => {
   const currentMonth = getCurrentMonth();
-  const statuses = getReportStatuses();
+  const clients = getReportDoneClients();
   
-  // Keep only current month statuses
-  const currentStatuses = statuses.filter(status => status.month === currentMonth);
-  saveReportStatuses(currentStatuses);
+  // Keep only current month statuses, remove old ones
+  const currentClients: ReportDoneClients = {};
+  
+  Object.entries(clients).forEach(([clientSlug, month]) => {
+    if (month === currentMonth) {
+      currentClients[clientSlug] = month;
+    }
+  });
+  
+  saveReportDoneClients(currentClients);
 };

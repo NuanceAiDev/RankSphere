@@ -35,7 +35,7 @@ export function Sidebar({
 
   // Check if client has report done for current month
   const hasReportDoneThisMonth = (client: Client): boolean => {
-    return isReportDone(client.id);
+    return isReportDone(client.name);
   };
 
   // Filter clients based on search term and report status
@@ -61,7 +61,7 @@ export function Sidebar({
     const client = clients.find(c => c.id === clientId);
     if (!client) return '🔴';
     
-    return hasReportDoneThisMonth(client) ? '🟢' : '🔴';
+    return isReportDone(client.name) ? '🟢' : '🔴';
   };
 
   return (
