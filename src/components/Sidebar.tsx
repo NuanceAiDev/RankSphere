@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search, Filter } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Client, Keyword } from '../types';
 
