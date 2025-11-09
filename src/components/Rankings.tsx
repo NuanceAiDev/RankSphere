@@ -411,6 +411,38 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           
           // Add borders to new page
           pdf.setFillColor(251, 194, 16);
+          pdf.rect(0, 0, 8, pageHeight, 'F');
+          pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F');
+          pdf.setFillColor(4, 140, 212);
+          pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
+          
+          // Header for additional table pages
+          try {
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            
+            const loadAdditionalPageLogo = new Promise((resolve) => {
+              logoImg.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  canvas.width = logoImg.width;
+                  canvas.height = logoImg.height;
+                  ctx.drawImage(logoImg, 0, 0);
+                  
+                  const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
+                  resolve(true);
+                } catch (error) {
+                  pdf.setFontSize(12);
+                  pdf.setTextColor(4, 140, 212);
+                  pdf.text('Nuance Digital', margin, 20);
+                  resolve(true);
+                }
+              };
+              logoImg.onerror = () => {
+                pdf.setFontSize(12);
+                pdf.setTextColor(4, 140, 212);
                 pdf.text('Nuance Digital', margin, 20);
                 resolve(true);
               };
