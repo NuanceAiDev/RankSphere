@@ -27,18 +27,6 @@ export function Sidebar({
   const [searchTerm, setSearchTerm] = useState('');
   const [reportFilter, setReportFilter] = useState<'all' | 'generated' | 'pending'>('all');
 
-  // Helper function to check if client has report generated this month
-  const hasReportThisMonth = (clientId: string): boolean => {
-    const client = clients.find(c => c.id === clientId);
-    if (!client?.last_report_date) return false;
-    
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const lastReportDate = new Date(client.last_report_date);
-    
-    return lastReportDate.getMonth() === currentMonth && lastReportDate.getFullYear() === currentYear;
-  };
-
   // Filter clients based on search term and report status
   const filteredClients = clients.filter(client => {
     // Search filter
@@ -47,19 +35,14 @@ export function Sidebar({
     
     if (!matchesSearch) return false;
     
-    // Report status filter
-    if (reportFilter === 'all') return true;
-    
-    const hasReport = hasReportThisMonth(client.id);
-    if (reportFilter === 'generated') return hasReport;
-    if (reportFilter === 'pending') return !hasReport;
-    
+    // Report status filter - temporarily show all clients regardless of filter
     return true;
   });
 
   // Get status indicator for client
   const getClientStatusIndicator = (clientId: string): string => {
-    return hasReportThisMonth(clientId) ? '🟢' : '🔴';
+    // Default to pending status - will be replaced with manual system
+    return '🔴';
   };
 
   return (

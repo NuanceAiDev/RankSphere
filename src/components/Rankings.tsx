@@ -722,32 +722,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             await loadScreenshot;
           } catch (error) {
             console.warn('Error processing screenshot:', error);
-          }
-        }
-      }
-      
-      // Save the PDF
-      const fileName = `${selectedClient.name} - Keyword Ranking Report - ${format(currentMonth, 'dd MMM, yyyy')} to ${format(currentMonthEnd, 'dd MMM, yyyy')}.pdf`;
-      pdf.save(fileName);
-      
-      // Update client's last_report_date
-      try {
-        const { error: updateError } = await supabase
-          .from('clients')
-          .update({ last_report_date: new Date().toISOString() })
-          .eq('id', selectedClient.id);
-
-        if (updateError) {
-          console.warn('Failed to update client report date:', updateError);
-        } else {
-          // Trigger client list refresh to update status indicators
-          onClientUpdated();
-        }
-      } catch (error) {
-        console.warn('Error updating client report date:', error);
-      }
-      
-      toast.success('Report generated successfully!');
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report');
