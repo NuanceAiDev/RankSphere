@@ -40,18 +40,20 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const currentYear = String(currentDate.getFullYear());
       const monthYear = `${currentMonth}-${currentYear}`;
       
-      const { data, error } = await supabase
-        .from('clients')
-        .update({ report_done_month: monthYear })
-        .eq('id', selectedClient.id)
-        .select();
+      const { data, error } = await retryOperation(async () => {
+        return await supabase
+          .from('clients')
+          .update({ report_done_month: monthYear })
+          .eq('id', selectedClient.id)
+          .select();
+      });
 
       if (error) {
         console.error('Supabase update error:', error);
         
         // Handle specific error types
-        if (error.message?.includes('column "report_done_month" does not exist')) {
-          toast.error('❌ Update failed: Missing column in database');
+        if (error.message?.includes('column') && error.message?.includes('does not exist')) {
+          toast.error('❌ Update failed: Missing column in database. Please run the latest migration.');
         } else if (error.message?.includes('permission denied') || error.code === 'PGRST301') {
           toast.error('❌ Update failed: Permission denied');
         } else if (error.message?.includes('JWT')) {
