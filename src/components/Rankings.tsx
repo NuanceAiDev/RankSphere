@@ -599,7 +599,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         const screenshotSpacing = 18; // Consistent 18px vertical spacing between images
         const availableWidth = pageWidth - (2 * margin);
         const maxScreenshotWidth = availableWidth * 0.9; // 90% of available content width
-        const maxScreenshotHeight = 84; // Max height for each image
+        const maxScreenshotHeight = 94; // Max height for each image
         const imagesPerPage = 2; // Exactly 2 images per page
         
         let currentScreenshotY = currentY;
