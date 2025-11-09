@@ -174,7 +174,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         
         // Use Promise.then() instead of await to avoid transpilation issues
         const loadLogo = new Promise((resolve) => {
-          logoImg.onload = () => {
+          logoImg.onload = async () => {
             try {
               // Create canvas to convert image to data URL
               const canvas = document.createElement('canvas');
@@ -196,7 +196,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               resolve(true);
             }
           };
-          logoImg.onerror = () => {
+          logoImg.onerror = async () => {
             console.warn('Logo loading failed, using text fallback');
             // Fallback to text
             pdf.setFontSize(14);
@@ -300,7 +300,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         logoImg.crossOrigin = 'anonymous';
         
         const loadPageLogo = new Promise((resolve) => {
-          logoImg.onload = () => {
+          logoImg.onload = async () => {
             try {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
@@ -350,7 +350,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               resolve(true);
             }
           };
-          logoImg.onerror = () => {
+          logoImg.onerror = async () => {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
             pdf.text('Nuance', margin, 20);
@@ -420,7 +420,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             logoImg.crossOrigin = 'anonymous';
             
             const loadAdditionalPageLogo = new Promise((resolve) => {
-              logoImg.onload = () => {
+              logoImg.onload = async () => {
                 try {
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
@@ -438,7 +438,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   resolve(true);
                 }
               };
-              logoImg.onerror = () => {
+              logoImg.onerror = async () => {
                 pdf.setFontSize(12);
                 pdf.setTextColor(4, 140, 212);
                 pdf.text('Nuance', margin, 20);
@@ -509,7 +509,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           logoImg.crossOrigin = 'anonymous';
           
           const loadAnalyticsPageLogo = new Promise((resolve) => {
-            logoImg.onload = () => {
+            logoImg.onload = async () => {
               try {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -527,7 +527,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 resolve(true);
               }
             };
-            logoImg.onerror = () => {
+            logoImg.onerror = async () => {
               pdf.setFontSize(12);
               pdf.setTextColor(4, 140, 212);
               // Add logo instead of text
@@ -607,7 +607,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             img.crossOrigin = 'anonymous';
             
             const loadScreenshot = new Promise((resolve) => {
-              img.onload = () => {
+              img.onload = async () => {
                 try {
                   // Calculate image dimensions
                   const maxWidth = maxScreenshotWidth; // 90% of content width
@@ -669,7 +669,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   resolve(true);
                 }
               };
-              img.onerror = () => {
+              img.onerror = async () => {
                 console.warn('Failed to load screenshot:', screenshotUrl);
                 resolve(true);
               };
