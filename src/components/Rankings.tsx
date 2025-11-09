@@ -181,12 +181,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Calculate date ranges
       const currentDate = new Date();
-      const currentMonth = startOfMonth(currentDate);
-      const previousMonth = startOfMonth(subMonths(currentDate, 1));
-      const currentMonthEnd = endOfMonth(currentDate);
+      const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const previousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
       
       const currentMonthLabel = format(currentMonth, 'MMM-yy');
       const previousMonthLabel = format(previousMonth, 'MMM-yy');
+      
+      // Format period as "Oct – Nov 2025"
+      const periodText = `${format(previousMonth, 'MMM')} – ${format(currentMonth, 'MMM yyyy')}`;
       
       // ===== FIRST PAGE - PROFESSIONAL COVER =====
       
@@ -250,7 +252,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Report Information Section (Centered)
       const centerX = pageWidth / 2;
-      const infoStartY = 90;
+      const infoStartY = 100;
+      const lineSpacing = 18; // Reduced from default spacing
       
       // Client Name
       pdf.setFontSize(14);
@@ -263,19 +266,18 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // Website URL
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
-      pdf.text('Website:', centerX - 50, infoStartY + 20, { fontStyle: 'bold' });
+      pdf.text('Website:', centerX - 50, infoStartY + lineSpacing, { fontStyle: 'bold' });
       pdf.setFontSize(14);
       pdf.setTextColor(4, 140, 212);
-      pdf.text(`https://${selectedClient.domain}`, centerX + 10, infoStartY + 20, { fontStyle: 'bold' });
+      pdf.text(`https://${selectedClient.domain}`, centerX + 10, infoStartY + lineSpacing, { fontStyle: 'bold' });
       
       // Report Period
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
-      pdf.text('Period:', centerX - 50, infoStartY + 40, { fontStyle: 'bold' });
+      pdf.text('Period:', centerX - 50, infoStartY + (lineSpacing * 2), { fontStyle: 'bold' });
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
-      const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
-      pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
+      pdf.text(periodText, centerX + 10, infoStartY + (lineSpacing * 2), { fontStyle: 'bold' });
       
       // Accent bars at bottom
       pdf.setFillColor(251, 194, 16);
