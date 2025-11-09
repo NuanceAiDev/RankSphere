@@ -36,7 +36,7 @@ export const retryOperation = async <T>(
 
 // Create a mock client when environment variables are not configured
 const createSupabaseClient = () => {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your_supabase_project_url_here') || supabaseAnonKey.includes('your_supabase_anon_key_here')) {
     console.warn('Supabase environment variables not configured. Using mock client.');
     // Return a mock client that throws helpful errors
     return {
