@@ -435,7 +435,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   ctx.drawImage(logoImg, 0, 0);
                   
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0);
+                  pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
                   resolve(true);
                 } catch (error) {
                   pdf.text('Nuance Digital', margin, 20);
@@ -520,7 +520,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 ctx.drawImage(logoImg, 0, 0);
                 
                 const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 20, 0);
+                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
                 resolve(true);
               } catch (error) {
                 pdf.setFontSize(12);
@@ -535,7 +535,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               // Add logo instead of text
               try {
                 const logoImg = new Image();
-                logoImg.crossOrigin = 'anonymous';
+            logoImg.src = '/pp-new.png';
                 
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
