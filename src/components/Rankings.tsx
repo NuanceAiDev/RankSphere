@@ -563,11 +563,11 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 
                 await loadFallbackLogo;
               } catch (error) {
-                pdf.text('Nuance', margin + 8, 20);
+                pdf.text('Nuance Digital', margin, 20);
               }
               resolve(true);
             };
-            logoImg.src = '/pp.jpg';
+            logoImg.src = '/pp-new.png';
           });
           
           await loadAnalyticsPageLogo;
