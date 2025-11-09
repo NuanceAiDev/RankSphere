@@ -520,7 +520,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 ctx.drawImage(logoImg, 0, 0);
                 
                 const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
+                pdf.addImage(logoDataUrl, 'JPEG', margin, 12, 32, 0);
                 resolve(true);
               } catch (error) {
                 pdf.setFontSize(12);
@@ -567,7 +567,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               }
               resolve(true);
             };
-            logoImg.src = '/pp.jpg';
+            logoImg.src = '/pp-new.png';
           });
           
           await loadAnalyticsPageLogo;
