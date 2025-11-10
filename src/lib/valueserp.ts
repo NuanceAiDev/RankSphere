@@ -21,7 +21,6 @@ export async function fetchKeywordRanking(
     const baseParams = {
       api_key: VALUESERP_API_KEY,
       q: keyword,
-      google_domain: 'google.com',
       output: 'json',
       num: '100' // Get top 100 results to find domain
     };
@@ -29,13 +28,22 @@ export async function fetchKeywordRanking(
     // Add location-specific parameters based on rank type
     const params = new URLSearchParams(baseParams);
     if (rankType === 'qatar') {
+      params.append('google_domain', 'google.com.qa');
       params.append('location', 'Doha, Qatar');
       params.append('gl', 'qa');
       params.append('hl', 'en');
       params.append('device', 'desktop');
     } else if (rankType === 'dubai') {
+      params.append('google_domain', 'google.ae');
       params.append('location', 'Dubai, United Arab Emirates');
       params.append('gl', 'ae');
+      params.append('hl', 'en');
+      params.append('device', 'desktop');
+    } else {
+      // Default fallback
+      params.append('google_domain', 'google.com');
+      params.append('location', 'United States');
+      params.append('gl', 'us');
       params.append('hl', 'en');
       params.append('device', 'desktop');
     }
