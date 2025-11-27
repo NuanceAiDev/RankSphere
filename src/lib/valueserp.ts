@@ -4,15 +4,6 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
-// Helper function to normalize domains for flexible matching
-function normalizeDomain(url: string): string {
-  return url
-    .replace(/^https?:\/\//, '') // Remove protocol
-    .replace(/^www\./, '')       // Remove www
-    .split('/')[0]               // Remove path/slugs (everything after first slash)
-    .toLowerCase();              // Convert to lowercase
-}
-
 export async function fetchKeywordRanking(
   domain: string, 
   keyword: string, 
@@ -63,12 +54,22 @@ export async function fetchKeywordRanking(
     let url = null;
     
     if (data.organic_results && Array.isArray(data.organic_results)) {
-      const normalizedClientDomain = normalizeDomain(domain);
+      // Clean the client domain (remove protocol and www)
+      const cleanClientDomain = domain
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .toLowerCase();
+      
+      console.log('Checking rank for:', cleanClientDomain);
       
       for (const result of data.organic_results) {
         if (result.link) {
-          const normalizedApiLink = normalizeDomain(result.link);
-          if (normalizedApiLink.includes(normalizedClientDomain)) {
+          console.log('Found API Result at pos', result.position, ':', result.link);
+          
+          const isMatch = result.link.toLowerCase().includes(cleanClientDomain);
+          console.log('Match Status:', isMatch);
+          
+          if (isMatch) {
             rank = result.position;
             url = result.link;
             break;
