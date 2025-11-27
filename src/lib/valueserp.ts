@@ -4,6 +4,15 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
+// Helper function to normalize domains for flexible matching
+function normalizeDomain(url: string): string {
+  return url
+    .replace(/^https?:\/\//, '') // Remove protocol
+    .replace(/^www\./, '')       // Remove www
+    .split('/')[0]               // Remove path/slugs (everything after first slash)
+    .toLowerCase();              // Convert to lowercase
+}
+
 export async function fetchKeywordRanking(
   domain: string, 
   keyword: string, 
@@ -54,9 +63,25 @@ export async function fetchKeywordRanking(
     let url = null;
     
     if (data.organic_results && Array.isArray(data.organic_results)) {
-      // Iterate through ALL results (up to 100) to find domain matches
+      const normalizedClientDomain = normalizeDomain(domain);
+      
       for (const result of data.organic_results) {
-        if (result.link && result.link.includes(domain)) {
+        if (result.link) {
+          const normalizedApiLink = normalizeDomain(result.link);
+          if (normalizedApiLink.includes(normalizedClientDomain)) {
+            rank = result.position;
+            url = result.link;
+            break;
+          }
+        }
+      }
+    }
+    
+    return {
+      rank,
+      url
+    };
+  } catch (error) {
           rank = result.position;
           url = result.link;
           break;
