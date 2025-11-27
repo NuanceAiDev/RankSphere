@@ -23,7 +23,7 @@ export async function fetchKeywordRanking(
       q: keyword,
       google_domain: 'google.com',
       output: 'json',
-      num: '100'
+      num: 100
     };
 
     // Add location-specific parameters based on rank type
@@ -54,10 +54,10 @@ export async function fetchKeywordRanking(
     let url = null;
     
     if (data.organic_results && Array.isArray(data.organic_results)) {
-      for (let i = 0; i < data.organic_results.length; i++) {
-        const result = data.organic_results[i];
+      // Iterate through ALL results (up to 100) to find domain matches
+      for (const result of data.organic_results) {
         if (result.link && result.link.includes(domain)) {
-          rank = result.position || (i + 1);
+          rank = result.position;
           url = result.link;
           break;
         }
