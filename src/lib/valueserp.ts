@@ -82,18 +82,6 @@ export async function fetchKeywordRanking(
       url
     };
   } catch (error) {
-          rank = result.position;
-          url = result.link;
-          break;
-        }
-      }
-    }
-    
-    return {
-      rank,
-      url
-    };
-  } catch (error) {
     console.error('ValueSERP API Error:', error);
     throw error;
   }
