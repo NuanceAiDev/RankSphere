@@ -4,6 +4,17 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
+// Helper to strip "https://", "www.", and paths to get the core domain
+function normalizeDomain(url: string): string {
+  try {
+    return url.toLowerCase()
+      .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '') // Remove protocol & www
+      .split('/')[0]; // Remove path, keep only domain
+  } catch (e) {
+    return url.toLowerCase();
+  }
+}
+
 export async function fetchKeywordRanking(
   domain: string, 
   keyword: string, 
@@ -18,23 +29,33 @@ export async function fetchKeywordRanking(
   }
 
   try {
-    const baseParams = {
+    // 1. Clean the input domain so we match "selectqatar.com" not "https://..."
+    const targetDomain = normalizeDomain(domain);
+    console.log(`[RankCheck] Searching for target: "${targetDomain}" for keyword: "${keyword}"`);
+
+    const baseParams: any = {
       api_key: VALUESERP_API_KEY,
       q: keyword,
-      google_domain: 'google.com',
       output: 'json',
-      num: '100' // Get top 100 results to find domain
+      num: 100 // Integer 100 is safer than string '100'
     };
 
-    // Add location-specific parameters based on rank type
-    const params = new URLSearchParams(baseParams);
+    // 2. Dynamic Location & Google Domain Logic
+    // We use .com.qa for Qatar to get accurate local ranks
+    const params = new URLSearchParams();
+    
+    // Add base params manually to URLSearchParams
+    Object.keys(baseParams).forEach(key => params.append(key, baseParams[key]));
+
     if (rankType === 'qatar') {
       params.append('location', 'Doha, Qatar');
+      params.append('google_domain', 'google.com.qa'); // CRITICAL FIX: Local Google
       params.append('gl', 'qa');
       params.append('hl', 'en');
       params.append('device', 'desktop');
     } else if (rankType === 'dubai') {
       params.append('location', 'Dubai, United Arab Emirates');
+      params.append('google_domain', 'google.ae'); // CRITICAL FIX: Local Google
       params.append('gl', 'ae');
       params.append('hl', 'en');
       params.append('device', 'desktop');
@@ -54,13 +75,22 @@ export async function fetchKeywordRanking(
     let url = null;
     
     if (data.organic_results && Array.isArray(data.organic_results)) {
+      console.log(`[RankCheck] API returned ${data.organic_results.length} results.`);
+      
       for (let i = 0; i < data.organic_results.length; i++) {
         const result = data.organic_results[i];
-        if (result.link && result.link.includes(domain)) {
+        
+        // 3. Brute Force Match: Does the result link contain our clean target domain?
+        if (result.link && result.link.toLowerCase().includes(targetDomain)) {
+          console.log(`[RankCheck] MATCH FOUND at pos ${result.position}! Link: ${result.link}`);
           rank = result.position || (i + 1);
           url = result.link;
           break;
         }
+      }
+      
+      if (!rank) {
+         console.log(`[RankCheck] NO MATCH found in top 100 results.`);
       }
     }
     
