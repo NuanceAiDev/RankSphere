@@ -4,14 +4,15 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
-// Helper to strip "https://", "www.", and paths to get the core domain
+// Helper to clean domains for comparison
 function normalizeDomain(url: string): string {
+  if (!url) return '';
   try {
     return url.toLowerCase()
-      .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '') // Remove protocol & www
-      .split('/')[0]; // Remove path, keep only domain
+      .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
+      .split('/')[0];
   } catch (e) {
-    return url.toLowerCase();
+    return '';
   }
 }
 
@@ -21,85 +22,91 @@ export async function fetchKeywordRanking(
   rankType: 'dubai' | 'qatar' = 'qatar'
 ): Promise<RankingData> {
   if (!VALUESERP_API_KEY) {
-    console.warn('ValueSERP API key not configured, using mock data');
-    return {
-      rank: Math.floor(Math.random() * 100) + 1,
-      url: `https://${domain}/sample-page`
-    };
+    console.warn('ValueSERP API key not configured');
+    return { rank: null, url: null };
   }
 
   try {
-    // 1. Clean the input domain so we match "selectqatar.com" not "https://..."
     const targetDomain = normalizeDomain(domain);
-    console.log(`[RankCheck] Searching for target: "${targetDomain}" for keyword: "${keyword}"`);
+    console.log(`\n🔍 [DEBUG] Looking for client: "${targetDomain}"`);
 
-    const baseParams: any = {
+    // Setup Params
+    const params = new URLSearchParams({
       api_key: VALUESERP_API_KEY,
       q: keyword,
       output: 'json',
-      num: 100 // Integer 100 is safer than string '100'
-    };
-
-    // 2. Dynamic Location & Google Domain Logic
-    // We use .com.qa for Qatar to get accurate local ranks
-    const params = new URLSearchParams();
-    
-    // Add base params manually to URLSearchParams
-    Object.keys(baseParams).forEach(key => params.append(key, baseParams[key]));
+      num: '100' 
+    });
 
     if (rankType === 'qatar') {
       params.append('location', 'Doha, Qatar');
-      params.append('google_domain', 'google.com.qa'); // CRITICAL FIX: Local Google
+      params.append('google_domain', 'google.com.qa');
       params.append('gl', 'qa');
       params.append('hl', 'en');
-      params.append('device', 'desktop');
-    } else if (rankType === 'dubai') {
+    } else {
       params.append('location', 'Dubai, United Arab Emirates');
-      params.append('google_domain', 'google.ae'); // CRITICAL FIX: Local Google
+      params.append('google_domain', 'google.ae');
       params.append('gl', 'ae');
       params.append('hl', 'en');
-      params.append('device', 'desktop');
     }
     
     const response = await fetch(`${BASE_URL}?${params}`);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ValueSERP API Error: ${response.status} - ${errorText}`);
-    }
+    if (!response.ok) throw new Error(`API Error: ${response.status}`);
     
     const data = await response.json();
     
-    // Search for the domain in organic results
     let rank = null;
     let url = null;
-    
-    if (data.organic_results && Array.isArray(data.organic_results)) {
-      console.log(`[RankCheck] API returned ${data.organic_results.length} results.`);
-      
-      for (let i = 0; i < data.organic_results.length; i++) {
-        const result = data.organic_results[i];
+    let foundIn = '';
+
+    // --- DEBUGGING: Collect ALL found domains to see what the API sees ---
+    const allFoundDomains: string[] = [];
+
+    // 1. Check Local Results (Map Pack) - CRITICAL FOR LOCAL BUSINESSES
+    if (data.local_results) {
+      for (let i = 0; i < data.local_results.length; i++) {
+        const item = data.local_results[i];
+        const itemUrl = item.website || item.link || '';
+        if (itemUrl) allFoundDomains.push(`[MAPS] ${itemUrl}`);
         
-        // 3. Brute Force Match: Does the result link contain our clean target domain?
-        if (result.link && result.link.toLowerCase().includes(targetDomain)) {
-          console.log(`[RankCheck] MATCH FOUND at pos ${result.position}! Link: ${result.link}`);
-          rank = result.position || (i + 1);
-          url = result.link;
+        if (normalizeDomain(itemUrl).includes(targetDomain)) {
+          rank = item.position; 
+          url = itemUrl;
+          foundIn = 'Map Pack';
           break;
         }
       }
-      
-      if (!rank) {
-         console.log(`[RankCheck] NO MATCH found in top 100 results.`);
+    }
+
+    // 2. Check Organic Results (Standard Links) - Only if not found in Maps
+    if (!rank && data.organic_results) {
+      for (let i = 0; i < data.organic_results.length; i++) {
+        const item = data.organic_results[i];
+        if (item.link) allFoundDomains.push(`[#${item.position}] ${item.link}`);
+
+        if (item.link && normalizeDomain(item.link).includes(targetDomain)) {
+          rank = item.position;
+          url = item.link;
+          foundIn = 'Organic';
+          break;
+        }
       }
     }
-    
-    return {
-      rank,
-      url
-    };
+
+    // --- FINAL REPORT IN CONSOLE ---
+    if (rank) {
+      console.log(`✅ MATCH FOUND! Rank: ${rank} (${foundIn}) | URL: ${url}`);
+    } else {
+      console.log(`❌ NOT RANKED. API scanned ${allFoundDomains.length} results.`);
+      console.log(`👀 DUMP of top 5 results found:\n`, allFoundDomains.slice(0, 5).join('\n'));
+      // UNCOMMENT BELOW TO SEE ALL RESULTS IF NEEDED:
+      // console.log(allFoundDomains.join('\n'));
+    }
+
+    return { rank, url };
+
   } catch (error) {
-    console.error('ValueSERP API Error:', error);
+    console.error('API Error:', error);
     throw error;
   }
 }
