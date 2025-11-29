@@ -19,12 +19,15 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   const totalKeywords = relevantKeywords.length;
   
   const improvements = relevantKeywords.filter(k => {
+    // Ensure both ranks exist before comparing
     if (!k.current_month_rank || !k.previous_month_rank) return false;
+    // Lower rank number is better (e.g., 5 is better than 10)
     return k.previous_month_rank > k.current_month_rank;
   }).length;
 
   const declines = relevantKeywords.filter(k => {
     if (!k.current_month_rank || !k.previous_month_rank) return false;
+    // Higher rank number is worse (e.g., 15 is worse than 10)
     return k.previous_month_rank < k.current_month_rank;
   }).length;
 
