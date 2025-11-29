@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award, PieChart as PieIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Client, Keyword } from '../types';
 
@@ -11,6 +11,7 @@ interface OverviewProps {
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   // --- 1. DETERMINE DATA SOURCE ---
+  // If a client is selected, filter keywords. If not, use ALL keywords (Agency View).
   const relevantKeywords = selectedClient 
     ? keywords.filter(k => k.client_id === selectedClient.id)
     : keywords;
@@ -19,15 +20,12 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   const totalKeywords = relevantKeywords.length;
   
   const improvements = relevantKeywords.filter(k => {
-    // Ensure both ranks exist before comparing
     if (!k.current_month_rank || !k.previous_month_rank) return false;
-    // Lower rank number is better (e.g., 5 is better than 10)
     return k.previous_month_rank > k.current_month_rank;
   }).length;
 
   const declines = relevantKeywords.filter(k => {
     if (!k.current_month_rank || !k.previous_month_rank) return false;
-    // Higher rank number is worse (e.g., 15 is worse than 10)
     return k.previous_month_rank < k.current_month_rank;
   }).length;
 
@@ -86,6 +84,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   let barChartTitle = '';
 
   if (selectedClient) {
+    // SINGLE CLIENT VIEW: Show specific keyword changes
     barChartTitle = "Keyword Ranking Comparison (Top 10)";
     barChartXKey = "keyword";
     barChartData = relevantKeywords
@@ -98,8 +97,11 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         currentRank: keyword.current_month_rank || 0,
       }));
   } else {
+    // AGENCY VIEW: Show Top Clients instead of random keywords
     barChartTitle = "Top Performing Clients (Most #1-10 Rankings)";
     barChartXKey = "name";
+    
+    // Calculate top performing clients
     barChartData = clients.map(client => {
       const clientKws = keywords.filter(k => k.client_id === client.id);
       const top10Count = clientKws.filter(k => k.current_month_rank && k.current_month_rank <= 10).length;
