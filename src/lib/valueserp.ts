@@ -75,9 +75,8 @@ export async function fetchKeywordRanking(
   const targetDomain = normalizeDomain(domain);
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
-  // 🔴 SAFETY LIMIT: Stop after Page 4 (Top 40 results) to save money.
-  // Most clients don't care if they are rank #41 or #99.
-  const MAX_PAGES = 4; 
+
+  const MAX_PAGES = 10; 
 
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
