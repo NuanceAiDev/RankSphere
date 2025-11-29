@@ -27,8 +27,13 @@ async function fetchPageFromAPI(
     api_key: VALUESERP_API_KEY,
     q: keyword,
     output: 'json',
-    page: pageNumber.toString(), // Fetch specific page (1, 2, 3...)
-    num: '50' // Standard 10 results per page (Google default)
+    page: pageNumber.toString(),
+    
+    // 🟢 SUPER SQUEEZE STRATEGY:
+    // We request 100 results per page.
+    // This attempts to fit the entire top 100 into a SINGLE API call.
+    // Benefit: Finding Rank #21 or #80 costs only 1 Credit instead of 3 or 9.
+    num: '100' 
   };
 
   const params = new URLSearchParams(baseParams);
@@ -64,8 +69,8 @@ export async function fetchKeywordRanking(
   keyword: string, 
   rankType: 'dubai' | 'qatar' = 'qatar'
 ): Promise<RankingData> {
-  // DEBUG: This logs how many times the function is called. 
-  // If you see "API CALL: 2" for one click, your UI is double-firing.
+  // DEBUG: Track API calls. 
+  // If you see "API CALL: 2" for one click, check your Frontend (Strict Mode/Double Click).
   console.count("🔥 API CALL START"); 
 
   if (!VALUESERP_API_KEY) {
@@ -76,8 +81,9 @@ export async function fetchKeywordRanking(
   const targetDomain = normalizeDomain(domain);
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
-  // Max Pages = 10 (Total 100 results). 
-  // Logic: Stop IMMEDIATELY when match is found to save money.
+  // Max Pages logic:
+  // Since we set num: '100', Page 1 usually captures everything.
+  // We keep the loop just in case Google ignores the '100' param and forces pagination.
   const MAX_PAGES = 10; 
 
   try {
@@ -104,6 +110,7 @@ export async function fetchKeywordRanking(
         for (const item of data.organic_results) {
           if (item.link && normalizeDomain(item.link).includes(targetDomain)) {
             console.log(`✅ Found in ORGANIC (Page ${page}) at pos ${item.position}`);
+            // Note: When num=100, item.position is usually the global rank (e.g., 21).
             return { rank: item.position, url: item.link }; // STOP! Cost: 'page' Credits
           }
         }
@@ -111,9 +118,15 @@ export async function fetchKeywordRanking(
       
       // If we are here, we didn't find it on this page.
       // The loop continues to the next page automatically.
+      // With num:100, if it's not on Page 1, it's likely not in the top 100.
+      if (page === 1 && data.organic_results && data.organic_results.length >= 80) {
+         // Optimization: If Page 1 returned 80+ results and we didn't find it, 
+         // it's probably not there. We can stop early to save time if you want.
+         // For now, we let it continue just to be safe.
+      }
     }
 
-    console.log(`❌ Not found in Top ${MAX_PAGES * 10} results.`);
+    console.log(`❌ Not found in Top ${MAX_PAGES * 100} results.`);
     return { rank: null, url: null };
 
   } catch (error) {
