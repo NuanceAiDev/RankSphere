@@ -69,24 +69,13 @@ export function Sidebar({
     <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/pp-logo.png" 
-              alt="Nuance Digital" 
-              className="h-18 w-auto"
-            />
-          </div>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-600" />
-            )}
-          </button>
+        {/* Logo Section - Now Centered & Clean */}
+        <div className="flex items-center justify-center mb-6">
+          <img 
+            src="/pp-logo.png" 
+            alt="Nuance Digital" 
+            className="h-16 w-auto object-contain" // Adjusted height for better fit
+          />
         </div>
         
         <button
@@ -124,7 +113,7 @@ export function Sidebar({
                 </h3>
               </div>
               
-              {/* Report Status Filter - Neutral Style */}
+              {/* Report Status Filter */}
               <div className="mb-3">
                 <div className="relative">
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -140,9 +129,8 @@ export function Sidebar({
                 </div>
               </div>
 
-              {/* Search Bar - HIGHLIGHTED STYLE */}
+              {/* Search Bar - Highlighted Style */}
               <div className="relative mb-3">
-                {/* Blue Icon to Pop */}
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500 dark:text-blue-400" />
                 <input
                   type="text"
@@ -216,6 +204,26 @@ export function Sidebar({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Footer - Theme Toggle (Moved Here) */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-gray-700 dark:text-gray-300 shadow-sm"
+        >
+          {isDark ? (
+            <>
+              <Sun className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium">Light Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium">Dark Mode</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
