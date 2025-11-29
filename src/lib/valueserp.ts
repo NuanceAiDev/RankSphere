@@ -4,7 +4,8 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
-// Helper to clean domains for accurate matching
+// 1. Helper to clean domains for accurate matching
+// Turns "https://www.SelectQatar.com/about" -> "selectqatar.com"
 function normalizeDomain(url: string): string {
   if (!url) return '';
   try {
@@ -16,19 +17,20 @@ function normalizeDomain(url: string): string {
   }
 }
 
-// Helper to fetch a SINGLE page
+// 2. Helper to fetch a SINGLE page with RETRY LOGIC (New!)
 async function fetchPageFromAPI(
   keyword: string, 
   pageNumber: number, 
-  rankType: string
+  rankType: string,
+  retries = 3 // 🛡️ Try 3 times before failing (Fixes network drops)
 ): Promise<any> {
   const baseParams: any = {
     api_key: VALUESERP_API_KEY,
     q: keyword,
     output: 'json',
     page: pageNumber.toString(),
-    // 🔴 REVERT: Google killed 'num: 100'. We must use default (10 results).
-    // This ensures Map Packs (Rank 1-3) are actually returned.
+    // 🟢 Standard 10 results ensures Map Pack is visible.
+    // We removed 'num: 100' because it hides local maps.
     num: '10' 
   };
 
@@ -46,25 +48,41 @@ async function fetchPageFromAPI(
     params.append('hl', 'en');
   }
 
-  try {
-    const response = await fetch(`${BASE_URL}?${params}`);
-    if (!response.ok) {
-       console.warn(`Warning: Page ${pageNumber} failed with status ${response.status}`);
-       return null;
+  // 🔄 RETRY LOOP
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${BASE_URL}?${params}`);
+      
+      // Handle Rate Limiting (429) or Server Errors (500+)
+      if (!response.ok) {
+         if (response.status === 429 || response.status >= 500) {
+            console.warn(`⚠️ Attempt ${attempt} failed (Status ${response.status}). Retrying...`);
+            await new Promise(r => setTimeout(r, 1000 * attempt)); // Wait 1s, then 2s...
+            continue;
+         }
+         console.warn(`Warning: Page ${pageNumber} failed with status ${response.status}`);
+         return null;
+      }
+      
+      return await response.json();
+
+    } catch (err) {
+      // 🛡️ CATCH NETWORK ERRORS (Like 'ERR_NAME_NOT_RESOLVED')
+      console.error(`⚠️ Network error on Page ${pageNumber} (Attempt ${attempt}/${retries})`);
+      if (attempt === retries) return null; // Give up after 3 tries
+      await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
     }
-    return await response.json();
-  } catch (err) {
-    console.error(`Network error on Page ${pageNumber}`, err);
-    return null;
   }
+  return null;
 }
 
-// Main Function with "Sequential Hunter" Loop
+// 3. Main Function with "Sequential Hunter" Loop
 export async function fetchKeywordRanking(
   domain: string, 
   keyword: string, 
   rankType: 'dubai' | 'qatar' = 'qatar'
 ): Promise<RankingData> {
+  // Debug counter to catch frontend double-firing
   console.count("🔥 API CALL START"); 
 
   if (!VALUESERP_API_KEY) {
@@ -76,7 +94,8 @@ export async function fetchKeywordRanking(
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
   // 🔴 SAFETY LIMIT: Stop after Page 5 (Top 50 results).
-  // Checking 10 pages costs 10 credits. Page 5 is a good balance.
+  // Checking 10 pages costs 10 credits per keyword. 
+  // Page 5 is a healthy balance between depth and budget.
   const MAX_PAGES = 5; 
 
   try {
@@ -88,7 +107,7 @@ export async function fetchKeywordRanking(
       if (!data) continue; 
 
       // A. Check Map Pack (Page 1 only)
-      // This is where your Rank #2 and #4 were likely hiding!
+      // This catches Rank #1-3 (Local Business Box)
       if (page === 1 && data.local_results) {
         for (const item of data.local_results) {
           const itemUrl = item.website || item.link || '';
@@ -105,9 +124,9 @@ export async function fetchKeywordRanking(
           if (item.link && normalizeDomain(item.link).includes(targetDomain)) {
             console.log(`✅ Found in ORGANIC (Page ${page}) at pos ${item.position}`);
             
-            // 🟢 CORRECT MATH: 
-            // Page 1: Pos 1 = Rank 1
-            // Page 2: Pos 1 = Rank 11 (10 + 1)
+            // 🟢 ACCURATE MATH: 
+            // Formula: ((Page Number - 1) * 10) + Item Position
+            // Ex: Page 2, Pos 6 = (1 * 10) + 6 = Rank 16.
             const globalRank = ((page - 1) * 10) + item.position;
             
             return { rank: globalRank, url: item.link };
