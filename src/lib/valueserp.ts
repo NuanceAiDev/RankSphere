@@ -28,7 +28,7 @@ async function fetchPageFromAPI(
     q: keyword,
     output: 'json',
     page: pageNumber.toString(), // Fetch specific page (1, 2, 3...)
-    num: '10' // Standard 10 results per page (Google default)
+    num: '50' // Standard 10 results per page (Google default)
   };
 
   const params = new URLSearchParams(baseParams);
