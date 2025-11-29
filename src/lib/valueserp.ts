@@ -4,19 +4,6 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
-// 1. Helper to clean domains for accurate matching
-// Turns "https://www.SelectQatar.com/about" -> "selectqatar.com"
-function normalizeDomain(url: string): string {
-  if (!url) return '';
-  try {
-    return url.toLowerCase()
-      .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
-      .split('/')[0];
-  } catch (e) {
-    return '';
-  }
-}
-
 // 2. Helper to fetch a SINGLE page with RETRY LOGIC (New!)
 async function fetchPageFromAPI(
   keyword: string, 
@@ -90,7 +77,10 @@ export async function fetchKeywordRanking(
     return { rank: null, url: null };
   }
 
-  const targetDomain = normalizeDomain(domain);
+  // Clean the client domain by removing protocols and www, convert to lowercase
+  const cleanClientDomain = domain.toLowerCase()
+    .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '');
+  
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
   // 🔴 SAFETY LIMIT: Stop after Page 5 (Top 50 results).
@@ -121,7 +111,13 @@ export async function fetchKeywordRanking(
       // B. Check Organic Results
       if (data.organic_results) {
         for (const item of data.organic_results) {
-          if (item.link && normalizeDomain(item.link).includes(targetDomain)) {
+          console.log('Checking rank for:', cleanClientDomain);
+          console.log('Found API Result at pos', result.position, ':', result.link);
+          
+          const isMatch = result.link.toLowerCase().includes(cleanClientDomain);
+          console.log('Match Status:', isMatch);
+          
+          if (isMatch) {
             console.log(`✅ Found in ORGANIC (Page ${page}) at pos ${item.position}`);
             
             // 🟢 ACCURATE MATH: 
