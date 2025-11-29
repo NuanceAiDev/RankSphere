@@ -96,7 +96,7 @@ export async function fetchKeywordRanking(
   // 🔴 SAFETY LIMIT: Stop after Page 5 (Top 50 results).
   // Checking 10 pages costs 10 credits per keyword. 
   // Page 5 is a healthy balance between depth and budget.
-  const MAX_PAGES = 5; 
+  const MAX_PAGES = 10; 
 
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
