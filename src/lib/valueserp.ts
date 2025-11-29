@@ -4,8 +4,7 @@ import { RankSettings, RankingData } from '../types';
 const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
-// 1. Helper to clean domains for accurate matching
-// Turns "https://www.SelectQatar.com/about" -> "selectqatar.com"
+// Helper to clean domains for accurate matching
 function normalizeDomain(url: string): string {
   if (!url) return '';
   try {
@@ -17,7 +16,7 @@ function normalizeDomain(url: string): string {
   }
 }
 
-// 2. Helper to fetch a SINGLE page
+// Helper to fetch a SINGLE page
 async function fetchPageFromAPI(
   keyword: string, 
   pageNumber: number, 
@@ -28,11 +27,8 @@ async function fetchPageFromAPI(
     q: keyword,
     output: 'json',
     page: pageNumber.toString(),
-    
-    // 🟢 SUPER SQUEEZE STRATEGY:
-    // We request 100 results per page.
-    // This attempts to fit the entire top 100 into a SINGLE API call.
-    // Benefit: Finding Rank #21 or #80 costs only 1 Credit instead of 3 or 9.
+    // Try to fetch 100 results on Page 1. 
+    // If Google ignores this (which it often does), we fall back to pagination loops.
     num: '100' 
   };
 
@@ -63,14 +59,12 @@ async function fetchPageFromAPI(
   }
 }
 
-// 3. Main Function with "Sequential Hunter" Loop
+// Main Function with "Sequential Hunter" Loop
 export async function fetchKeywordRanking(
   domain: string, 
   keyword: string, 
   rankType: 'dubai' | 'qatar' = 'qatar'
 ): Promise<RankingData> {
-  // DEBUG: Track API calls. 
-  // If you see "API CALL: 2" for one click, check your Frontend (Strict Mode/Double Click).
   console.count("🔥 API CALL START"); 
 
   if (!VALUESERP_API_KEY) {
@@ -81,10 +75,9 @@ export async function fetchKeywordRanking(
   const targetDomain = normalizeDomain(domain);
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
-  // Max Pages logic:
-  // Since we set num: '100', Page 1 usually captures everything.
-  // We keep the loop just in case Google ignores the '100' param and forces pagination.
-  const MAX_PAGES = 10; 
+  // 🔴 SAFETY LIMIT: Stop after Page 4 (Top 40 results) to save money.
+  // Most clients don't care if they are rank #41 or #99.
+  const MAX_PAGES = 4; 
 
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
@@ -92,15 +85,15 @@ export async function fetchKeywordRanking(
       
       const data = await fetchPageFromAPI(keyword, page, rankType);
       
-      if (!data) continue; // Skip failed pages
+      if (!data) continue; 
 
-      // A. Check Map Pack (Only exists on Page 1 usually)
+      // A. Check Map Pack (Page 1 only)
       if (page === 1 && data.local_results) {
         for (const item of data.local_results) {
           const itemUrl = item.website || item.link || '';
           if (normalizeDomain(itemUrl).includes(targetDomain)) {
             console.log(`✅ Found in MAP PACK (Page 1) at pos ${item.position}`);
-            return { rank: item.position, url: itemUrl }; // STOP! Cost: 1 Credit
+            return { rank: item.position, url: itemUrl }; 
           }
         }
       }
@@ -110,23 +103,24 @@ export async function fetchKeywordRanking(
         for (const item of data.organic_results) {
           if (item.link && normalizeDomain(item.link).includes(targetDomain)) {
             console.log(`✅ Found in ORGANIC (Page ${page}) at pos ${item.position}`);
-            // Note: When num=100, item.position is usually the global rank (e.g., 21).
-            return { rank: item.position, url: item.link }; // STOP! Cost: 'page' Credits
+            
+            // 🟢 CRITICAL MATH FIX: Calculate Global Rank
+            // If we are on Page 2, and position is 6... Real Rank is 16.
+            // Formula: ((Page Number - 1) * 10) + Item Position
+            let globalRank = item.position;
+            
+            // Only apply math if Google ignored 'num: 100' and gave us small pages
+            if (data.organic_results.length < 50 && page > 1) {
+               globalRank = ((page - 1) * 10) + item.position;
+            }
+            
+            return { rank: globalRank, url: item.link };
           }
         }
       }
-      
-      // If we are here, we didn't find it on this page.
-      // The loop continues to the next page automatically.
-      // With num:100, if it's not on Page 1, it's likely not in the top 100.
-      if (page === 1 && data.organic_results && data.organic_results.length >= 80) {
-         // Optimization: If Page 1 returned 80+ results and we didn't find it, 
-         // it's probably not there. We can stop early to save time if you want.
-         // For now, we let it continue just to be safe.
-      }
     }
 
-    console.log(`❌ Not found in Top ${MAX_PAGES * 100} results.`);
+    console.log(`❌ Not found in Top ${MAX_PAGES * 10} results.`);
     return { rank: null, url: null };
 
   } catch (error) {
