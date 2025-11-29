@@ -25,52 +25,46 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
     return isNaN(num) || num <= 0 ? 0 : num;
   };
 
+  // Logic to calculate Improvements
   const improvements = relevantKeywords.filter(k => {
     const current = getRank(k.current_month_rank);
     const previous = getRank(k.previous_month_rank);
-
-    // Scenario A: Improved Rank (e.g., 10 -> 5)
+    // Improvement: Rank got smaller (better), OR it's a new ranking (0 -> number)
     if (current > 0 && previous > 0 && current < previous) return true;
-    
-    // Scenario B: New Ranking (e.g., Unranked -> 50) - THIS WAS LIKELY MISSING
     if (previous === 0 && current > 0) return true;
-
     return false;
   }).length;
 
+  // Logic to calculate Declines
   const declines = relevantKeywords.filter(k => {
     const current = getRank(k.current_month_rank);
     const previous = getRank(k.previous_month_rank);
-
-    // Scenario A: Declined Rank (e.g., 5 -> 10)
+    // Decline: Rank got larger (worse), OR it dropped out (number -> 0)
     if (current > 0 && previous > 0 && current > previous) return true;
-
-    // Scenario B: Lost Ranking (e.g., 50 -> Unranked) - THIS WAS LIKELY MISSING
     if (previous > 0 && current === 0) return true;
-
     return false;
   }).length;
 
-  const noChange = relevantKeywords.filter(k => {
-    const current = getRank(k.current_month_rank);
-    const previous = getRank(k.previous_month_rank);
-
-    // Only count "Stable" if the keyword is actually ranking
-    if (current > 0 && previous > 0 && current === previous) return true;
-    
-    return false;
-  }).length;
-
-  // --- 3. DETERMINE CHART STATE ---
-  const hasTrendData = improvements > 0 || declines > 0 || noChange > 0;
-
-  // Ranking Distribution
+  // --- 3. PREPARE CHART DATA (FORCED TO RANKING DISTRIBUTION) ---
+  
+  // Calculate distribution buckets
   const rank1to3 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 3 }).length;
   const rank4to10 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 3 && r <= 10 }).length;
   const rank11to30 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 10 && r <= 30 }).length;
   const rank31plus = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 30 }).length;
   const notRanked = relevantKeywords.filter(k => getRank(k.current_month_rank) === 0).length;
 
+  // Chart Config
+  const pieTitle = selectedClient ? 'Current Rankings' : 'Agency Rankings Overview';
+  const pieData = [
+      { name: 'Top 3', value: rank1to3, color: '#3b82f6' },        
+      { name: 'Top 4-10', value: rank4to10, color: '#10b981' },    
+      { name: 'Top 11-30', value: rank11to30, color: '#f59e0b' },  
+      { name: 'Top 30+', value: rank31plus, color: '#9ca3af' },    
+      { name: 'Not Ranked', value: notRanked, color: '#ef4444' }   
+  ].filter(d => d.value > 0); 
+
+  // --- 4. OTHER METRICS ---
   // Calculate Average Rank (Only for currently ranked keywords)
   const rankedKeywords = relevantKeywords.filter(k => getRank(k.current_month_rank) > 0);
   const avgCurrentRank = rankedKeywords.length > 0 
@@ -78,28 +72,6 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
     : 0;
 
   const totalTop10 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 10 }).length;
-
-  // --- 4. PREPARE CHART DATA ---
-  let pieData = [];
-  let pieTitle = "";
-
-  if (hasTrendData) {
-    pieTitle = selectedClient ? 'Performance Trends' : 'Agency Trend Health';
-    pieData = [
-      { name: 'Improved', value: improvements, color: '#10b981' }, 
-      { name: 'Declined', value: declines, color: '#ef4444' },     
-      { name: 'Stable', value: noChange, color: '#6b7280' }        
-    ].filter(d => d.value > 0); // Hide zero values
-  } else {
-    pieTitle = selectedClient ? 'Current Rankings' : 'Agency Rankings Overview';
-    pieData = [
-      { name: 'Top 3', value: rank1to3, color: '#3b82f6' },        
-      { name: 'Top 4-10', value: rank4to10, color: '#10b981' },    
-      { name: 'Top 11-30', value: rank11to30, color: '#f59e0b' },  
-      { name: 'Top 30+', value: rank31plus, color: '#9ca3af' },    
-      { name: 'Not Ranked', value: notRanked, color: '#ef4444' }   
-    ].filter(d => d.value > 0); 
-  }
 
   // Bar Chart Data
   let barChartData = [];
@@ -141,9 +113,8 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
              {selectedClient ? selectedClient.name : 'Agency Overview'}
            </h1>
-           {/* Debug Helper - Remove in production if needed */}
            <span className="text-xs text-gray-400 mt-1">
-             Keywords Analyzed: {relevantKeywords.length}
+             Keywords Analyzed: {totalKeywords}
            </span>
         </div>
         {selectedClient && (
@@ -216,7 +187,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Left Chart: Distribution/Trends */}
+        {/* Left Chart: ALWAYS Ranking Distribution */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {pieTitle}
