@@ -21,18 +21,21 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
   const [isFetchingRanks, setIsFetchingRanks] = useState(false);
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [fetchingKeywordId, setFetchingKeywordId] = useState<string | null>(null);
+  
+  // 🔒 SAFETY LOCK: Prevents double-firing of API calls
+  const isRequestInProgress = useRef(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if current date is within the allowed range for monthly refresh (27th to 13th)
   const isMonthlyRefreshAllowed = (): boolean => {
     const today = new Date();
     const dayOfMonth = today.getDate();
-    
-    // Allow from 27th of current month to 13th of next month
     return dayOfMonth >= 27 || dayOfMonth <= 13;
   };
 
   const monthlyRefreshAllowed = isMonthlyRefreshAllowed();
+
   if (!selectedClient) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -100,7 +103,6 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
         return;
       }
 
-      // Check for duplicates
       const duplicates = keywordsToAdd.filter(keyword => checkDuplicateKeyword(keyword));
       const uniqueKeywords = keywordsToAdd.filter(keyword => !checkDuplicateKeyword(keyword));
 
@@ -162,8 +164,14 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
   };
 
+  // --- UPDATED FUNCTION WITH SAFETY LOCK ---
   const handleFetchSingleKeyword = async (keyword: Keyword) => {
+    // 🛑 LOCK CHECK: If request is running, STOP immediately.
+    if (isRequestInProgress.current) return;
+    if (fetchingKeywordId) return; // Double check state
+
     setFetchingKeywordId(keyword.id);
+    isRequestInProgress.current = true; // 🔒 LOCK
     
     try {
       const rankType = selectedClient.rank_type || 'qatar';
@@ -188,6 +196,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       toast.error(`Failed to fetch ranking for "${keyword.text}"`);
     } finally {
       setFetchingKeywordId(null);
+      isRequestInProgress.current = false; // 🔓 UNLOCK
     }
   };
 
@@ -196,9 +205,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       toast.error('No keywords selected');
       return;
     }
+    if (isRequestInProgress.current) return; // Lock check
 
     const keywordsToFetch = clientKeywords.filter(k => selectedKeywords.has(k.id));
     setIsFetchingRanks(true);
+    isRequestInProgress.current = true; // Lock
+    
     let successCount = 0;
     let errorCount = 0;
 
@@ -224,7 +236,6 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           if (error) throw error;
           successCount++;
 
-          // Add delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Error fetching ranking for keyword ${keyword.text}:`, error);
@@ -249,6 +260,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     } finally {
       setIsFetchingRanks(false);
       setSelectedKeywords(new Set());
+      isRequestInProgress.current = false; // Unlock
     }
   };
 
@@ -257,8 +269,10 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       toast.error('No keywords to refresh');
       return;
     }
+    if (isRequestInProgress.current) return;
 
     setIsFetchingRanks(true);
+    isRequestInProgress.current = true;
     let successCount = 0;
     let errorCount = 0;
 
@@ -269,14 +283,11 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       for (const keyword of clientKeywords) {
         try {
-          // Move current rank to previous
           const previousRank = keyword.current_month_rank;
           const previousDate = keyword.current_month_date;
           
-          // Fetch new ranking from ValueSERP
           const rankingData = await fetchKeywordRanking(selectedClient.domain, keyword.text, rankType);
           
-          // Update keyword with new data
           const { error } = await supabase
             .from('keywords')
             .update({
@@ -292,7 +303,6 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           if (error) throw error;
           successCount++;
 
-          // Add delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Error fetching ranking for keyword ${keyword.text}:`, error);
@@ -316,6 +326,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       toast.error('Failed to complete monthly refresh');
     } finally {
       setIsFetchingRanks(false);
+      isRequestInProgress.current = false;
     }
   };
 
@@ -395,7 +406,6 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
         </div>
       </div>
 
-      {/* Hidden file input for CSV upload */}
       <input
         ref={fileInputRef}
         type="file"
