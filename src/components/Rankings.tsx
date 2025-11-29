@@ -510,7 +510,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           }
           
           pdf.setTextColor(128, 128, 128);
-          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - margin, 20, { align: 'right' });
           pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           
           currentY = 40;
@@ -631,7 +631,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         }
         
         pdf.setTextColor(128, 128, 128);
-        pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+        pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - margin, 20, { align: 'right' });
         pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         
         currentY = 50; // Start content lower on the page
