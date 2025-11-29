@@ -3,7 +3,7 @@ import { Upload, X, RotateCcw, Image as ImageIcon, AlertCircle, Target, Trash2, 
 import { Client } from '../types';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns'; // Added differenceInDays
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 interface AnalyticsProps {
@@ -32,6 +32,40 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
   const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+  // Helper: Client Slug
+  const generateClientSlug = (clientName: string): string => {
+    return clientName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  // Helper: Month Path
+  const getCurrentMonthPath = (): string => {
+    return format(new Date(), 'yyyy-MM');
+  };
+
+  // Helper: Cache Busting
+  const generateCacheBustingUrl = (baseUrl: string): string => {
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}t=${Date.now()}`;
+  };
+
+  // Helper: Extract Path
+  const extractStoragePathFromUrl = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      const relevantParts = pathParts.slice(-3); 
+      return relevantParts.join('/');
+    } catch (error) {
+      console.error('Error extracting storage path:', error);
+      return '';
+    }
+  };
+
   // Load existing screenshots when component mounts or client changes
   React.useEffect(() => {
     if (selectedClient) {
@@ -55,6 +89,38 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       console.warn('Error checking bucket:', error);
       return false;
     }
+  };
+
+  // 🧹 NEW CLEANUP FUNCTION
+  const cleanupOldFiles = async (files: any[], folderPath: string) => {
+    const now = new Date();
+    const filesToDelete: string[] = [];
+    const validFiles: any[] = [];
+
+    for (const file of files) {
+      if (file.name === '.keep') continue;
+
+      // Check file age based on created_at or updated_at
+      const fileDate = new Date(file.created_at || file.updated_at || now);
+      const daysOld = differenceInDays(now, fileDate);
+
+      // If older than 7 days, mark for deletion
+      if (daysOld >= 7) {
+        filesToDelete.push(`${folderPath}/${file.name}`);
+      } else {
+        validFiles.push(file);
+      }
+    }
+
+    // Delete old files in background
+    if (filesToDelete.length > 0) {
+      console.log(`🧹 Cleaning up ${filesToDelete.length} old screenshots...`);
+      await supabase.storage
+        .from('analytics_screenshots')
+        .remove(filesToDelete);
+    }
+
+    return validFiles;
   };
 
   const loadExistingScreenshots = async () => {
@@ -86,8 +152,11 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       }
 
       if (files && files.length > 0) {
-        // Filter out .keep files and create UploadedFile objects
-        const imageFiles = files.filter(file => 
+        // 🧹 Run cleanup first
+        const validFiles = await cleanupOldFiles(files, folderPath);
+
+        // Filter out .keep files and valid images
+        const imageFiles = validFiles.filter(file => 
           file.name !== '.keep' && 
           /\.(jpg|jpeg|png|webp)$/i.test(file.name)
         );
@@ -100,10 +169,10 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           const cacheBustedUrl = generateCacheBustingUrl(data.publicUrl);
           
           return {
-            id: file.name, // Use filename as ID for existing files
+            id: file.name, 
             name: file.name,
             url: cacheBustedUrl,
-            file: new File([], file.name), // Placeholder file object
+            file: new File([], file.name), 
             uploading: false,
             progress: 100
           };
@@ -120,6 +189,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       setIsLoading(false);
     }
   };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -136,54 +206,21 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
     setIsDragging(false);
   }, []);
 
-  if (!selectedClient) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Client Selected</h3>
-          <p className="text-gray-500 dark:text-gray-400">Select a client to manage their analytics screenshots</p>
-        </div>
-      </div>
-    );
-  }
-
-  const generateClientSlug = (clientName: string): string => {
-    return clientName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-
-  const getCurrentMonthPath = (): string => {
-    return format(new Date(), 'yyyy-MM');
-  };
-
   const createStoragePath = (filename: string): string => {
-    const clientSlug = generateClientSlug(selectedClient.name);
+    const clientSlug = generateClientSlug(selectedClient!.name);
     const monthPath = getCurrentMonthPath();
     const timestamp = Date.now();
     return `${clientSlug}/${monthPath}/${timestamp}_${filename}`;
   };
 
-  const generateCacheBustingUrl = (baseUrl: string): string => {
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    return `${baseUrl}${separator}t=${Date.now()}`;
-  };
-
   const ensureFolderExists = async (clientSlug: string, monthPath: string): Promise<void> => {
     try {
-      // Create a dummy file to ensure the folder structure exists
       const dummyPath = `${clientSlug}/${monthPath}/.keep`;
       
-      // Check if folder exists by trying to list files
       const { data: existingFiles } = await supabase.storage
         .from('analytics_screenshots')
         .list(`${clientSlug}/${monthPath}`);
 
-      // If no files exist, create the folder structure
       if (!existingFiles || existingFiles.length === 0) {
         const dummyBlob = new Blob([''], { type: 'text/plain' });
         await supabase.storage
@@ -195,7 +232,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       }
     } catch (error) {
       console.warn('Folder creation warning:', error);
-      // Continue with upload even if folder creation fails
     }
   };
 
@@ -212,7 +248,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
   const uploadFile = async (file: File): Promise<string | null> => {
     const fileId = Math.random().toString(36).substr(2, 9);
     
-    // Add file to state with uploading status
     const newFile: UploadedFile = {
       id: fileId,
       name: file.name,
@@ -225,15 +260,13 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
     setUploadedFiles(prev => [...prev, newFile]);
 
     try {
-      const clientSlug = generateClientSlug(selectedClient.name);
+      const clientSlug = generateClientSlug(selectedClient!.name);
       const monthPath = getCurrentMonthPath();
       
-      // Ensure folder exists
       await ensureFolderExists(clientSlug, monthPath);
       
       const storagePath = createStoragePath(file.name);
 
-      // Upload file to Supabase Storage
       const { data, error } = await supabase.storage
         .from('analytics_screenshots')
         .upload(storagePath, file, {
@@ -242,25 +275,21 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         });
 
       if (error) {
-        // Check if it's a bucket not found error
         if (error.message?.includes('Bucket not found') || error.message?.includes('404')) {
           setBucketExists(false);
-          throw new Error('Storage bucket not found. Please create the "analytics_screenshots" bucket in your Supabase project Storage section and make it public.');
+          throw new Error('Storage bucket not found. Please create the "analytics_screenshots" bucket.');
         }
         throw error;
       }
 
-      // Mark bucket as existing after successful upload
       setBucketExists(true);
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('analytics_screenshots')
         .getPublicUrl(storagePath);
 
       const cacheBustedUrl = generateCacheBustingUrl(urlData.publicUrl);
 
-      // Update file state with success
       setUploadedFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { ...f, uploading: false, progress: 100, url: cacheBustedUrl }
@@ -270,19 +299,10 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       return cacheBustedUrl;
     } catch (error) {
       console.error('Upload error:', error);
-      
-      // Remove failed upload from state
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
       
-      // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      if (errorMessage.includes('Storage bucket not found')) {
-        toast.error('Storage not configured. Please create the "analytics_screenshots" bucket in Supabase Storage.', {
-          duration: 8000
-        });
-      } else {
-        toast.error(`Failed to upload ${file.name}: ${errorMessage}`);
-      }
+      toast.error(`Failed to upload ${file.name}: ${errorMessage}`);
       
       throw error;
     }
@@ -315,7 +335,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         successCount++;
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);
-        toast.error(`Failed to upload ${file.name}`);
         errorCount++;
       }
     }
@@ -325,37 +344,20 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
     }
   };
 
-  const extractStoragePathFromUrl = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-      const pathParts = urlObj.pathname.split('/');
-      // Remove the first empty part and 'object/public/analytics_screenshots'
-      const relevantParts = pathParts.slice(-3); // Get last 3 parts: client/month/filename
-      return relevantParts.join('/');
-    } catch (error) {
-      console.error('Error extracting storage path:', error);
-      return '';
-    }
-  };
-
   const deleteFile = async (fileId: string) => {
     const file = uploadedFiles.find(f => f.id === fileId);
     if (!file) return;
 
     try {
       const storagePath = extractStoragePathFromUrl(file.url);
-      if (!storagePath) {
-        throw new Error('Could not extract storage path from URL');
-      }
+      if (!storagePath) throw new Error('Could not extract storage path from URL');
 
-      // Delete from Supabase Storage
       const { error } = await supabase.storage
         .from('analytics_screenshots')
         .remove([storagePath]);
 
       if (error) throw error;
 
-      // Remove from state
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
       toast.success('File deleted successfully');
     } catch (error) {
@@ -368,7 +370,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
     const file = uploadedFiles.find(f => f.id === fileId);
     if (!file) return;
 
-    // Create a temporary file input for replacement
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = ALLOWED_TYPES.join(',');
@@ -384,23 +385,20 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
 
         try {
           const storagePath = extractStoragePathFromUrl(file.url);
-          if (!storagePath) {
-            throw new Error('Could not extract storage path from URL');
-          }
+          if (!storagePath) throw new Error('Could not extract storage path from URL');
 
-          // Delete old file from storage
+          // Delete old
           const { error: deleteError } = await supabase.storage
             .from('analytics_screenshots')
             .remove([storagePath]);
 
           if (deleteError) throw deleteError;
 
-          // Upload new file to the same path (without timestamp prefix)
+          // Upload new (same logic)
           const pathParts = storagePath.split('/');
-          const originalFilename = pathParts[pathParts.length - 1].split('_').slice(1).join('_'); // Remove timestamp prefix
           const newStoragePath = `${pathParts.slice(0, -1).join('/')}/${Date.now()}_${newFile.name}`;
 
-          const { data, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('analytics_screenshots')
             .upload(newStoragePath, newFile, {
               cacheControl: '3600',
@@ -409,14 +407,12 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
 
           if (uploadError) throw uploadError;
 
-          // Get new public URL with cache busting
           const { data: urlData } = supabase.storage
             .from('analytics_screenshots')
             .getPublicUrl(newStoragePath);
 
           const cacheBustedUrl = generateCacheBustingUrl(urlData.publicUrl);
 
-          // Update file in state
           setUploadedFiles(prev => prev.map(f => 
             f.id === fileId 
               ? { ...f, name: newFile.name, url: cacheBustedUrl, file: newFile }
@@ -438,11 +434,10 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
 
     setIsClearing(true);
     try {
-      const clientSlug = generateClientSlug(selectedClient.name);
+      const clientSlug = generateClientSlug(selectedClient!.name);
       const monthPath = getCurrentMonthPath();
       const folderPath = `${clientSlug}/${monthPath}`;
 
-      // Get all files in the folder
       const { data: files, error: listError } = await supabase.storage
         .from('analytics_screenshots')
         .list(folderPath);
@@ -450,13 +445,11 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       if (listError) throw listError;
 
       if (files && files.length > 0) {
-        // Filter out .keep files and create full paths
         const filesToDelete = files
           .filter(file => file.name !== '.keep')
           .map(file => `${folderPath}/${file.name}`);
 
         if (filesToDelete.length > 0) {
-          // Delete all files
           const { error: deleteError } = await supabase.storage
             .from('analytics_screenshots')
             .remove(filesToDelete);
@@ -465,7 +458,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         }
       }
 
-      // Clear local state
       setUploadedFiles([]);
       toast.success('All screenshots cleared successfully!');
       setShowClearAllModal(false);
@@ -484,7 +476,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Analytics for {selectedClient.name}
+            Analytics for {selectedClient?.name}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {currentMonth} • Upload analytics screenshots for this month's report
@@ -503,7 +495,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         )}
       </div>
 
-      {/* Setup Warning Banner - Only show if bucket doesn't exist */}
       {bucketExists === false && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
           <div className="flex items-start gap-3">
@@ -527,7 +518,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       )}
 
-      {/* Upload Area */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -578,13 +568,11 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           />
         </div>
 
-        {/* File Counter */}
         <div className="mt-4 flex items-center justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {uploadedFiles.length} of {MAX_FILES} files uploaded
           </span>
           
-          {/* Warning Note */}
           <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
             <AlertCircle className="w-4 h-4" />
             <span>Screenshots auto-delete after 7 days</span>
@@ -592,7 +580,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       </div>
 
-      {/* Loading State */}
       {isLoading && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
@@ -600,7 +587,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       )}
 
-      {/* Uploaded Files Grid */}
       {uploadedFiles.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -630,7 +616,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
                     </div>
                   )}
                   
-                  {/* Action Buttons */}
                   {!file.uploading && (
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
@@ -665,16 +650,14 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       )}
 
-      {/* Clear All Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={showClearAllModal}
         onClose={() => setShowClearAllModal(false)}
         onConfirm={clearAllUploads}
         title="Clear All Screenshots"
-        message={`Are you sure you want to delete all ${uploadedFiles.length} screenshot(s) for ${selectedClient.name} in ${currentMonth}? This action cannot be undone.`}
+        message={`Are you sure you want to delete all ${uploadedFiles.length} screenshot(s) for ${selectedClient?.name} in ${currentMonth}? This action cannot be undone.`}
       />
 
-      {/* Empty State */}
       {!isLoading && uploadedFiles.length === 0 && bucketExists !== false && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -691,7 +674,6 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       )}
 
-      {/* Info Panel */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
@@ -699,7 +681,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
             <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">How It Works</h4>
             <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
               <p>• Screenshots are organized by client and month</p>
-              <p>• Files auto-delete after 7 days (with lifecycle rules)</p>
+              <p>• Files auto-delete after 7 days (auto-cleanup)</p>
               <p>• Uploaded images appear in generated PDF reports</p>
               <p>• Supports JPEG, PNG, WebP formats (max 10MB each)</p>
             </div>
