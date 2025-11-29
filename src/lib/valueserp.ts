@@ -5,6 +5,7 @@ const VALUESERP_API_KEY = import.meta.env.VITE_VALUESERP_API_KEY;
 const BASE_URL = 'https://api.valueserp.com/search';
 
 // 1. Helper to clean domains for accurate matching
+// Turns "https://www.SelectQatar.com/about" -> "selectqatar.com"
 function normalizeDomain(url: string): string {
   if (!url) return '';
   try {
@@ -27,7 +28,7 @@ async function fetchPageFromAPI(
     q: keyword,
     output: 'json',
     page: pageNumber.toString(), // Fetch specific page (1, 2, 3...)
-    num: '10' // Standard 10 results per page
+    num: '10' // Standard 10 results per page (Google default)
   };
 
   const params = new URLSearchParams(baseParams);
@@ -44,13 +45,17 @@ async function fetchPageFromAPI(
     params.append('hl', 'en');
   }
 
-  const response = await fetch(`${BASE_URL}?${params}`);
-  if (!response.ok) {
-     // If we hit a 429 or error, we log it but don't crash the whole app
-     console.warn(`Warning: Page ${pageNumber} failed.`);
-     return null;
+  try {
+    const response = await fetch(`${BASE_URL}?${params}`);
+    if (!response.ok) {
+       console.warn(`Warning: Page ${pageNumber} failed with status ${response.status}`);
+       return null;
+    }
+    return await response.json();
+  } catch (err) {
+    console.error(`Network error on Page ${pageNumber}`, err);
+    return null;
   }
-  return await response.json();
 }
 
 // 3. Main Function with "Sequential Hunter" Loop
@@ -59,6 +64,10 @@ export async function fetchKeywordRanking(
   keyword: string, 
   rankType: 'dubai' | 'qatar' = 'qatar'
 ): Promise<RankingData> {
+  // DEBUG: This logs how many times the function is called. 
+  // If you see "API CALL: 2" for one click, your UI is double-firing.
+  console.count("🔥 API CALL START"); 
+
   if (!VALUESERP_API_KEY) {
     console.warn('ValueSERP API key not configured');
     return { rank: null, url: null };
@@ -68,7 +77,7 @@ export async function fetchKeywordRanking(
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
   // Max Pages = 10 (Total 100 results). 
-  // Loop stops strictly when match is found to save money.
+  // Logic: Stop IMMEDIATELY when match is found to save money.
   const MAX_PAGES = 10; 
 
   try {
