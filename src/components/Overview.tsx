@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award, Trophy, Star, PieChart as PieIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Client, Keyword } from '../types';
 
@@ -10,33 +10,53 @@ interface OverviewProps {
 }
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
+  // --- DEBUGGING LOG ---
+  useEffect(() => {
+    console.log("Overview Component Debug:");
+    console.log("Selected Client:", selectedClient?.name || "None (Agency View)");
+    console.log("Total Keywords passed:", keywords.length);
+    console.log("Sample Keyword:", keywords[0]);
+  }, [selectedClient, keywords]);
+
   // --- 1. DETERMINE DATA SOURCE ---
+  // Explicitly handle the null check to ensure we get ALL keywords for Agency View
   const relevantKeywords = selectedClient 
     ? keywords.filter(k => k.client_id === selectedClient.id)
-    : keywords;
+    : keywords; // Use ALL keywords if no client selected
 
-  // --- 2. CALCULATE TREND METRICS ---
+  // --- 2. CALCULATE METRICS ---
   const totalKeywords = relevantKeywords.length;
   
+  // Robust check for improvements
   const improvements = relevantKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank > k.current_month_rank;
+    const current = k.current_month_rank;
+    const previous = k.previous_month_rank;
+    // Ensure valid numbers before comparing
+    if (typeof current !== 'number' || typeof previous !== 'number') return false;
+    // Rank 5 is "better" than Rank 10, so Previous > Current = Improvement
+    return previous > current;
   }).length;
 
   const declines = relevantKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank < k.current_month_rank;
+    const current = k.current_month_rank;
+    const previous = k.previous_month_rank;
+    if (typeof current !== 'number' || typeof previous !== 'number') return false;
+    return previous < current;
   }).length;
 
   const noChange = relevantKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank === k.current_month_rank;
+    const current = k.current_month_rank;
+    const previous = k.previous_month_rank;
+    if (typeof current !== 'number' || typeof previous !== 'number') return false;
+    return previous === current;
   }).length;
 
-  const totalTrends = improvements + declines + noChange;
-  const hasTrendData = totalTrends > 0;
+  // --- 3. DETERMINE CHART STATE ---
+  // If we have trends (up/down/stable), show the Trend Chart.
+  // If everything is 0 (new data), show the Ranking Distribution Chart instead.
+  const hasTrendData = improvements > 0 || declines > 0 || noChange > 0;
 
-  // --- 3. CALCULATE RANKING DISTRIBUTION (Fallback) ---
+  // Ranking Distribution (Fallback Logic)
   const rank1to3 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank <= 3).length;
   const rank4to10 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank > 3 && k.current_month_rank <= 10).length;
   const rank11to30 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank > 10 && k.current_month_rank <= 30).length;
@@ -51,30 +71,26 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
 
   const totalTop10 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank <= 10).length;
 
-  // --- 4. DECIDE WHAT TO SHOW IN CARDS ---
-  // If we have no trend data (new setup), showing "0 Improvements" looks broken.
-  // Instead, we show "Top 3" and "Top 4-10" counts in those cards.
-  const showRankingStatsInCards = !hasTrendData;
-
-  // --- 5. PREPARE CHART DATA ---
+  // --- 4. PREPARE CHART DATA ---
   let pieData = [];
   let pieTitle = "";
 
   if (hasTrendData) {
-    pieTitle = 'Keyword Performance Trends';
+    pieTitle = selectedClient ? 'Performance Trends' : 'Agency Trend Health';
     pieData = [
-      { name: 'Improved', value: improvements, color: '#10b981' }, // Green
-      { name: 'Declined', value: declines, color: '#ef4444' },     // Red
-      { name: 'Stable', value: noChange, color: '#6b7280' }        // Gray
-    ].filter(d => d.value > 0);
+      { name: 'Improved', value: improvements, color: '#10b981' }, 
+      { name: 'Declined', value: declines, color: '#ef4444' },     
+      { name: 'Stable', value: noChange, color: '#6b7280' }        
+    ];
   } else {
-    pieTitle = 'Current Ranking Distribution';
+    // FALLBACK: If no trend data, show Current Rankings so the chart isn't empty
+    pieTitle = selectedClient ? 'Current Rankings' : 'Agency Rankings Overview';
     pieData = [
-      { name: 'Top 3', value: rank1to3, color: '#3b82f6' },        // Blue
-      { name: 'Top 4-10', value: rank4to10, color: '#10b981' },    // Green
-      { name: 'Top 11-30', value: rank11to30, color: '#f59e0b' },  // Yellow
-      { name: 'Top 30+', value: rank31plus, color: '#9ca3af' },    // Gray
-      { name: 'Not Ranked', value: notRanked, color: '#ef4444' }   // Red
+      { name: 'Top 3', value: rank1to3, color: '#3b82f6' },        
+      { name: 'Top 4-10', value: rank4to10, color: '#10b981' },    
+      { name: 'Top 11-30', value: rank11to30, color: '#f59e0b' },  
+      { name: 'Top 30+', value: rank31plus, color: '#9ca3af' },    
+      { name: 'Not Ranked', value: notRanked, color: '#ef4444' }   
     ].filter(d => d.value > 0); 
   }
 
@@ -140,36 +156,28 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
           </div>
         </div>
 
-        {/* Card 2: Improvement OR Top 3 */}
+        {/* Card 2: Improvements */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {showRankingStatsInCards ? 'Top 3 Positions' : 'Improvements'}
-              </p>
-              <p className={`text-2xl font-bold ${showRankingStatsInCards ? 'text-blue-600' : 'text-green-600'}`}>
-                {showRankingStatsInCards ? rank1to3 : improvements}
-              </p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Improvements</p>
+              <p className="text-2xl font-bold text-green-600">{improvements}</p>
             </div>
-            <div className={`p-3 bg-gradient-to-br ${showRankingStatsInCards ? 'from-blue-500 to-blue-600' : 'from-green-500 to-green-600'} rounded-lg`}>
-              {showRankingStatsInCards ? <Trophy className="w-6 h-6 text-white" /> : <TrendingUp className="w-6 h-6 text-white" />}
+            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
-        {/* Card 3: Decline OR Top 4-10 */}
+        {/* Card 3: Declines */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {showRankingStatsInCards ? 'Top 4-10 Positions' : 'Declines'}
-              </p>
-              <p className={`text-2xl font-bold ${showRankingStatsInCards ? 'text-green-600' : 'text-red-600'}`}>
-                {showRankingStatsInCards ? rank4to10 : declines}
-              </p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Declines</p>
+              <p className="text-2xl font-bold text-red-600">{declines}</p>
             </div>
-            <div className={`p-3 bg-gradient-to-br ${showRankingStatsInCards ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600'} rounded-lg`}>
-              {showRankingStatsInCards ? <Star className="w-6 h-6 text-white" /> : <TrendingDown className="w-6 h-6 text-white" />}
+            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
+              <TrendingDown className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
@@ -225,9 +233,9 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
             </ResponsiveContainer>
           ) : (
             <div className="h-[300px] flex flex-col items-center justify-center text-gray-400">
-              <PieIcon className="w-12 h-12 mb-2 opacity-20" />
+              <BarChart3 className="w-12 h-12 mb-2 opacity-20" />
               <p>No ranking data available yet.</p>
-              <p className="text-sm mt-1">Fetch rankings to populate this chart.</p>
+              <p className="text-sm mt-1">Add keywords and fetch rankings to see data.</p>
             </div>
           )}
         </div>
