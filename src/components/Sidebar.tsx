@@ -124,14 +124,14 @@ export function Sidebar({
                 </h3>
               </div>
               
-              {/* Report Status Filter */}
+              {/* Report Status Filter - Neutral Style */}
               <div className="mb-3">
                 <div className="relative">
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <select
                     value={reportFilter}
                     onChange={(e) => setReportFilter(e.target.value as 'all' | 'generated' | 'pending')}
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
                   >
                     <option value="all">All Clients</option>
                     <option value="generated">Reports Generated (This Month)</option>
@@ -140,15 +140,16 @@ export function Sidebar({
                 </div>
               </div>
 
-              {/* Search Bar */}
+              {/* Search Bar - HIGHLIGHTED STYLE */}
               <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {/* Blue Icon to Pop */}
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500 dark:text-blue-400" />
                 <input
                   type="text"
                   placeholder="Search clients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white placeholder-blue-400 dark:placeholder-blue-300/50"
                 />
               </div>
 
