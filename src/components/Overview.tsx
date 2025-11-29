@@ -27,28 +27,30 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   // --- 2. CALCULATE METRICS ---
   const totalKeywords = relevantKeywords.length;
   
-  // Robust check for improvements
+  // Calculate improvements (lower rank number = better position)
   const improvements = relevantKeywords.filter(k => {
     const current = k.current_month_rank;
     const previous = k.previous_month_rank;
-    // Ensure valid numbers before comparing
-    if (typeof current !== 'number' || typeof previous !== 'number') return false;
-    // Rank 5 is "better" than Rank 10, so Previous > Current = Improvement
-    return previous > current;
+    // Both values must exist and be valid numbers
+    if (!current || !previous || current <= 0 || previous <= 0) return false;
+    // Improvement means current rank is lower (better) than previous rank
+    return current < previous;
   }).length;
 
   const declines = relevantKeywords.filter(k => {
     const current = k.current_month_rank;
     const previous = k.previous_month_rank;
-    if (typeof current !== 'number' || typeof previous !== 'number') return false;
-    return previous < current;
+    if (!current || !previous || current <= 0 || previous <= 0) return false;
+    // Decline means current rank is higher (worse) than previous rank
+    return current > previous;
   }).length;
 
   const noChange = relevantKeywords.filter(k => {
     const current = k.current_month_rank;
     const previous = k.previous_month_rank;
-    if (typeof current !== 'number' || typeof previous !== 'number') return false;
-    return previous === current;
+    if (!current || !previous || current <= 0 || previous <= 0) return false;
+    // No change means ranks are exactly the same
+    return current === previous;
   }).length;
 
   // --- 3. DETERMINE CHART STATE ---
