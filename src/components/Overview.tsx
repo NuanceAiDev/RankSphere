@@ -35,8 +35,9 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   }).length;
 
   // Calculate Average Rank (Agency-wide or Client-specific)
-  const avgCurrentRank = relevantKeywords.length > 0 
-    ? Math.round(relevantKeywords.reduce((sum, k) => sum + (k.current_month_rank || 0), 0) / relevantKeywords.filter(k => k.current_month_rank).length || 1)
+  const rankedKeywords = relevantKeywords.filter(k => k.current_month_rank);
+  const avgCurrentRank = rankedKeywords.length > 0 
+    ? Math.round(rankedKeywords.reduce((sum, k) => sum + (k.current_month_rank || 0), 0) / rankedKeywords.length)
     : 0;
 
   // Calculate Total Top 10 Rankings (High value metric)
@@ -77,7 +78,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       const clientKws = keywords.filter(k => k.client_id === client.id);
       const top10Count = clientKws.filter(k => k.current_month_rank && k.current_month_rank <= 10).length;
       return {
-        name: client.name,
+        name: client.name.length > 15 ? client.name.substring(0, 15) + '...' : client.name,
         top10Count: top10Count
       };
     })
@@ -102,19 +103,19 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Card 1: Total Count */}
+        {/* Card 1: Total Count - CHANGED TO ALWAYS SHOW KEYWORDS FOR AGENCY VIEW AS REQUESTED */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {selectedClient ? 'Total Keywords' : 'Total Clients'}
+                {selectedClient ? 'Total Keywords' : 'Total Keywords'}
               </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {selectedClient ? totalKeywords : clients.length}
+                {totalKeywords}
               </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-              {selectedClient ? <Target className="w-6 h-6 text-white" /> : <Users className="w-6 h-6 text-white" />}
+              <Target className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
