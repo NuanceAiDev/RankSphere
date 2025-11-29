@@ -419,8 +419,15 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         pdf.text('Nuance', margin, 20);
       }
       
+      // FIX FOR PAGE 2: Consistent size, format, and alignment
+      pdf.setFontSize(10); 
       pdf.setTextColor(128, 128, 128);
-      pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+      pdf.text(
+        `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, 
+        pageWidth - margin, 
+        20, 
+        { align: 'right' }
+      );
       
       // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
