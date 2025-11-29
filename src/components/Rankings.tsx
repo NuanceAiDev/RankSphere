@@ -307,7 +307,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.text('Period:', centerX - 50, infoStartY + 40, { fontStyle: 'bold' });
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
-      const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
+      
+      // NEW CODE: Formats as "Nov 2025"
+      const periodText = format(currentMonth, 'MMM yyyy');
+      
       pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
       
       // Yellow and Blue accent bars at bottom (matching page 2)
