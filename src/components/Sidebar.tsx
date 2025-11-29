@@ -69,12 +69,12 @@ export function Sidebar({
     <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        {/* Logo Section - Now Centered & Clean */}
+        {/* Logo Section - Centered */}
         <div className="flex items-center justify-center mb-6">
           <img 
             src="/pp-logo.png" 
             alt="Nuance Digital" 
-            className="h-16 w-auto object-contain" // Adjusted height for better fit
+            className="h-16 w-auto object-contain"
           />
         </div>
         
@@ -206,8 +206,8 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Footer - Theme Toggle (Moved Here) */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      {/* Footer - Theme Toggle */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 mt-auto">
         <button
           onClick={toggleTheme}
           className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-gray-700 dark:text-gray-300 shadow-sm"
