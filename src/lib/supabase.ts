@@ -39,16 +39,21 @@ const createSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your_supabase_project_url_here') || supabaseAnonKey.includes('your_supabase_anon_key_here')) {
     console.warn('Supabase environment variables not configured. Using mock client.');
     // Return a mock client that throws helpful errors
+    const mockChain = {
+      select: function() { return this; },
+      insert: function() { return Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }); },
+      update: function() { return Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }); },
+      delete: function() { return Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }); },
+      eq: function() { return this; },
+      order: function() { return this; },
+      single: function() { return Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }); },
+      then: function(resolve: any) { 
+        return resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') }); 
+      }
+    };
+    
     return {
-      from: () => ({
-        select: () => Promise.resolve({ data: [], error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        update: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        delete: () => Promise.resolve({ data: null, error: new Error('Supabase not configured. Please connect to Supabase first.') }),
-        eq: function() { return this; },
-        order: function() { return this; },
-        single: function() { return this; }
-      })
+      from: () => mockChain
     } as any;
   }
   
