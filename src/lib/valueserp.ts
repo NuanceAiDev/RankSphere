@@ -27,9 +27,9 @@ async function fetchPageFromAPI(
     q: keyword,
     output: 'json',
     page: pageNumber.toString(),
-    // Try to fetch 100 results on Page 1. 
-    // If Google ignores this (which it often does), we fall back to pagination loops.
-    num: '100' 
+    // 🔴 REVERT: Google killed 'num: 100'. We must use default (10 results).
+    // This ensures Map Packs (Rank 1-3) are actually returned.
+    num: '10' 
   };
 
   const params = new URLSearchParams(baseParams);
@@ -75,8 +75,9 @@ export async function fetchKeywordRanking(
   const targetDomain = normalizeDomain(domain);
   console.log(`\n🔍 [Hunter Strategy] Target: "${targetDomain}" | Keyword: "${keyword}"`);
 
-
-  const MAX_PAGES = 10; 
+  // 🔴 SAFETY LIMIT: Stop after Page 5 (Top 50 results).
+  // Checking 10 pages costs 10 credits. Page 5 is a good balance.
+  const MAX_PAGES = 5; 
 
   try {
     for (let page = 1; page <= MAX_PAGES; page++) {
@@ -87,6 +88,7 @@ export async function fetchKeywordRanking(
       if (!data) continue; 
 
       // A. Check Map Pack (Page 1 only)
+      // This is where your Rank #2 and #4 were likely hiding!
       if (page === 1 && data.local_results) {
         for (const item of data.local_results) {
           const itemUrl = item.website || item.link || '';
@@ -103,15 +105,10 @@ export async function fetchKeywordRanking(
           if (item.link && normalizeDomain(item.link).includes(targetDomain)) {
             console.log(`✅ Found in ORGANIC (Page ${page}) at pos ${item.position}`);
             
-            // 🟢 CRITICAL MATH FIX: Calculate Global Rank
-            // If we are on Page 2, and position is 6... Real Rank is 16.
-            // Formula: ((Page Number - 1) * 10) + Item Position
-            let globalRank = item.position;
-            
-            // Only apply math if Google ignored 'num: 100' and gave us small pages
-            if (data.organic_results.length < 50 && page > 1) {
-               globalRank = ((page - 1) * 10) + item.position;
-            }
+            // 🟢 CORRECT MATH: 
+            // Page 1: Pos 1 = Rank 1
+            // Page 2: Pos 1 = Rank 11 (10 + 1)
+            const globalRank = ((page - 1) * 10) + item.position;
             
             return { rank: globalRank, url: item.link };
           }
