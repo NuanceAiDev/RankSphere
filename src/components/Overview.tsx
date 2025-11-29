@@ -10,68 +10,74 @@ interface OverviewProps {
 }
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
-  // --- DEBUGGING LOG ---
-  useEffect(() => {
-    console.log("Overview Component Debug:");
-    console.log("Selected Client:", selectedClient?.name || "None (Agency View)");
-    console.log("Total Keywords passed:", keywords.length);
-    console.log("Sample Keyword:", keywords[0]);
-  }, [selectedClient, keywords]);
-
+  
   // --- 1. DETERMINE DATA SOURCE ---
-  // Explicitly handle the null check to ensure we get ALL keywords for Agency View
   const relevantKeywords = selectedClient 
     ? keywords.filter(k => k.client_id === selectedClient.id)
-    : keywords; // Use ALL keywords if no client selected
+    : keywords; 
 
-  // --- 2. CALCULATE METRICS ---
+  // --- 2. CALCULATE METRICS (FIXED) ---
   const totalKeywords = relevantKeywords.length;
-  
-  // Calculate improvements (lower rank number = better position)
+   
+  // Helper to safely get numbers (converts null/undefined/strings to 0)
+  const getRank = (val: any) => {
+    const num = Number(val);
+    return isNaN(num) || num <= 0 ? 0 : num;
+  };
+
   const improvements = relevantKeywords.filter(k => {
-    const current = k.current_month_rank;
-    const previous = k.previous_month_rank;
-    // Both values must exist and be valid numbers
-    if (!current || !previous || current <= 0 || previous <= 0) return false;
-    // Improvement means current rank is lower (better) than previous rank
-    return current < previous;
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+
+    // Scenario A: Improved Rank (e.g., 10 -> 5)
+    if (current > 0 && previous > 0 && current < previous) return true;
+    
+    // Scenario B: New Ranking (e.g., Unranked -> 50) - THIS WAS LIKELY MISSING
+    if (previous === 0 && current > 0) return true;
+
+    return false;
   }).length;
 
   const declines = relevantKeywords.filter(k => {
-    const current = k.current_month_rank;
-    const previous = k.previous_month_rank;
-    if (!current || !previous || current <= 0 || previous <= 0) return false;
-    // Decline means current rank is higher (worse) than previous rank
-    return current > previous;
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+
+    // Scenario A: Declined Rank (e.g., 5 -> 10)
+    if (current > 0 && previous > 0 && current > previous) return true;
+
+    // Scenario B: Lost Ranking (e.g., 50 -> Unranked) - THIS WAS LIKELY MISSING
+    if (previous > 0 && current === 0) return true;
+
+    return false;
   }).length;
 
   const noChange = relevantKeywords.filter(k => {
-    const current = k.current_month_rank;
-    const previous = k.previous_month_rank;
-    if (!current || !previous || current <= 0 || previous <= 0) return false;
-    // No change means ranks are exactly the same
-    return current === previous;
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+
+    // Only count "Stable" if the keyword is actually ranking
+    if (current > 0 && previous > 0 && current === previous) return true;
+    
+    return false;
   }).length;
 
   // --- 3. DETERMINE CHART STATE ---
-  // If we have trends (up/down/stable), show the Trend Chart.
-  // If everything is 0 (new data), show the Ranking Distribution Chart instead.
   const hasTrendData = improvements > 0 || declines > 0 || noChange > 0;
 
-  // Ranking Distribution (Fallback Logic)
-  const rank1to3 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank <= 3).length;
-  const rank4to10 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank > 3 && k.current_month_rank <= 10).length;
-  const rank11to30 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank > 10 && k.current_month_rank <= 30).length;
-  const rank31plus = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank > 30).length;
-  const notRanked = relevantKeywords.filter(k => !k.current_month_rank).length;
+  // Ranking Distribution
+  const rank1to3 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 3 }).length;
+  const rank4to10 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 3 && r <= 10 }).length;
+  const rank11to30 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 10 && r <= 30 }).length;
+  const rank31plus = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 30 }).length;
+  const notRanked = relevantKeywords.filter(k => getRank(k.current_month_rank) === 0).length;
 
-  // Calculate Average Rank
-  const rankedKeywords = relevantKeywords.filter(k => k.current_month_rank);
+  // Calculate Average Rank (Only for currently ranked keywords)
+  const rankedKeywords = relevantKeywords.filter(k => getRank(k.current_month_rank) > 0);
   const avgCurrentRank = rankedKeywords.length > 0 
-    ? Math.round(rankedKeywords.reduce((sum, k) => sum + (k.current_month_rank || 0), 0) / rankedKeywords.length)
+    ? Math.round(rankedKeywords.reduce((sum, k) => sum + getRank(k.current_month_rank), 0) / rankedKeywords.length)
     : 0;
 
-  const totalTop10 = relevantKeywords.filter(k => k.current_month_rank && k.current_month_rank <= 10).length;
+  const totalTop10 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 10 }).length;
 
   // --- 4. PREPARE CHART DATA ---
   let pieData = [];
@@ -83,9 +89,8 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       { name: 'Improved', value: improvements, color: '#10b981' }, 
       { name: 'Declined', value: declines, color: '#ef4444' },     
       { name: 'Stable', value: noChange, color: '#6b7280' }        
-    ];
+    ].filter(d => d.value > 0); // Hide zero values
   } else {
-    // FALLBACK: If no trend data, show Current Rankings so the chart isn't empty
     pieTitle = selectedClient ? 'Current Rankings' : 'Agency Rankings Overview';
     pieData = [
       { name: 'Top 3', value: rank1to3, color: '#3b82f6' },        
@@ -105,20 +110,20 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
     barChartTitle = "Keyword Ranking Comparison (Top 10)";
     barChartXKey = "keyword";
     barChartData = relevantKeywords
-      .filter(k => k.current_month_rank)
-      .sort((a, b) => (a.current_month_rank || 100) - (b.current_month_rank || 100))
+      .filter(k => getRank(k.current_month_rank) > 0)
+      .sort((a, b) => getRank(a.current_month_rank) - getRank(b.current_month_rank))
       .slice(0, 10)
       .map(keyword => ({
         keyword: keyword.text.length > 15 ? keyword.text.substring(0, 15) + '...' : keyword.text,
-        previousRank: keyword.previous_month_rank || 0,
-        currentRank: keyword.current_month_rank || 0,
+        previousRank: getRank(keyword.previous_month_rank),
+        currentRank: getRank(keyword.current_month_rank),
       }));
   } else {
     barChartTitle = "Top Performing Clients (Most Top 10 Rankings)";
     barChartXKey = "name";
     barChartData = clients.map(client => {
       const clientKws = keywords.filter(k => k.client_id === client.id);
-      const top10Count = clientKws.filter(k => k.current_month_rank && k.current_month_rank <= 10).length;
+      const top10Count = clientKws.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 10 }).length;
       return {
         name: client.name.length > 15 ? client.name.substring(0, 15) + '...' : client.name,
         top10Count: top10Count
@@ -132,9 +137,15 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {selectedClient ? selectedClient.name : 'Agency Overview'}
-        </h1>
+        <div className="flex flex-col">
+           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+             {selectedClient ? selectedClient.name : 'Agency Overview'}
+           </h1>
+           {/* Debug Helper - Remove in production if needed */}
+           <span className="text-xs text-gray-400 mt-1">
+             Keywords Analyzed: {relevantKeywords.length}
+           </span>
+        </div>
         {selectedClient && (
           <div className="text-sm text-gray-500 dark:text-gray-400">
             Domain: {selectedClient.domain}
