@@ -69,24 +69,13 @@ export function Sidebar({
     <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/pp-new.png" 
-              alt="Nuance Digital" 
-              className="h-18 w-auto"
-            />
-          </div>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-600" />
-            )}
-          </button>
+        {/* Logo Section - Centered */}
+        <div className="flex items-center justify-center mb-6">
+          <img 
+            src="/pp-logo.png" 
+            alt="Nuance Digital" 
+            className="h-16 w-auto object-contain"
+          />
         </div>
         
         <button
@@ -131,7 +120,7 @@ export function Sidebar({
                   <select
                     value={reportFilter}
                     onChange={(e) => setReportFilter(e.target.value as 'all' | 'generated' | 'pending')}
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none"
                   >
                     <option value="all">All Clients</option>
                     <option value="generated">Reports Generated (This Month)</option>
@@ -140,15 +129,15 @@ export function Sidebar({
                 </div>
               </div>
 
-              {/* Search Bar */}
+              {/* Search Bar - Highlighted Style */}
               <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500 dark:text-blue-400" />
                 <input
                   type="text"
                   placeholder="Search clients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-blue-300 dark:border-blue-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-white placeholder-blue-400 dark:placeholder-blue-300/50"
                 />
               </div>
 
@@ -215,6 +204,26 @@ export function Sidebar({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Footer - Theme Toggle */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 mt-auto">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-gray-700 dark:text-gray-300 shadow-sm"
+        >
+          {isDark ? (
+            <>
+              <Sun className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium">Light Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-medium">Dark Mode</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

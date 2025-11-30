@@ -16,7 +16,7 @@ function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'keywords' | 'rankings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'keywords' | 'analytics' | 'rankings'>('overview');
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
@@ -25,6 +25,13 @@ function App() {
     loadClients();
     loadKeywords();
   }, []);
+
+  // Reset tab to 'overview' when deselecting a client (going to Agency Overview)
+  useEffect(() => {
+    if (!selectedClient) {
+      setActiveTab('overview');
+    }
+  }, [selectedClient]);
 
   const loadClients = async () => {
     try {
@@ -169,26 +176,28 @@ function App() {
         />
 
         <div className="ml-80 p-8">
-          {/* Tab Navigation */}
-          <div className="mb-8">
-            <div className="border-b border-gray-200 dark:border-gray-700">
-              <nav className="-mb-px flex space-x-8">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
+          {/* Tab Navigation - Only show if a client is selected */}
+          {selectedClient && (
+            <div className="mb-8">
+              <div className="border-b border-gray-200 dark:border-gray-700">
+                <nav className="-mb-px flex space-x-8">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                        activeTab === tab.id
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Tab Content */}
           {activeTab === 'overview' && (
@@ -199,27 +208,32 @@ function App() {
             />
           )}
 
-          {activeTab === 'keywords' && (
-            <Keywords
-              selectedClient={selectedClient}
-              keywords={keywords}
-              onKeywordAdded={loadKeywords}
-              onClientUpdated={loadClients}
-            />
-          )}
+          {/* Only render these components if a client is selected (safety check) */}
+          {selectedClient && (
+            <>
+              {activeTab === 'keywords' && (
+                <Keywords
+                  selectedClient={selectedClient}
+                  keywords={keywords}
+                  onKeywordAdded={loadKeywords}
+                  onClientUpdated={loadClients}
+                />
+              )}
 
-          {activeTab === 'analytics' && (
-            <Analytics
-              selectedClient={selectedClient}
-            />
-          )}
+              {activeTab === 'analytics' && (
+                <Analytics
+                  selectedClient={selectedClient}
+                />
+              )}
 
-          {activeTab === 'rankings' && (
-            <Rankings
-              selectedClient={selectedClient}
-              keywords={keywords}
-              onClientUpdated={loadClients}
-            />
+              {activeTab === 'rankings' && (
+                <Rankings
+                  selectedClient={selectedClient}
+                  keywords={keywords}
+                  onClientUpdated={loadClients}
+                />
+              )}
+            </>
           )}
         </div>
 

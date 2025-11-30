@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Target, BarChart3, Users } from 'lucide-react';
-import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import React, { useEffect } from 'react';
+import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Client, Keyword } from '../types';
 
 interface OverviewProps {
@@ -10,265 +10,255 @@ interface OverviewProps {
 }
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
-  const clientKeywords = selectedClient 
-    ? keywords.filter(k => k.client_id === selectedClient.id)
-    : keywords;
-
-  // Calculate metrics
-  const totalKeywords = clientKeywords.length;
   
-  const improvements = clientKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank > k.current_month_rank;
-  }).length;
+  // --- 1. DETERMINE DATA SOURCE ---
+  const relevantKeywords = selectedClient 
+    ? keywords.filter(k => k.client_id === selectedClient.id)
+    : keywords; 
 
-  const declines = clientKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank < k.current_month_rank;
-  }).length;
-
-  const topRankings = clientKeywords.filter(k => k.current_month_rank && k.current_month_rank <= 10).length;
-
-  const avgCurrentRank = clientKeywords.length > 0 
-    ? Math.round(clientKeywords.reduce((sum, k) => sum + (k.current_month_rank || 50), 0) / clientKeywords.length)
-    : 0;
-
-  const avgPreviousRank = clientKeywords.length > 0 
-    ? Math.round(clientKeywords.reduce((sum, k) => sum + (k.previous_month_rank || 50), 0) / clientKeywords.length)
-    : 0;
-
-  // Create keyword comparison data for dual-bar chart
-  const keywordComparisonData = clientKeywords.slice(0, 10).map(keyword => ({
-    keyword: keyword.text.length > 15 ? keyword.text.substring(0, 15) + '...' : keyword.text,
-    previousRank: keyword.previous_month_rank,
-    currentRank: keyword.current_month_rank,
-    change: keyword.current_month_rank && keyword.previous_month_rank 
-      ? keyword.previous_month_rank - keyword.current_month_rank 
-      : null
-  }));
-
-  const pieData = [
-    { name: 'Improvements', value: improvements, color: '#10b981' },
-    { name: 'Declines', value: declines, color: '#ef4444' },
-    { name: 'No Change', value: clientKeywords.filter(k => {
-      if (!k.current_month_rank || !k.previous_month_rank) return false;
-      return k.previous_month_rank === k.current_month_rank;
-    }).length, color: '#6b7280' }
-  ];
-
-  // Agency overview data when no client is selected
-  const agencyData = selectedClient ? null : {
-    totalClients: clients.length,
-    totalKeywords: keywords.length,
-    totalImprovements: keywords.filter(k => {
-      if (!k.current_month_rank || !k.previous_month_rank) return false;
-      return k.previous_month_rank > k.current_month_rank;
-    }).length,
-    totalDeclines: keywords.filter(k => {
-      if (!k.current_month_rank || !k.previous_month_rank) return false;
-      return k.previous_month_rank < k.current_month_rank;
-    }).length
+  // --- 2. CALCULATE METRICS (FIXED) ---
+  const totalKeywords = relevantKeywords.length;
+   
+  // Helper to safely get numbers (converts null/undefined/strings to 0)
+  const getRank = (val: any) => {
+    const num = Number(val);
+    return isNaN(num) || num <= 0 ? 0 : num;
   };
+
+  // Logic to calculate Improvements
+  const improvements = relevantKeywords.filter(k => {
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+    // Improvement: Rank got smaller (better), OR it's a new ranking (0 -> number)
+    if (current > 0 && previous > 0 && current < previous) return true;
+    if (previous === 0 && current > 0) return true;
+    return false;
+  }).length;
+
+  // Logic to calculate Declines
+  const declines = relevantKeywords.filter(k => {
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+    // Decline: Rank got larger (worse), OR it dropped out (number -> 0)
+    if (current > 0 && previous > 0 && current > previous) return true;
+    if (previous > 0 && current === 0) return true;
+    return false;
+  }).length;
+
+  // --- 3. PREPARE CHART DATA (FORCED TO RANKING DISTRIBUTION) ---
+  
+  // Calculate distribution buckets
+  const rank1to3 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 3 }).length;
+  const rank4to10 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 3 && r <= 10 }).length;
+  const rank11to30 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 10 && r <= 30 }).length;
+  const rank31plus = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 30 }).length;
+  const notRanked = relevantKeywords.filter(k => getRank(k.current_month_rank) === 0).length;
+
+  // Chart Config
+  const pieTitle = selectedClient ? 'Current Rankings' : 'Agency Rankings Overview';
+  const pieData = [
+      { name: 'Top 3', value: rank1to3, color: '#3b82f6' },        
+      { name: 'Top 4-10', value: rank4to10, color: '#10b981' },    
+      { name: 'Top 11-30', value: rank11to30, color: '#f59e0b' },  
+      { name: 'Top 30+', value: rank31plus, color: '#9ca3af' },    
+      { name: 'Not Ranked', value: notRanked, color: '#ef4444' }   
+  ].filter(d => d.value > 0); 
+
+  // --- 4. OTHER METRICS ---
+  // Calculate Average Rank (Only for currently ranked keywords)
+  const rankedKeywords = relevantKeywords.filter(k => getRank(k.current_month_rank) > 0);
+  const avgCurrentRank = rankedKeywords.length > 0 
+    ? Math.round(rankedKeywords.reduce((sum, k) => sum + getRank(k.current_month_rank), 0) / rankedKeywords.length)
+    : 0;
+
+  const totalTop10 = relevantKeywords.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 10 }).length;
+
+  // Bar Chart Data
+  let barChartData = [];
+  let barChartXKey = '';
+  let barChartTitle = '';
+
+  if (selectedClient) {
+    barChartTitle = "Keyword Ranking Comparison (Top 10)";
+    barChartXKey = "keyword";
+    barChartData = relevantKeywords
+      .filter(k => getRank(k.current_month_rank) > 0)
+      .sort((a, b) => getRank(a.current_month_rank) - getRank(b.current_month_rank))
+      .slice(0, 10)
+      .map(keyword => ({
+        keyword: keyword.text.length > 15 ? keyword.text.substring(0, 15) + '...' : keyword.text,
+        previousRank: getRank(keyword.previous_month_rank),
+        currentRank: getRank(keyword.current_month_rank),
+      }));
+  } else {
+    barChartTitle = "Top Performing Clients (Most Top 10 Rankings)";
+    barChartXKey = "name";
+    barChartData = clients.map(client => {
+      const clientKws = keywords.filter(k => k.client_id === client.id);
+      const top10Count = clientKws.filter(k => { const r = getRank(k.current_month_rank); return r > 0 && r <= 10 }).length;
+      return {
+        name: client.name.length > 15 ? client.name.substring(0, 15) + '...' : client.name,
+        top10Count: top10Count
+      };
+    })
+    .sort((a, b) => b.top10Count - a.top10Count)
+    .slice(0, 8);
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {selectedClient ? selectedClient.name : 'Agency Overview'}
-        </h1>
+        <div className="flex flex-col">
+           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+             {selectedClient ? selectedClient.name : 'Agency Overview'}
+           </h1>
+           <span className="text-xs text-gray-400 mt-1">
+             Keywords Analyzed: {totalKeywords}
+           </span>
+        </div>
         {selectedClient && (
           <div className="text-sm text-gray-500 dark:text-gray-400">
             Domain: {selectedClient.domain}
-            {selectedClient.industry && ` • Industry: ${selectedClient.industry}`}
           </div>
         )}
       </div>
 
-      {/* Key Metrics */}
+      {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        {/* Card 1: Total Keywords */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {selectedClient ? 'Total Keywords' : 'Total Clients'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {selectedClient ? totalKeywords : agencyData?.totalClients}
-              </p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Keywords</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalKeywords}</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-              {selectedClient ? (
-                <Target className="w-6 h-6 text-white" />
-              ) : (
-                <Users className="w-6 h-6 text-white" />
-              )}
+              <Target className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
+        {/* Card 2: Improvements */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {selectedClient ? 'Improvements' : 'Total Keywords'}
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                {selectedClient ? improvements : agencyData?.totalKeywords}
-              </p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Improvements</p>
+              <p className="text-2xl font-bold text-green-600">{improvements}</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
-              {selectedClient ? (
-                <TrendingUp className="w-6 h-6 text-white" />
-              ) : (
-                <Target className="w-6 h-6 text-white" />
-              )}
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
+        {/* Card 3: Declines */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {selectedClient ? 'Declines' : 'Improvements'}
-              </p>
-              <p className="text-2xl font-bold text-red-600">
-                {selectedClient ? declines : agencyData?.totalImprovements}
-              </p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Declines</p>
+              <p className="text-2xl font-bold text-red-600">{declines}</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
-              {selectedClient ? (
-                <TrendingDown className="w-6 h-6 text-white" />
-              ) : (
-                <TrendingUp className="w-6 h-6 text-white" />
-              )}
+              <TrendingDown className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
+        {/* Card 4: High Value Metric */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {selectedClient ? 'Average Rank' : 'Declines'}
+                {selectedClient ? 'Avg Rank' : 'Top 10 Rankings'}
               </p>
               <p className="text-2xl font-bold text-blue-600">
-                {selectedClient ? `#${Math.round(avgCurrentRank)}` : agencyData?.totalDeclines}
+                {selectedClient ? `#${avgCurrentRank}` : totalTop10}
               </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
-              {selectedClient ? (
-                <BarChart3 className="w-6 h-6 text-white" />
-              ) : (
-                <TrendingDown className="w-6 h-6 text-white" />
-              )}
+              {selectedClient ? <BarChart3 className="w-6 h-6 text-white" /> : <Award className="w-6 h-6 text-white" />}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Left Chart: ALWAYS Ranking Distribution */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {selectedClient ? 'Performance Distribution' : 'Agency Overview'}
+            {pieTitle}
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: '#f3f4f6',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#374151'
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex justify-center gap-6 mt-4">
-            {pieData.map((entry, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: entry.color }}
-                ></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {entry.name}: {entry.value}
-                </span>
-              </div>
-            ))}
-          </div>
+          
+          {pieData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none' }}
+                />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex flex-col items-center justify-center text-gray-400">
+              <BarChart3 className="w-12 h-12 mb-2 opacity-20" />
+              <p>No ranking data available yet.</p>
+              <p className="text-sm mt-1">Add keywords and fetch rankings to see data.</p>
+            </div>
+          )}
         </div>
 
+        {/* Right Chart: Ranking Comparison or Top Clients */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Keyword Ranking Comparison</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={keywordComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            {barChartTitle}
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
               <XAxis 
-                dataKey="keyword" 
-                stroke="#6b7280"
-                fontSize={12}
-                angle={-45}
-                textAnchor="end"
-                height={80}
+                dataKey={barChartXKey} 
+                stroke="#6b7280" 
+                fontSize={12} 
+                angle={-45} 
+                textAnchor="end" 
+                height={80} 
               />
               <YAxis 
-                stroke="#6b7280"
-                fontSize={12}
-                domain={[1, 100]}
-                reversed
+                stroke="#6b7280" 
+                fontSize={12} 
+                domain={selectedClient ? [0, 100] : [0, 'auto']} 
+                reversed={!!selectedClient} 
               />
               <Tooltip 
-                contentStyle={{
-                  backgroundColor: '#f3f4f6',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#374151'
-                }}
-                formatter={(value, name) => {
-                  if (name === 'previousRank') return [`Rank ${value || 'N/A'}`, 'Previous Month'];
-                  if (name === 'currentRank') return [`Rank ${value || 'N/A'}`, 'Current Month'];
-                  return [value, name];
-                }}
+                contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none' }}
               />
-              <Bar 
-                dataKey="previousRank" 
-                fill="#94a3b8" 
-                name="previousRank"
-                radius={[2, 2, 0, 0]}
-              />
-              <Bar 
-                dataKey="currentRank" 
-                fill="#3b82f6" 
-                name="currentRank"
-                radius={[2, 2, 0, 0]}
-              />
+              {selectedClient ? (
+                <>
+                  <Bar dataKey="previousRank" fill="#94a3b8" name="Previous" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="currentRank" fill="#3b82f6" name="Current" radius={[2, 2, 0, 0]} />
+                </>
+              ) : (
+                <Bar dataKey="top10Count" fill="#3b82f6" name="Keywords in Top 10" radius={[4, 4, 0, 0]} />
+              )}
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex justify-center gap-6 mt-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-gray-400"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Previous Month</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-blue-500"></div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Current Month</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

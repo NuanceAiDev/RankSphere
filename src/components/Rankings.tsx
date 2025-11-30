@@ -307,7 +307,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.text('Period:', centerX - 50, infoStartY + 40, { fontStyle: 'bold' });
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
-      const periodText = `${format(currentMonth, 'MMM dd, yyyy')} — ${format(currentMonthEnd, 'MMM dd, yyyy')}`;
+      
+      // NEW CODE: Formats as "Nov 2025"
+      const periodText = format(currentMonth, 'MMM yyyy');
+      
       pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
       
       // Yellow and Blue accent bars at bottom (matching page 2)
@@ -416,8 +419,15 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         pdf.text('Nuance', margin, 20);
       }
       
+      // FIX FOR PAGE 2: Consistent size, format, and alignment
+      pdf.setFontSize(10); 
       pdf.setTextColor(128, 128, 128);
-      pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+      pdf.text(
+        `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, 
+        pageWidth - margin, 
+        20, 
+        { align: 'right' }
+      );
       
       // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
@@ -506,9 +516,15 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             pdf.text('Nuance Digital', margin, 20);
           }
           
-          pdf.setTextColor(128, 128, 128);
-          pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
-          pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+         pdf.setFontSize(10); // Explicitly set size so it matches every page
+pdf.setTextColor(128, 128, 128);
+pdf.text(
+  `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, // Changed to Month Year only
+  pageWidth - margin, 
+  20, 
+  { align: 'right' }
+);
+pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           
           currentY = 40;
         }
@@ -627,9 +643,15 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           pdf.text('Nuance', margin, 20);
         }
         
-        pdf.setTextColor(128, 128, 128);
-        pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
-        pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+        pdf.setFontSize(10); // Explicitly set size so it matches every page
+pdf.setTextColor(128, 128, 128);
+pdf.text(
+  `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, // Changed to Month Year only
+  pageWidth - margin, 
+  20, 
+  { align: 'right' }
+);
+pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         
         currentY = 50; // Start content lower on the page
         
