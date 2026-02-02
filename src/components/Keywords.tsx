@@ -464,9 +464,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100vh-14rem)] overflow-auto shadow-md relative">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
+              <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-6 py-4 text-left">
                     <input
