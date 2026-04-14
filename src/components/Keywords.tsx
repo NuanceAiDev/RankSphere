@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Client, Keyword } from '../types';
 import { fetchKeywordRanking } from '../lib/valueserp';
 import { supabase } from '../lib/supabase';
@@ -22,6 +22,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
   const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
   const [fetchingKeywordId, setFetchingKeywordId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>(
+    { key: 'current_month_rank', direction: 'asc' }
+  );
 
   // Check if current date is within the allowed range for monthly refresh (27th to 13th)
   const isMonthlyRefreshAllowed = (): boolean => {
@@ -46,6 +49,46 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
   }
 
   const clientKeywords = keywords.filter(k => k.client_id === selectedClient.id);
+
+  // Helper: treat null/0 ranks as Infinity so they always sink to the bottom on asc sort
+  const getRankValue = (rank: number | null | undefined): number => {
+    if (rank === null || rank === undefined || rank === 0) return Infinity;
+    return rank;
+  };
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev =>
+      prev.key === key
+        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' }
+    );
+  };
+
+  const sortedKeywords = useMemo(() => {
+    const sorted = [...clientKeywords];
+    sorted.sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+
+      if (sortConfig.key === 'current_month_rank') {
+        aVal = getRankValue(a.current_month_rank);
+        bVal = getRankValue(b.current_month_rank);
+      } else if (sortConfig.key === 'previous_month_rank') {
+        aVal = getRankValue(a.previous_month_rank);
+        bVal = getRankValue(b.previous_month_rank);
+      } else if (sortConfig.key === 'text') {
+        aVal = a.text.toLowerCase();
+        bVal = b.text.toLowerCase();
+      } else {
+        return 0;
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [clientKeywords, sortConfig]);
 
   const checkDuplicateKeyword = (keywordText: string): boolean => {
     return clientKeywords.some(k => k.text.toLowerCase() === keywordText.toLowerCase());
@@ -477,13 +520,43 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                     />
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Keyword
+                    <button
+                      onClick={() => handleSort('text')}
+                      className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                      Keyword
+                      {sortConfig.key === 'text' ? (
+                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-40" />
+                      )}
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Previous Rank
+                    <button
+                      onClick={() => handleSort('previous_month_rank')}
+                      className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                      Previous Rank
+                      {sortConfig.key === 'previous_month_rank' ? (
+                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-40" />
+                      )}
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Current Rank
+                    <button
+                      onClick={() => handleSort('current_month_rank')}
+                      className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                      Current Rank
+                      {sortConfig.key === 'current_month_rank' ? (
+                        sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-40" />
+                      )}
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Change
@@ -497,7 +570,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {clientKeywords.map((keyword) => {
+                {sortedKeywords.map((keyword) => {
                   const rankChange = keyword.current_month_rank && keyword.previous_month_rank
                     ? keyword.previous_month_rank - keyword.current_month_rank
                     : null;

@@ -18,6 +18,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const [isReportDone, setIsReportDone] = useState(false);
+  const [reportSortOrder, setReportSortOrder] = useState<'default' | 'asc' | 'desc'>('default');
 
   // Update local state when selectedClient changes
   useEffect(() => {
@@ -133,21 +134,32 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
   const clientKeywords = keywords.filter(k => k.client_id === selectedClient.id);
 
-  // Calculate improvements vs declines
+  // Safe rank extractor: treats null, undefined, and 0 as "not ranked"
+  const getRank = (val: any): number => { const num = Number(val); return isNaN(num) || num <= 0 ? 0 : num; };
+
+  // Calculate improvements vs declines (includes new/lost ranking edge cases)
   const improvements = clientKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank > k.current_month_rank; // Lower rank number = better
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+    // Rank improved (lower number) OR keyword newly appeared in rankings
+    return (current > 0 && previous > 0 && current < previous) || (previous === 0 && current > 0);
   }).length;
 
   const declines = clientKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank < k.current_month_rank; // Higher rank number = worse
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+    // Rank worsened (higher number) OR keyword dropped out of rankings entirely
+    return (current > 0 && previous > 0 && current > previous) || (previous > 0 && current === 0);
   }).length;
 
   const noChange = clientKeywords.filter(k => {
-    if (!k.current_month_rank || !k.previous_month_rank) return false;
-    return k.previous_month_rank === k.current_month_rank;
+    const current = getRank(k.current_month_rank);
+    const previous = getRank(k.previous_month_rank);
+    // Both months have a valid rank and it hasn't moved
+    return current > 0 && previous > 0 && current === previous;
   }).length;
+
+  const noPieData = improvements === 0 && declines === 0 && noChange === 0;
 
   const pieData = [
     { name: 'Improvements', value: improvements, color: '#10b981' },
@@ -198,8 +210,49 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
     try {
       // Fetch analytics screenshots
       const analyticsScreenshots = await fetchAnalyticsScreenshots();
-      
+
+      // --- Sort keywords for report ---
+      const getRankVal = (rank: number | null | undefined): number =>
+        rank === null || rank === undefined || rank === 0 ? Infinity : rank;
+
+      const reportKeywords = [...clientKeywords].sort((a, b) => {
+        if (reportSortOrder === 'default') return 0;
+        const aVal = getRankVal(a.current_month_rank);
+        const bVal = getRankVal(b.current_month_rank);
+        if (aVal < bVal) return reportSortOrder === 'asc' ? -1 : 1;
+        if (aVal > bVal) return reportSortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      // Detect if this client's keywords contain Arabic (U+0600–U+06FF)
+      // Used to conditionally right-align the keyword column (RTL) vs. left-align (LTR)
+      const isArabicReport = reportKeywords.some(k => /[\u0600-\u06FF]/.test(k.text));
+
+      // --- Load Amiri Arabic font from CDN and inject into jsPDF ---
+      // Amiri supports Arabic Unicode; jsPDF requires a TTF as base64
+      let arabicFontLoaded = false;
       const pdf = new jsPDF();
+
+      try {
+        // Verified working URL: Amiri TTF from Google Fonts' official GitHub repo via jsDelivr
+        const ttfResponse = await fetch(
+          'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/amiri/Amiri-Regular.ttf'
+        );
+        if (ttfResponse.ok) {
+          const ttfBuffer = await ttfResponse.arrayBuffer();
+          // btoa() only handles 0-255 codepoints; Uint8Array ensures correct byte mapping
+          const ttfBase64 = btoa(
+            new Uint8Array(ttfBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+          );
+          pdf.addFileToVFS('Amiri-Regular.ttf', ttfBase64);
+          pdf.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+          arabicFontLoaded = true;
+        } else {
+          console.warn('Amiri font CDN returned:', ttfResponse.status, '— Arabic text may not render.');
+        }
+      } catch (fontErr) {
+        console.warn('Amiri font could not be loaded, Arabic may not render correctly:', fontErr);
+      }
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 15; // Reduced from 20 to 15 for ~12% more width
@@ -431,7 +484,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
-      
+
       // Google Ranking section
       pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);
@@ -439,7 +492,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       
       pdf.setFontSize(12);
       pdf.setTextColor(128, 128, 128);
-      pdf.text(`Showing ${clientKeywords.length} of ${clientKeywords.length} Rows`, margin, 65);
+      pdf.text(`Showing ${reportKeywords.length} of ${reportKeywords.length} Rows`, margin, 65);
       
       // Table header
       const tableStartY = 80;
@@ -463,7 +516,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       let pageNumber = 1;
       
       // Table rows
-      for (const [index, keyword] of clientKeywords.entries()) {
+      for (const [index, keyword] of reportKeywords.entries()) {
         // Check if we need a new page
         if (currentY > pageHeight - 40) {
           pdf.addPage();
@@ -529,18 +582,40 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           currentY = 40;
         }
         
-        // Row background (alternating)
-        if (index % 2 === 0) {
-          pdf.setFillColor(245, 245, 245);
-          pdf.rect(tableStartX, currentY - 8, tableWidth, rowHeight, 'F');
+        // Keyword name — switch to Amiri for Arabic support
+        // Use splitTextToSize (equiv. overflow:'linebreak') so full text wraps instead of truncating
+        if (arabicFontLoaded) {
+          pdf.setFont('Amiri', 'normal');
         }
-        
-        // Keyword name
         pdf.setTextColor(0, 0, 0);
         pdf.setFontSize(10);
-        const truncatedKeyword = keyword.text.length > 25 ? keyword.text.substring(0, 25) + '...' : keyword.text;
-        pdf.text(truncatedKeyword, tableStartX + 3, currentY);
-        
+
+        // Allow full text to fill col-0 width, wrapping to new lines as needed
+        const keywordColInnerWidth = colWidths[0] - 6; // 3px padding each side
+        const keywordLines: string[] = pdf.splitTextToSize(keyword.text, keywordColInnerWidth);
+        const wrappedLineCount = keywordLines.length;
+        const lineSpacing = 4.5; // pt between wrapped lines
+        const effectiveRowHeight = Math.max(rowHeight, wrappedLineCount * lineSpacing + 4);
+
+        // Draw alternating row background sized to actual row height
+        if (index % 2 === 0) {
+          pdf.setFillColor(245, 245, 245);
+          pdf.rect(tableStartX, currentY - 8, tableWidth, effectiveRowHeight, 'F');
+        }
+
+        // Align keyword text: right-anchor for Arabic (RTL), left-anchor for English (LTR)
+        const keywordTextX = isArabicReport
+          ? tableStartX + colWidths[0] - 3  // right edge of col-0
+          : tableStartX + 3;                // left edge of col-0
+        const keywordTextAlign = isArabicReport ? 'right' : 'left';
+        pdf.text(keywordLines, keywordTextX, currentY, { align: keywordTextAlign });
+
+        // Reset to default font for rank numbers (ASCII-safe, no Arabic needed)
+        if (arabicFontLoaded) {
+          pdf.setFont('helvetica', 'normal');
+        }
+
+        // Rank columns align vertically to the first keyword line
         // Previous month rank
         pdf.setTextColor(0, 0, 0); // Always black for previous month
         const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
@@ -552,7 +627,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         const currentRankText = keyword.current_month_rank ? toOrdinal(keyword.current_month_rank) : '—';
         pdf.text(currentRankText, tableStartX + colWidths[0] + colWidths[1] + 3, currentY);
         
-        currentY += rowHeight;
+        currentY += effectiveRowHeight;
       }
       
       // Footer on last page
@@ -815,7 +890,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Rankings for {selectedClient.name}
         </h1>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleMarkAsDone}
             disabled={isMarkingDone || isReportDone}
@@ -827,6 +902,15 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           >
             {isReportDone ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
           </button>
+          <select
+            value={reportSortOrder}
+            onChange={(e) => setReportSortOrder(e.target.value as 'default' | 'asc' | 'desc')}
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+          >
+            <option value="default">Sort: Default</option>
+            <option value="asc">Rank: Low to High (Ascending)</option>
+            <option value="desc">Rank: High to Low (Descending)</option>
+          </select>
           <button
             onClick={generateReport}
             disabled={isGeneratingReport || clientKeywords.length === 0}
@@ -852,44 +936,56 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Distribution</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: '#f3f4f6',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#374151'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-6 mt-4">
-                {pieData.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: entry.color }}
-                    ></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {entry.name}: {entry.value}
-                    </span>
+              {noPieData ? (
+                <div className="flex items-center justify-center h-[250px]">
+                  <div className="text-center">
+                    <TrendingUp className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No trend data available yet</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Rankings need both a previous and current month value to compute trends</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: '#f3f4f6',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: '#374151'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex justify-center gap-6 mt-4">
+                    {pieData.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: entry.color }}
+                        ></div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {entry.name}: {entry.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
