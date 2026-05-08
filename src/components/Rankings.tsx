@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveCo
 import { Client, Keyword } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
 import { supabase } from '../lib/supabase';
 
@@ -257,15 +257,13 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 15; // Reduced from 20 to 15 for ~12% more width
       
-      // Calculate date ranges
+      // Calculate date ranges — report covers the previous month
       const currentDate = new Date();
-      const currentMonth = startOfMonth(currentDate);
-      const previousMonth = startOfMonth(subMonths(currentDate, 1));
-      const currentMonthEnd = endOfMonth(currentDate);
-      const previousMonthEnd = endOfMonth(previousMonth);
-      
-      const currentMonthLabel = format(currentMonth, 'MMM-yy');
-      const previousMonthLabel = format(previousMonth, 'MMM-yy');
+      const reportMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      const previousReportMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
+
+      const currentMonthLabel = format(reportMonthDate, 'MMM-yy');
+      const previousMonthLabel = format(previousReportMonthDate, 'MMM-yy');
       
       // ===== FIRST PAGE - PROFESSIONAL COVER =====
       
@@ -361,8 +359,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
       
-      // NEW CODE: Formats as "Nov 2025"
-      const periodText = format(currentMonth, 'MMM yyyy');
+      // Formats as "Apr 2026" (previous month = the month being reported on)
+      const periodText = format(reportMonthDate, 'MMM yyyy');
       
       pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
       
@@ -476,7 +474,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.setFontSize(10); 
       pdf.setTextColor(128, 128, 128);
       pdf.text(
-        `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, 
+        `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`, 
         pageWidth - margin, 
         20, 
         { align: 'right' }
@@ -572,7 +570,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
          pdf.setFontSize(10); // Explicitly set size so it matches every page
 pdf.setTextColor(128, 128, 128);
 pdf.text(
-  `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, // Changed to Month Year only
+  `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`,
   pageWidth - margin, 
   20, 
   { align: 'right' }
@@ -721,7 +719,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         pdf.setFontSize(10); // Explicitly set size so it matches every page
 pdf.setTextColor(128, 128, 128);
 pdf.text(
-  `${selectedClient.name} – ${format(new Date(), 'MMM yyyy')}`, // Changed to Month Year only
+  `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`,
   pageWidth - margin, 
   20, 
   { align: 'right' }
@@ -832,7 +830,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     }
                     
                     pdf.setTextColor(128, 128, 128);
-                    pdf.text(`${selectedClient.name} – ${format(new Date(), 'MMM dd, yyyy')}`, pageWidth - 80, 20);
+                    pdf.text(`${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`, pageWidth - margin, 20, { align: 'right' });
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     
                     // Reset Y position for new page
