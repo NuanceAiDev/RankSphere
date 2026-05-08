@@ -336,13 +336,15 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const centerX = pageWidth / 2;
       const infoStartY = 90;
       
-      // Client Name
+      // Client Name — split to prevent overflow for long names
       pdf.setFontSize(14);
       pdf.setTextColor(0, 0, 0);
       pdf.text('Client:', centerX - 50, infoStartY, { fontStyle: 'bold' });
       pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(selectedClient.name, centerX + 10, infoStartY, { fontStyle: 'bold' });
+      const coverClientNameMaxWidth = pageWidth - margin - (centerX + 10);
+      const coverClientNameLines = pdf.splitTextToSize(selectedClient.name, coverClientNameMaxWidth);
+      pdf.text(coverClientNameLines, centerX + 10, infoStartY, { fontStyle: 'bold' });
       
       // Website URL
       pdf.setFontSize(14);
@@ -473,12 +475,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // FIX FOR PAGE 2: Consistent size, format, and alignment
       pdf.setFontSize(10); 
       pdf.setTextColor(128, 128, 128);
-      pdf.text(
-        `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`, 
-        pageWidth - margin, 
-        20, 
-        { align: 'right' }
-      );
+      const headerText2 = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
+      const headerMaxWidth2 = pageWidth - (margin * 2) - 25; // reserve space left of right margin
+      const headerLines2 = pdf.splitTextToSize(headerText2, headerMaxWidth2);
+      pdf.text(headerLines2, pageWidth - margin, 20, { align: 'right' });
       
       // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
@@ -569,15 +569,22 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           
          pdf.setFontSize(10); // Explicitly set size so it matches every page
 pdf.setTextColor(128, 128, 128);
-pdf.text(
-  `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`,
-  pageWidth - margin, 
-  20, 
-  { align: 'right' }
-);
+const headerTextOvf = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
+const headerMaxWidthOvf = pageWidth - (margin * 2) - 25;
+const headerLinesOvf = pdf.splitTextToSize(headerTextOvf, headerMaxWidthOvf);
+pdf.text(headerLinesOvf, pageWidth - margin, 20, { align: 'right' });
 pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
-          
+
+          // Repeat table header row on overflow page
           currentY = 40;
+          pdf.setFillColor(128, 128, 128);
+          pdf.rect(tableStartX, currentY - 5, tableWidth, rowHeight + 2, 'F');
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(12);
+          pdf.text('Keyword', tableStartX + 3, currentY + 5);
+          pdf.text(previousMonthLabel, tableStartX + colWidths[0] + 3, currentY + 5);
+          pdf.text(currentMonthLabel, tableStartX + colWidths[0] + colWidths[1] + 3, currentY + 5);
+          currentY += rowHeight + 5;
         }
         
         // Keyword name — switch to Amiri for Arabic support
@@ -718,12 +725,10 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         
         pdf.setFontSize(10); // Explicitly set size so it matches every page
 pdf.setTextColor(128, 128, 128);
-pdf.text(
-  `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`,
-  pageWidth - margin, 
-  20, 
-  { align: 'right' }
-);
+const headerTextAnalytics = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
+const headerMaxWidthAnalytics = pageWidth - (margin * 2) - 25;
+const headerLinesAnalytics = pdf.splitTextToSize(headerTextAnalytics, headerMaxWidthAnalytics);
+pdf.text(headerLinesAnalytics, pageWidth - margin, 20, { align: 'right' });
 pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         
         currentY = 50; // Start content lower on the page
@@ -742,9 +747,6 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         
         // Add analytics screenshots with proper page overflow handling
         const screenshotSpacing = 18; // Consistent 18px vertical spacing between images
-        const availableWidth = pageWidth - (2 * margin);
-        const maxScreenshotWidth = availableWidth; // 90% of available content width
-        const maxScreenshotHeight = 84; // Max height for each image
         const imagesPerPage = 2; // Exactly 2 images per page
         
         let currentScreenshotY = currentY;
@@ -761,21 +763,21 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
             const loadScreenshot = new Promise((resolve) => {
               img.onload = async () => {
                 try {
-                  // Calculate image dimensions
-                  const maxWidth = maxScreenshotWidth; // 90% of content width
-                  const maxHeight = maxScreenshotHeight; // Max height for images
-                  
-                  let imgWidth = maxWidth;
-                  let imgHeight = (img.height / img.width) * maxWidth;
-                  
-                  // Scale down if too tall
-                  if (imgHeight > maxHeight) {
-                    imgHeight = maxHeight;
-                    imgWidth = (img.width / img.height) * maxHeight;
+                  // Scale image to fit within page content width, preserving aspect ratio
+                  const contentWidth = pageWidth - (margin * 2); // strict margin-to-margin width
+                  const aspectRatio = img.width / img.height;
+                  let imgWidth = contentWidth;
+                  let imgHeight = contentWidth / aspectRatio;
+
+                  // Secondary cap: if height is still too tall for the page, scale down from height
+                  const maxImgHeight = pageHeight - 80; // leave room for header/footer
+                  if (imgHeight > maxImgHeight) {
+                    imgHeight = maxImgHeight;
+                    imgWidth = maxImgHeight * aspectRatio;
                   }
-                  
-                  // Calculate centered position
-                  const xPos = (pageWidth - imgWidth) / 2; // Center horizontally
+
+                  // Always start from left margin (image fills full content width)
+                  const xPos = margin;
                   
                   // Check if we need a new page (when we have 2 images or exceed page height)
                   if (imagesOnCurrentPage >= imagesPerPage || currentScreenshotY + imgHeight > pageHeight - 40) {
@@ -830,7 +832,10 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     }
                     
                     pdf.setTextColor(128, 128, 128);
-                    pdf.text(`${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`, pageWidth - margin, 20, { align: 'right' });
+                    const headerTextCont = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
+                    const headerMaxWidthCont = pageWidth - (margin * 2) - 25;
+                    const headerLinesCont = pdf.splitTextToSize(headerTextCont, headerMaxWidthCont);
+                    pdf.text(headerLinesCont, pageWidth - margin, 20, { align: 'right' });
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     
                     // Reset Y position for new page
