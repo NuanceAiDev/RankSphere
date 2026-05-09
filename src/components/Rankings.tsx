@@ -272,9 +272,9 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const brandYellow: [number, number, number] = [255, 192, 0];
       const centerX = pageWidth / 2;
 
-      // ── 1. DARK BLUE TOP HEADER BAND ──────────────────────────────────────
+      // ── 1. WHITE TOP HEADER BAND (logo has native white bg — no rect needed) ──
       const headerHeight = 130;
-      pdf.setFillColor(...darkBlue);
+      pdf.setFillColor(255, 255, 255);
       pdf.rect(0, 0, pageWidth, headerHeight, 'F');
 
       // ── 2. LOGO centered inside the blue band ─────────────────────────────
@@ -294,24 +294,22 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-              // White background rect so transparent PNGs read on dark blue
+              // Draw logo directly — header band is white so no background rect needed
               const logoAspect = logoImg.height / logoImg.width;
               const logoH = logoW * logoAspect;
-              pdf.setFillColor(255, 255, 255);
-              pdf.roundedRect(logoX - 2, logoY - 2, logoW + 4, logoH + 4, 2, 2, 'F');
               pdf.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH);
               resolve(true);
             } catch {
-              // Fallback: white text agency name
+              // Fallback: dark blue text agency name on white header
               pdf.setFontSize(16);
-              pdf.setTextColor(255, 255, 255);
+              pdf.setTextColor(...darkBlue);
               pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
               resolve(true);
             }
           };
           logoImg.onerror = () => {
             pdf.setFontSize(16);
-            pdf.setTextColor(255, 255, 255);
+            pdf.setTextColor(...darkBlue);
             pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
             resolve(true);
           };
@@ -320,17 +318,17 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         await loadLogo;
       } catch {
         pdf.setFontSize(16);
-        pdf.setTextColor(255, 255, 255);
+        pdf.setTextColor(...darkBlue);
         pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
       }
 
-      // ── 3. YELLOW "MONTHLY SEO REPORT" BANNER (bottom of blue header) ─────
+      // ── 3. DARK BLUE "MONTHLY SEO REPORT" BANNER (bottom of white header) ──
       const bannerH = 20;
       const bannerY = headerHeight - bannerH;
-      pdf.setFillColor(...brandYellow);
+      pdf.setFillColor(...darkBlue);
       pdf.rect(0, bannerY, pageWidth, bannerH, 'F');
       pdf.setFontSize(13);
-      pdf.setTextColor(...darkBlue);
+      pdf.setTextColor(255, 255, 255);
       pdf.text('MONTHLY SEO REPORT', centerX, bannerY + 13, {
         align: 'center',
         fontStyle: 'bold',
@@ -389,11 +387,13 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
       // ── 8. BOTTOM METRIC CARDS ────────────────────────────────────────────
       const numOneRankings = reportKeywords.filter(k => k.current_month_rank === 1).length;
+      const top3Count = reportKeywords.filter(k => k.current_month_rank != null && k.current_month_rank >= 1 && k.current_month_rank <= 3).length;
+      const top10Count = reportKeywords.filter(k => k.current_month_rank != null && k.current_month_rank >= 1 && k.current_month_rank <= 10).length;
 
       const cards: { label: string; value: string }[] = [
-        { label: 'Keywords #1',  value: String(numOneRankings) },
-        { label: 'Sessions',     value: '—' },
-        { label: 'Organic %',   value: '—' },
+        { label: 'Keywords #1',    value: String(numOneRankings) },
+        { label: 'Top 3 Rankings', value: String(top3Count) },
+        { label: 'First Page Ranks', value: String(top10Count) },
       ];
 
       const cardW = (pageWidth - margin * 2 - 8) / 3; // 8px total gap for 2 gutters
