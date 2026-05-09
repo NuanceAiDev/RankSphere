@@ -265,128 +265,172 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const currentMonthLabel = format(reportMonthDate, 'MMM-yy');
       const previousMonthLabel = format(previousReportMonthDate, 'MMM-yy');
       
-      // ===== FIRST PAGE - PROFESSIONAL COVER =====
-      
-      // Header Section with actual logo
+      // ===== FIRST PAGE - PREMIUM AGENCY COVER =====
+
+      // --- Brand colors ---
+      const darkBlue: [number, number, number] = [15, 45, 82];
+      const brandYellow: [number, number, number] = [255, 192, 0];
+      const centerX = pageWidth / 2;
+
+      // ── 1. DARK BLUE TOP HEADER BAND ──────────────────────────────────────
+      const headerHeight = 130;
+      pdf.setFillColor(...darkBlue);
+      pdf.rect(0, 0, pageWidth, headerHeight, 'F');
+
+      // ── 2. LOGO centered inside the blue band ─────────────────────────────
+      const logoW = 38;     // logo display width (mm)
+      const logoX = (pageWidth - logoW) / 2;
+      const logoY = 14;     // top padding inside header
+
       try {
-        // Load and add the Nuance Digital logo
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
-        
-        // Use Promise.then() instead of await to avoid transpilation issues
         const loadLogo = new Promise((resolve) => {
           logoImg.onload = async () => {
             try {
-              // Create canvas to convert image to data URL
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
               canvas.width = logoImg.width;
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
-              
-              // Add logo to PDF (top-left, professional size)
-              const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-              pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0); // Auto height to maintain aspect ratio
+              const logoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+              // White background rect so transparent PNGs read on dark blue
+              const logoAspect = logoImg.height / logoImg.width;
+              const logoH = logoW * logoAspect;
+              pdf.setFillColor(255, 255, 255);
+              pdf.roundedRect(logoX - 2, logoY - 2, logoW + 4, logoH + 4, 2, 2, 'F');
+              pdf.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH);
               resolve(true);
-            } catch (error) {
-              console.warn('Logo processing failed:', error);
-              // Fallback to text
-              pdf.setFontSize(14);
-              pdf.setTextColor(4, 140, 212);
-              pdf.text('Nuance Digital', margin, 35);
+            } catch {
+              // Fallback: white text agency name
+              pdf.setFontSize(16);
+              pdf.setTextColor(255, 255, 255);
+              pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
               resolve(true);
             }
           };
-          logoImg.onerror = async () => {
-            console.warn('Logo loading failed, using text fallback');
-            // Fallback to text
-            pdf.setFontSize(14);
-            pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance Digital', margin, 35);
+          logoImg.onerror = () => {
+            pdf.setFontSize(16);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
             resolve(true);
           };
           logoImg.src = '/pp.jpg';
         });
-        
         await loadLogo;
-      } catch (error) {
-        console.warn('Logo loading error:', error);
-        // Fallback to text
-        pdf.setFontSize(14);
-        pdf.setTextColor(4, 140, 212);
-        pdf.text('Nuance Digital', margin, 35);
+      } catch {
+        pdf.setFontSize(16);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
       }
-      
-      // Title section (top-right) - clean header with proper spacing
-      pdf.setFontSize(18);
-      pdf.setTextColor(4, 140, 212); // #048cd4
-      const titleX = pageWidth - margin;
-      pdf.text('Nuance Digital Solutions', titleX, 25, { align: 'right' });
-      
-      pdf.setFontSize(14);
-      pdf.setTextColor(85, 85, 85); // #555555
-      pdf.text('Monthly SEO Report', titleX, 40, { align: 'right' });
-      
-      // Header divider line - thin and subtle
-      pdf.setDrawColor(224, 224, 224); // #e0e0e0
-      pdf.setLineWidth(0.5);
-      pdf.line(margin, 55, pageWidth - margin, 55);
-      
-      // Report Information Section (Centered) - reduced spacing
-      const centerX = pageWidth / 2;
-      const infoStartY = 90;
-      
-      // Client Name — split to prevent overflow for long names
-      pdf.setFontSize(14);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Client:', centerX - 50, infoStartY, { fontStyle: 'bold' });
-      pdf.setFontSize(18);
-      pdf.setTextColor(0, 0, 0);
-      const coverClientNameMaxWidth = pageWidth - margin - (centerX + 10);
-      const coverClientNameLines = pdf.splitTextToSize(selectedClient.name, coverClientNameMaxWidth);
-      pdf.text(coverClientNameLines, centerX + 10, infoStartY, { fontStyle: 'bold' });
-      
-      // Website URL
-      pdf.setFontSize(14);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Website:', centerX - 50, infoStartY + 20, { fontStyle: 'bold' });
-      pdf.setFontSize(14);
-      pdf.setTextColor(4, 140, 212); // #048cd4
-      pdf.text(`https://${selectedClient.domain}`, centerX + 10, infoStartY + 20, { fontStyle: 'bold' });
-      
-      // Report Period
-      pdf.setFontSize(14);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Period:', centerX - 50, infoStartY + 40, { fontStyle: 'bold' });
-      pdf.setFontSize(14);
-      pdf.setTextColor(0, 0, 0);
-      
-      // Formats as "Apr 2026" (previous month = the month being reported on)
-      const periodText = format(reportMonthDate, 'MMM yyyy');
-      
-      pdf.text(periodText, centerX + 10, infoStartY + 40, { fontStyle: 'bold' });
-      
-      // Yellow and Blue accent bars at bottom (matching page 2)
-      pdf.setFillColor(251, 194, 16); // #fbc210 - Yellow
-      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-      pdf.setFillColor(4, 140, 212); // #048cd4 - Blue
-      pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-      
-      // Footer Section (Page 1 only)
-      const coverFooterY = pageHeight - 45;
-      
-      // Updated Tagline - "Helping Your Business Grow"
-      pdf.setFontSize(14);
-      pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Helping Your Business Grow', centerX, coverFooterY, { 
+
+      // ── 3. YELLOW "MONTHLY SEO REPORT" BANNER (bottom of blue header) ─────
+      const bannerH = 20;
+      const bannerY = headerHeight - bannerH;
+      pdf.setFillColor(...brandYellow);
+      pdf.rect(0, bannerY, pageWidth, bannerH, 'F');
+      pdf.setFontSize(13);
+      pdf.setTextColor(...darkBlue);
+      pdf.text('MONTHLY SEO REPORT', centerX, bannerY + 13, {
         align: 'center',
-        fontStyle: 'bolditalic'
+        fontStyle: 'bold',
       });
-      
-      // Prepared by
-      pdf.setFontSize(10);
-      pdf.setTextColor(102, 102, 102); // #666666
-      pdf.text('Prepared by Nuance Digital Solutions', centerX, coverFooterY + 12, { align: 'center' });
+
+      // ── 4. "PREPARED FOR" label ───────────────────────────────────────────
+      let cursorY = headerHeight + 18;
+      pdf.setFontSize(9);
+      pdf.setTextColor(160, 160, 160);
+      pdf.text('PREPARED FOR', centerX, cursorY, { align: 'center' });
+
+      // ── 5. CLIENT NAME (large, dark blue) ────────────────────────────────
+      cursorY += 10;
+      pdf.setFontSize(22);
+      pdf.setTextColor(...darkBlue);
+      const clientNameMaxW = pageWidth - margin * 2;
+      const clientNameLines = pdf.splitTextToSize(selectedClient.name, clientNameMaxW);
+      pdf.text(clientNameLines, centerX, cursorY, { align: 'center', fontStyle: 'bold' });
+
+      // Move cursor past wrapped client name (approx 9pt per line at fontSize 22)
+      cursorY += (clientNameLines.length - 1) * 9;
+
+      // ── 6. YELLOW ACCENT LINE below client name ───────────────────────────
+      cursorY += 6;
+      const accentLineW = 40;
+      pdf.setDrawColor(...brandYellow);
+      pdf.setLineWidth(1.5);
+      pdf.line(centerX - accentLineW / 2, cursorY, centerX + accentLineW / 2, cursorY);
+      pdf.setLineWidth(0.5); // reset
+
+      // ── 7. METADATA GRID (Website / Period / Prepared By) ─────────────────
+      const periodText = format(reportMonthDate, 'MMM yyyy');
+      const metaRows: [string, string][] = [
+        ['Website',     `https://${selectedClient.domain}`],
+        ['Period',      periodText],
+        ['Prepared By', 'Nuance Digital Solutions'],
+      ];
+      const labelX = centerX - 28;
+      const valueX = centerX + 4;
+
+      cursorY += 14;
+      metaRows.forEach(([label, value]) => {
+        // Label
+        pdf.setFontSize(9);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(label.toUpperCase(), labelX, cursorY, { align: 'right' });
+
+        // Value — wrap if long
+        pdf.setFontSize(10);
+        pdf.setTextColor(...darkBlue);
+        const valueLines = pdf.splitTextToSize(value, pageWidth - valueX - margin);
+        pdf.text(valueLines, valueX, cursorY);
+
+        cursorY += valueLines.length > 1 ? valueLines.length * 5.5 + 4 : 11;
+      });
+
+      // ── 8. BOTTOM METRIC CARDS ────────────────────────────────────────────
+      const numOneRankings = reportKeywords.filter(k => k.current_month_rank === 1).length;
+
+      const cards: { label: string; value: string }[] = [
+        { label: 'Keywords #1',  value: String(numOneRankings) },
+        { label: 'Sessions',     value: '—' },
+        { label: 'Organic %',   value: '—' },
+      ];
+
+      const cardW = (pageWidth - margin * 2 - 8) / 3; // 8px total gap for 2 gutters
+      const cardH = 36;
+      const cardY = pageHeight - cardH - 18;
+      const cardGap = 4;
+
+      cards.forEach((card, i) => {
+        const cardX = margin + i * (cardW + cardGap);
+
+        // Card background
+        pdf.setFillColor(...darkBlue);
+        pdf.roundedRect(cardX, cardY, cardW, cardH, 2, 2, 'F');
+
+        // Yellow accent stripe at top of card
+        pdf.setFillColor(...brandYellow);
+        pdf.rect(cardX, cardY, cardW, 3, 'F');
+
+        // Big number / value
+        pdf.setFontSize(18);
+        pdf.setTextColor(...brandYellow);
+        pdf.text(card.value, cardX + cardW / 2, cardY + 18, {
+          align: 'center',
+          fontStyle: 'bold',
+        });
+
+        // Small label below
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(card.label.toUpperCase(), cardX + cardW / 2, cardY + 28, {
+          align: 'center',
+        });
+      });
+
+      // ── 9. THIN YELLOW BOTTOM STRIPE ─────────────────────────────────────
+      pdf.setFillColor(...brandYellow);
+      pdf.rect(0, pageHeight - 6, pageWidth, 6, 'F');
       
       // Add new page for table
       pdf.addPage();
