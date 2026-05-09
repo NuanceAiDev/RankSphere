@@ -273,14 +273,17 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const centerX = pageWidth / 2;
 
       // ── 1. WHITE TOP HEADER BAND (logo has native white bg — no rect needed) ──
-      const headerHeight = 130;
-      pdf.setFillColor(255, 255, 255);
+      const headerHeight = 140;
+      pdf.setFillColor(...darkBlue);
       pdf.rect(0, 0, pageWidth, headerHeight, 'F');
 
-      // ── 2. LOGO centered inside the blue band ─────────────────────────────
-      const logoW = 38;     // logo display width (mm)
-      const logoX = (pageWidth - logoW) / 2;
-      const logoY = 14;     // top padding inside header
+      // White logo card centered inside the blue header
+      const cardWidth  = 80;
+      const cardHeight = 60;
+      const cardX = (pageWidth - cardWidth) / 2;
+      const cardTopY = 30;
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(cardX, cardTopY, cardWidth, cardHeight, 'F');
 
       try {
         const logoImg = new Image();
@@ -294,23 +297,27 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-              // Draw logo directly — header band is white so no background rect needed
-              const logoAspect = logoImg.height / logoImg.width;
-              const logoH = logoW * logoAspect;
-              pdf.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoW, logoH);
+              // Fit logo inside 60×40mm box, preserving aspect ratio
+              const maxImgW = 60;
+              const maxImgH = 40;
+              const ratio  = Math.min(maxImgW / logoImg.width, maxImgH / logoImg.height);
+              const finalW = logoImg.width  * ratio;
+              const finalH = logoImg.height * ratio;
+              const imgX = cardX + (cardWidth  - finalW) / 2;
+              const imgY = cardTopY + (cardHeight - finalH) / 2;
+              pdf.addImage(logoDataUrl, 'JPEG', imgX, imgY, finalW, finalH);
               resolve(true);
             } catch {
-              // Fallback: dark blue text agency name on white header
               pdf.setFontSize(16);
-              pdf.setTextColor(...darkBlue);
-              pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
+              pdf.setTextColor(255, 255, 255);
+              pdf.text('Nuance Digital', centerX, cardTopY + cardHeight / 2, { align: 'center' });
               resolve(true);
             }
           };
           logoImg.onerror = () => {
             pdf.setFontSize(16);
-            pdf.setTextColor(...darkBlue);
-            pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Nuance Digital', centerX, cardTopY + cardHeight / 2, { align: 'center' });
             resolve(true);
           };
           logoImg.src = '/pp.jpg';
@@ -318,24 +325,25 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         await loadLogo;
       } catch {
         pdf.setFontSize(16);
-        pdf.setTextColor(...darkBlue);
-        pdf.text('Nuance Digital', centerX, logoY + 12, { align: 'center' });
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('Nuance Digital', centerX, cardTopY + cardHeight / 2, { align: 'center' });
       }
 
       // ── 3. DARK BLUE "MONTHLY SEO REPORT" BANNER (bottom of white header) ──
-      const bannerH = 20;
-      const bannerY = headerHeight - bannerH;
-      pdf.setFillColor(...darkBlue);
+      // Yellow banner directly below the blue header
+      const bannerY = headerHeight;
+      const bannerH = 25;
+      pdf.setFillColor(...brandYellow);
       pdf.rect(0, bannerY, pageWidth, bannerH, 'F');
       pdf.setFontSize(13);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text('MONTHLY SEO REPORT', centerX, bannerY + 13, {
+      pdf.setTextColor(...darkBlue);
+      pdf.text('MONTHLY SEO REPORT', centerX, bannerY + 16, {
         align: 'center',
         fontStyle: 'bold',
       });
 
       // ── 4. "PREPARED FOR" label ───────────────────────────────────────────
-      let cursorY = headerHeight + 18;
+      let cursorY = bannerY + bannerH + 18; // 18mm breathing room below yellow banner
       pdf.setFontSize(9);
       pdf.setTextColor(160, 160, 160);
       pdf.text('PREPARED FOR', centerX, cursorY, { align: 'center' });
