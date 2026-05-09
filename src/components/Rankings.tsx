@@ -272,19 +272,11 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const brandYellow: [number, number, number] = [255, 192, 0];
       const centerX = pageWidth / 2;
 
-      // ── 1. WHITE TOP HEADER BAND (logo has native white bg — no rect needed) ──
-      const headerHeight = 140;
-      pdf.setFillColor(...darkBlue);
-      pdf.rect(0, 0, pageWidth, headerHeight, 'F');
-
-      // White logo card centered inside the blue header
-      const cardWidth  = 80;
-      const cardHeight = 60;
-      const cardX = (pageWidth - cardWidth) / 2;
-      const cardTopY = 30;
+      // Layer 1: White top band for the logo (0 -> 60mm)
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(cardX, cardTopY, cardWidth, cardHeight, 'F');
+      pdf.rect(0, 0, pageWidth, 60, 'F');
 
+      // Logo centered inside the white band, max height 40mm, aspect-ratio safe
       try {
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
@@ -293,31 +285,30 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             try {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
-              canvas.width = logoImg.width;
+              canvas.width  = logoImg.width;
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-              // Fit logo inside 60×40mm box, preserving aspect ratio
-              const maxImgW = 60;
+              const maxImgW = pageWidth - margin * 2;
               const maxImgH = 40;
               const ratio  = Math.min(maxImgW / logoImg.width, maxImgH / logoImg.height);
               const finalW = logoImg.width  * ratio;
               const finalH = logoImg.height * ratio;
-              const imgX = cardX + (cardWidth  - finalW) / 2;
-              const imgY = cardTopY + (cardHeight - finalH) / 2;
+              const imgX = (pageWidth - finalW) / 2;
+              const imgY = (60 - finalH) / 2; // vertically centered in 60mm band
               pdf.addImage(logoDataUrl, 'JPEG', imgX, imgY, finalW, finalH);
               resolve(true);
             } catch {
               pdf.setFontSize(16);
-              pdf.setTextColor(255, 255, 255);
-              pdf.text('Nuance Digital', centerX, cardTopY + cardHeight / 2, { align: 'center' });
+              pdf.setTextColor(...darkBlue);
+              pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
               resolve(true);
             }
           };
           logoImg.onerror = () => {
             pdf.setFontSize(16);
-            pdf.setTextColor(255, 255, 255);
-            pdf.text('Nuance Digital', centerX, cardTopY + cardHeight / 2, { align: 'center' });
+            pdf.setTextColor(...darkBlue);
+            pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
             resolve(true);
           };
           logoImg.src = '/pp.jpg';
@@ -325,25 +316,26 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         await loadLogo;
       } catch {
         pdf.setFontSize(16);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text('Nuance Digital', centerX, cardTopY + cardHeight / 2, { align: 'center' });
+        pdf.setTextColor(...darkBlue);
+        pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
       }
 
-      // ── 3. DARK BLUE "MONTHLY SEO REPORT" BANNER (bottom of white header) ──
-      // Yellow banner directly below the blue header
-      const bannerY = headerHeight;
-      const bannerH = 25;
-      pdf.setFillColor(...brandYellow);
-      pdf.rect(0, bannerY, pageWidth, bannerH, 'F');
+      // Layer 2: Dark blue title band (60 -> 100mm)
+      pdf.setFillColor(...darkBlue);
+      pdf.rect(0, 60, pageWidth, 40, 'F');
       pdf.setFontSize(13);
-      pdf.setTextColor(...darkBlue);
-      pdf.text('MONTHLY SEO REPORT', centerX, bannerY + 16, {
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('MONTHLY SEO REPORT', centerX, 85, {
         align: 'center',
         fontStyle: 'bold',
       });
 
+      // Layer 3: Yellow accent line (100 -> 105mm)
+      pdf.setFillColor(...brandYellow);
+      pdf.rect(0, 100, pageWidth, 5, 'F');
+
       // ── 4. "PREPARED FOR" label ───────────────────────────────────────────
-      let cursorY = bannerY + bannerH + 18; // 18mm breathing room below yellow banner
+      let cursorY = 123; // 18mm below the yellow accent line bottom (105mm)
       pdf.setFontSize(9);
       pdf.setTextColor(160, 160, 160);
       pdf.text('PREPARED FOR', centerX, cursorY, { align: 'center' });
@@ -401,7 +393,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const cards: { label: string; value: string }[] = [
         { label: 'Keywords #1',    value: String(numOneRankings) },
         { label: 'Top 3 Rankings', value: String(top3Count) },
-        { label: 'First Page Ranks', value: String(top10Count) },
+        { label: 'Top 10 Rankings', value: String(top10Count) },
       ];
 
       const cardW = (pageWidth - margin * 2 - 8) / 3; // 8px total gap for 2 gutters
