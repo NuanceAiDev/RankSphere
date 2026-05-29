@@ -19,29 +19,34 @@ async function fetchPageFromAPI(
   rankType: string,
   retries = 3 // 🛡️ Try 3 times before failing (Fixes network drops)
 ): Promise<any> {
+  // Build strict geo-parameters based on rankType to prevent SERP localization mismatches
+  let locationParams: Record<string, string> = {};
+  if (rankType.toLowerCase() === 'qatar') {
+    locationParams = {
+      location: 'Qatar',
+      google_domain: 'google.com.qa',
+      gl: 'qa', // Country code
+      hl: 'en'  // Language (English)
+    };
+  } else if (rankType.toLowerCase() === 'dubai') {
+    locationParams = {
+      location: 'Dubai,United Arab Emirates',
+      google_domain: 'google.ae',
+      gl: 'ae',
+      hl: 'en'
+    };
+  }
+
   const baseParams: any = {
     api_key: VALUESERP_API_KEY,
     q: keyword,
     output: 'json',
     page: pageNumber.toString(),
-    // 🟢 Standard 10 results ensures Map Pack is visible.
-    // We removed 'num: 100' because it hides local maps.
-    num: '10'
+    num: '100',
+    ...locationParams // Inject strict location settings
   };
 
   const params = new URLSearchParams(baseParams);
-
-  if (rankType === 'qatar') {
-    params.append('location', 'Doha, Qatar');
-    params.append('google_domain', 'google.com.qa');
-    params.append('gl', 'qa');
-    params.append('hl', 'en');
-  } else {
-    params.append('location', 'Dubai, United Arab Emirates');
-    params.append('google_domain', 'google.ae');
-    params.append('gl', 'ae');
-    params.append('hl', 'en');
-  }
 
   // 🔄 RETRY LOOP
   for (let attempt = 1; attempt <= retries; attempt++) {

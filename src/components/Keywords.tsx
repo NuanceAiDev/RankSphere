@@ -270,7 +270,8 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           // Add delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
-          console.error(`Error fetching ranking for keyword ${keyword.text}:`, error);
+          // Isolated: log and continue — do not re-throw so the loop proceeds to the next keyword
+          console.error(`Failed to fetch rank for ${keyword.text}`, error);
           errorCount++;
         }
       }
@@ -312,24 +313,34 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       for (const keyword of clientKeywords) {
         try {
-          // Move current rank to previous
-          const previousRank = keyword.current_month_rank;
-          const previousDate = keyword.current_month_date;
-          
+          const today = new Date();
+          const lastChecked = keyword.last_checked ? new Date(keyword.last_checked) : null;
+
+          // Only shift current → previous if the last check was in a different month/year.
+          // This prevents a same-month re-run from overwriting real historical data.
+          const isNewMonth =
+            !lastChecked ||
+            lastChecked.getMonth() !== today.getMonth() ||
+            lastChecked.getFullYear() !== today.getFullYear();
+
           // Fetch new ranking from ValueSERP
           const rankingData = await fetchKeywordRanking(selectedClient.domain, keyword.text, rankType);
-          
-          // Update keyword with new data
+
+          const payloadToUpdate = {
+            // Shift to previous only on a genuine new month; otherwise keep existing previous data.
+            previous_month_rank: isNewMonth ? keyword.current_month_rank : keyword.previous_month_rank,
+            previous_month_date: isNewMonth ? keyword.last_checked : keyword.previous_month_date,
+
+            current_month_rank: rankingData.rank,
+            current_month_date: today.toISOString().split('T')[0],
+            last_checked: today.toISOString(),
+            updated_at: today.toISOString()
+          };
+
+          // Update keyword with protected payload
           const { error } = await supabase
             .from('keywords')
-            .update({
-              previous_month_rank: previousRank,
-              previous_month_date: previousDate,
-              current_month_rank: rankingData.rank,
-              current_month_date: new Date().toISOString().split('T')[0],
-              last_checked: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
+            .update(payloadToUpdate)
             .eq('id', keyword.id);
 
           if (error) throw error;
@@ -338,7 +349,8 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           // Add delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
-          console.error(`Error fetching ranking for keyword ${keyword.text}:`, error);
+          // Isolated: log and continue — do not re-throw so the loop proceeds to the next keyword
+          console.error(`Failed to fetch rank for ${keyword.text}`, error);
           errorCount++;
         }
       }
