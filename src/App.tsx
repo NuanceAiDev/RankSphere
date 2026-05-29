@@ -33,6 +33,15 @@ function App() {
     }
   }, [selectedClient]);
 
+  // Keep selectedClient in sync with the clients list so that changes saved to
+  // Supabase (e.g. rank_type toggle) are immediately reflected without a hard refresh.
+  useEffect(() => {
+    if (selectedClient) {
+      const updated = clients.find(c => c.id === selectedClient.id);
+      if (updated) setSelectedClient(updated);
+    }
+  }, [clients]);
+
   const loadClients = async () => {
     try {
       const { data, error } = await retryOperation(async () => {
