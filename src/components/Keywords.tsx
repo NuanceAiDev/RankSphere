@@ -251,53 +251,42 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
     const keywordsToFetch = clientKeywords.filter(k => selectedKeywords.has(k.id));
     setIsFetchingRanks(true);
-    let successCount = 0;
-    let errorCount = 0;
 
     try {
       toast.loading(`Fetching rankings for ${keywordsToFetch.length} selected keywords...`, { id: 'fetch-selected' });
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      const keywordChunks = chunkArray(keywordsToFetch, 50);
-
-      for (const chunk of keywordChunks) {
-        const chunkPromises = chunk.map(async (keyword) => {
-          const rankingData = await fetchKeywordRanking(selectedClient.domain, keyword.text, rankType);
-
-          const { error } = await supabase
-            .from('keywords')
-            .update({
-              current_month_rank: rankingData.rank,
-              current_month_date: new Date().toISOString().split('T')[0],
-              last_checked: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', keyword.id);
-
-          if (error) throw error;
-          return keyword;
-        });
-
-        const results = await Promise.allSettled(chunkPromises);
-        results.forEach((result, i) => {
-          if (result.status === 'fulfilled') {
-            successCount++;
-          } else {
-            // Isolated: log and continue — do not re-throw so the batch proceeds to the next chunk
-            console.error(`Failed to fetch rank for ${chunk[i].text}`, result.reason);
-            errorCount++;
-          }
-        });
-      }
+      // Send all keywords to the backend in one request — server-side concurrency bypasses
+      // the browser's 6-connection limit and keeps the tab-switch problem off the table.
+      const response = await fetch('/api/bulk-refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keywords: keywordsToFetch.map(k => ({
+            id: k.id,
+            text: k.text,
+            last_checked: k.last_checked,
+            current_month_rank: k.current_month_rank,
+            previous_month_rank: k.previous_month_rank,
+            previous_month_date: k.previous_month_date
+          })),
+          domain: selectedClient.domain,
+          rankType,
+          applyMonthGuard: false  // Selected fetch updates current rank only
+        })
+      });
 
       toast.dismiss('fetch-selected');
-      
+
+      if (!response.ok) throw new Error(`Bulk refresh failed: ${response.status}`);
+
+      const { successCount, errorCount } = await response.json();
+
       if (successCount > 0) {
         toast.success(`Successfully updated ${successCount} keywords!`);
         onKeywordAdded();
       }
-      
       if (errorCount > 0) {
         toast.error(`Failed to update ${errorCount} keywords`);
       }
@@ -318,71 +307,42 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
 
     setIsFetchingRanks(true);
-    let successCount = 0;
-    let errorCount = 0;
 
     try {
       toast.loading(`Monthly refresh for ${clientKeywords.length} keywords...`, { id: 'monthly-refresh' });
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      const keywordChunks = chunkArray(clientKeywords, 50);
-
-      for (const chunk of keywordChunks) {
-        const chunkPromises = chunk.map(async (keyword) => {
-          const today = new Date();
-          const lastChecked = keyword.last_checked ? new Date(keyword.last_checked) : null;
-
-          // Only shift current → previous if the last check was in a different month/year.
-          // This prevents a same-month re-run from overwriting real historical data.
-          const isNewMonth =
-            !lastChecked ||
-            lastChecked.getMonth() !== today.getMonth() ||
-            lastChecked.getFullYear() !== today.getFullYear();
-
-          // Fetch new ranking from ValueSERP
-          const rankingData = await fetchKeywordRanking(selectedClient.domain, keyword.text, rankType);
-
-          const payloadToUpdate = {
-            // Shift to previous only on a genuine new month; otherwise keep existing previous data.
-            previous_month_rank: isNewMonth ? keyword.current_month_rank : keyword.previous_month_rank,
-            previous_month_date: isNewMonth ? keyword.last_checked : keyword.previous_month_date,
-
-            current_month_rank: rankingData.rank,
-            current_month_date: today.toISOString().split('T')[0],
-            last_checked: today.toISOString(),
-            updated_at: today.toISOString()
-          };
-
-          // Update keyword with protected payload
-          const { error } = await supabase
-            .from('keywords')
-            .update(payloadToUpdate)
-            .eq('id', keyword.id);
-
-          if (error) throw error;
-          return keyword;
-        });
-
-        const results = await Promise.allSettled(chunkPromises);
-        results.forEach((result, i) => {
-          if (result.status === 'fulfilled') {
-            successCount++;
-          } else {
-            // Isolated: log and continue — do not re-throw so the batch proceeds to the next chunk
-            console.error(`Failed to fetch rank for ${chunk[i].text}`, result.reason);
-            errorCount++;
-          }
-        });
-      }
+      // Delegate the entire refresh to the backend — all ValueSERP fetches run concurrently
+      // in Node (no browser connection cap) and Supabase updates are written server-side.
+      const response = await fetch('/api/bulk-refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keywords: clientKeywords.map(k => ({
+            id: k.id,
+            text: k.text,
+            last_checked: k.last_checked,
+            current_month_rank: k.current_month_rank,
+            previous_month_rank: k.previous_month_rank,
+            previous_month_date: k.previous_month_date
+          })),
+          domain: selectedClient.domain,
+          rankType,
+          applyMonthGuard: true  // Monthly refresh must protect historical previous_month data
+        })
+      });
 
       toast.dismiss('monthly-refresh');
-      
+
+      if (!response.ok) throw new Error(`Bulk refresh failed: ${response.status}`);
+
+      const { successCount, errorCount } = await response.json();
+
       if (successCount > 0) {
         toast.success(`Monthly refresh completed! Updated ${successCount} keywords.`);
         onKeywordAdded();
       }
-      
       if (errorCount > 0) {
         toast.error(`Failed to update ${errorCount} keywords`);
       }
