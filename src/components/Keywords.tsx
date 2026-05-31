@@ -7,6 +7,15 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
 
+// Splits an array into sequential chunks of a given size for batch processing
+const chunkArray = <T,>(array: T[], size: number): T[][] => {
+  const chunked: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunked.push(array.slice(i, i + size));
+  }
+  return chunked;
+};
+
 interface KeywordsProps {
   selectedClient: Client | null;
   keywords: Keyword[];
@@ -250,10 +259,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      for (const keyword of keywordsToFetch) {
-        try {
+      const keywordChunks = chunkArray(keywordsToFetch, 5);
+
+      for (const chunk of keywordChunks) {
+        const chunkPromises = chunk.map(async (keyword) => {
           const rankingData = await fetchKeywordRanking(selectedClient.domain, keyword.text, rankType);
-          
+
           const { error } = await supabase
             .from('keywords')
             .update({
@@ -265,15 +276,19 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
             .eq('id', keyword.id);
 
           if (error) throw error;
-          successCount++;
+          return keyword;
+        });
 
-          // Add delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          // Isolated: log and continue — do not re-throw so the loop proceeds to the next keyword
-          console.error(`Failed to fetch rank for ${keyword.text}`, error);
-          errorCount++;
-        }
+        const results = await Promise.allSettled(chunkPromises);
+        results.forEach((result, i) => {
+          if (result.status === 'fulfilled') {
+            successCount++;
+          } else {
+            // Isolated: log and continue — do not re-throw so the batch proceeds to the next chunk
+            console.error(`Failed to fetch rank for ${chunk[i].text}`, result.reason);
+            errorCount++;
+          }
+        });
       }
 
       toast.dismiss('fetch-selected');
@@ -311,8 +326,10 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      for (const keyword of clientKeywords) {
-        try {
+      const keywordChunks = chunkArray(clientKeywords, 5);
+
+      for (const chunk of keywordChunks) {
+        const chunkPromises = chunk.map(async (keyword) => {
           const today = new Date();
           const lastChecked = keyword.last_checked ? new Date(keyword.last_checked) : null;
 
@@ -344,15 +361,19 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
             .eq('id', keyword.id);
 
           if (error) throw error;
-          successCount++;
+          return keyword;
+        });
 
-          // Add delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          // Isolated: log and continue — do not re-throw so the loop proceeds to the next keyword
-          console.error(`Failed to fetch rank for ${keyword.text}`, error);
-          errorCount++;
-        }
+        const results = await Promise.allSettled(chunkPromises);
+        results.forEach((result, i) => {
+          if (result.status === 'fulfilled') {
+            successCount++;
+          } else {
+            // Isolated: log and continue — do not re-throw so the batch proceeds to the next chunk
+            console.error(`Failed to fetch rank for ${chunk[i].text}`, result.reason);
+            errorCount++;
+          }
+        });
       }
 
       toast.dismiss('monthly-refresh');
