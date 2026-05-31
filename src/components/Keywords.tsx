@@ -259,7 +259,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      const keywordChunks = chunkArray(keywordsToFetch, 5);
+      const keywordChunks = chunkArray(keywordsToFetch, 50);
 
       for (const chunk of keywordChunks) {
         const chunkPromises = chunk.map(async (keyword) => {
@@ -326,7 +326,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      const keywordChunks = chunkArray(clientKeywords, 5);
+      const keywordChunks = chunkArray(clientKeywords, 50);
 
       for (const chunk of keywordChunks) {
         const chunkPromises = chunk.map(async (keyword) => {
