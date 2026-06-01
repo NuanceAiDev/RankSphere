@@ -17,6 +17,7 @@ function normalizeTargetDomain(domain: string): string {
     .replace(/^https?:\/\//, '')
     .replace(/^www\./, '')
     .replace(/\/$/, '')
+    .trim()
     .toLowerCase();
 }
 
@@ -78,11 +79,15 @@ async function fetchRank(
   );
   if (localMatch) return localMatch.position as number;
 
-  // B. Organic results — substring match is more forgiving than exact equality.
+  // B. Organic results — use position_overall for the true global rank across paginated pages.
+  //    position resets to 1-10 per page, so it would be wrong for results beyond page 1.
   const organicMatch = data.organic_results?.find((r: any) =>
     r.link?.toLowerCase().includes(cleanTargetDomain)
   );
-  if (organicMatch) return organicMatch.position as number;
+  if (organicMatch) {
+    const rank = organicMatch.position_overall || organicMatch.position;
+    return rank as number;
+  }
 
   return null; // Not ranked in top 100
 }
