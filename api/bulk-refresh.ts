@@ -10,13 +10,14 @@ const supabase = createClient(
 );
 
 // ---------------------------------------------------------------------------
-// Domain normalisation — mirrors src/lib/valueserp.ts
+// Domain normalisation — strips protocol, www, and trailing slashes
 // ---------------------------------------------------------------------------
-function normalizeDomain(url: string): string {
-  return url
-    .toLowerCase()
-    .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
-    .replace(/\/$/, '');
+function normalizeTargetDomain(domain: string): string {
+  return domain
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/$/, '')
+    .toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -60,26 +61,25 @@ async function fetchRank(
   }
 
   const data = await response.json();
-  const cleanDomain = normalizeDomain(domain);
+  const cleanTargetDomain = normalizeTargetDomain(domain);
 
-  // A. Map Pack (local_results) — catches top-3 Local Business Box
-  if (data.local_results) {
-    for (const item of data.local_results) {
-      const itemUrl: string = item.website || item.link || '';
-      if (normalizeDomain(itemUrl).includes(cleanDomain)) {
-        return item.position as number;
-      }
-    }
-  }
+  // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
+  const coreName = cleanTargetDomain.split('.')[0];
 
-  // B. Organic results
-  if (data.organic_results) {
-    for (const item of data.organic_results) {
-      if (normalizeDomain(item.link as string).includes(cleanDomain)) {
-        return item.position as number;
-      }
-    }
-  }
+  // A. Map Pack (local_results) — catches Local Business Box positions.
+  //    Some businesses have no website button, so we fall back to title matching.
+  const localMatch = data.local_results?.find((r: any) =>
+    r.website?.toLowerCase().includes(cleanTargetDomain) ||
+    r.link?.toLowerCase().includes(cleanTargetDomain) ||
+    r.title?.toLowerCase().includes(coreName)
+  );
+  if (localMatch) return localMatch.position as number;
+
+  // B. Organic results — substring match is more forgiving than exact equality.
+  const organicMatch = data.organic_results?.find((r: any) =>
+    r.link?.toLowerCase().includes(cleanTargetDomain)
+  );
+  if (organicMatch) return organicMatch.position as number;
 
   return null; // Not ranked in top 100
 }

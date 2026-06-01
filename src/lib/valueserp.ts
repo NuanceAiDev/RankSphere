@@ -1,12 +1,12 @@
 import { RankSettings, RankingData } from '../types';
 
-// Helper to normalize domain URLs for comparison —
-// strips http://, https://, www., and trailing slashes before matching.
-function normalizeDomain(url: string): string {
+// Domain normalisation — strips protocol, www, and trailing slashes before matching.
+function normalizeTargetDomain(url: string): string {
   return url
-    .toLowerCase()
-    .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
-    .replace(/\/$/, '');
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/$/, '')
+    .toLowerCase();
 }
 
 // Main ranking function — calls the secure /api/fetch-rank proxy instead of
@@ -19,7 +19,9 @@ export async function fetchKeywordRanking(
 ): Promise<RankingData> {
   console.count('🔥 API CALL START');
 
-  const cleanClientDomain = normalizeDomain(domain);
+  const cleanClientDomain = normalizeTargetDomain(domain);
+  // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
+  const coreName = cleanClientDomain.split('.')[0];
   console.log(`\n🔍 [Proxy] Target: "${cleanClientDomain}" | Keyword: "${keyword}" | Market: ${rankType}`);
 
   try {
@@ -35,29 +37,25 @@ export async function fetchKeywordRanking(
 
     const data = await response.json();
 
-    // A. Check Map Pack (local_results) — catches top-3 Local Business Box positions
-    if (data.local_results) {
-      for (const item of data.local_results) {
-        const itemUrl = item.website || item.link || '';
-        if (normalizeDomain(itemUrl).includes(cleanClientDomain)) {
-          console.log(`✅ Found in MAP PACK at pos ${item.position}`);
-          return { rank: item.position, url: itemUrl };
-        }
-      }
+    // A. Map Pack (local_results) — catches Local Business Box positions.
+    //    Some businesses have no website button, so we fall back to title matching.
+    const localMatch = data.local_results?.find((item: any) =>
+      item.website?.toLowerCase().includes(cleanClientDomain) ||
+      item.link?.toLowerCase().includes(cleanClientDomain) ||
+      item.title?.toLowerCase().includes(coreName)
+    );
+    if (localMatch) {
+      console.log(`✅ Found in MAP PACK at pos ${localMatch.position}`);
+      return { rank: localMatch.position, url: localMatch.website || localMatch.link || '' };
     }
 
-    // B. Check Organic Results — position is already the global rank in a num=100 response
-    if (data.organic_results) {
-      for (const item of data.organic_results) {
-        console.log('Checking pos', item.position, ':', item.link);
-        const isMatch = normalizeDomain(item.link).includes(cleanClientDomain);
-        console.log('Match:', isMatch);
-
-        if (isMatch) {
-          console.log(`✅ Found in ORGANIC at pos ${item.position}`);
-          return { rank: item.position, url: item.link };
-        }
-      }
+    // B. Organic results — substring match is more forgiving than exact equality.
+    const organicMatch = data.organic_results?.find((item: any) =>
+      item.link?.toLowerCase().includes(cleanClientDomain)
+    );
+    if (organicMatch) {
+      console.log(`✅ Found in ORGANIC at pos ${organicMatch.position}`);
+      return { rank: organicMatch.position, url: organicMatch.link };
     }
 
     console.log('❌ Not found in Top 100 results.');
