@@ -34,14 +34,15 @@ async function fetchRank(
   let locationParams: Record<string, string>;
   if (rankType.toLowerCase() === 'dubai') {
     locationParams = {
-      location: 'Dubai,United Arab Emirates',
+      location: 'Dubai, Dubai, United Arab Emirates',
       google_domain: 'google.ae',
       gl: 'ae',
       hl: 'en'
     };
   } else {
+    // Default to Qatar — city-level targeting matches local Doha browser results
     locationParams = {
-      location: 'Qatar',
+      location: 'Doha, Doha, Qatar',
       google_domain: 'google.com.qa',
       gl: 'qa',
       hl: 'en'
