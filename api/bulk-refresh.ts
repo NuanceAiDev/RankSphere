@@ -26,7 +26,8 @@ function normalizeTargetDomain(domain: string): string {
 async function fetchRank(
   keyword: string,
   domain: string,
-  rankType: string
+  rankType: string,
+  brandName?: string | null
 ): Promise<number | null> {
   // Strict geo-parameters — matches fetch-rank.ts logic
   let locationParams: Record<string, string>;
@@ -51,7 +52,7 @@ async function fetchRank(
     q: keyword,
     output: 'json',
     page: '1',
-    num: '100',
+    max_page: '10', // Fetch Top 100 across 10 pages — num=100 is ignored for local queries
     ...locationParams
   });
 
@@ -65,13 +66,15 @@ async function fetchRank(
 
   // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
   const coreName = cleanTargetDomain.split('.')[0];
+  // Prefer explicit brandName from DB; fall back to coreName derived from domain
+  const titleFallback = brandName?.toLowerCase() || coreName;
 
   // A. Map Pack (local_results) — catches Local Business Box positions.
   //    Some businesses have no website button, so we fall back to title matching.
   const localMatch = data.local_results?.find((r: any) =>
     r.website?.toLowerCase().includes(cleanTargetDomain) ||
     r.link?.toLowerCase().includes(cleanTargetDomain) ||
-    r.title?.toLowerCase().includes(coreName)
+    r.title?.toLowerCase().includes(titleFallback)
   );
   if (localMatch) return localMatch.position as number;
 
@@ -100,6 +103,7 @@ interface BulkRefreshBody {
   keywords: KeywordPayload[];
   domain: string;
   rankType: string;
+  brandName?: string | null;
   /** If true, apply the isNewMonth guard and shift previous data. Used by Monthly Refresh. */
   applyMonthGuard: boolean;
 }
@@ -112,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { keywords, domain, rankType, applyMonthGuard } = req.body as BulkRefreshBody;
+  const { keywords, domain, rankType, brandName, applyMonthGuard } = req.body as BulkRefreshBody;
 
   if (!keywords?.length || !domain || !rankType) {
     return res.status(400).json({ error: 'Missing required fields: keywords, domain, rankType' });
@@ -125,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Fire all keyword fetches concurrently — no browser 6-connection cap in Node
   const results = await Promise.allSettled(
     keywords.map(async (keyword) => {
-      const newRank = await fetchRank(keyword.text, domain, rankType);
+      const newRank = await fetchRank(keyword.text, domain, rankType, brandName);
 
       // isNewMonth guard — only shift current → previous on a genuine new month
       let previousRank = keyword.previous_month_rank;

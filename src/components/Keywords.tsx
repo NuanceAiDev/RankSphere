@@ -219,7 +219,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     
     try {
       const rankType = selectedClient.rank_type || 'qatar';
-      const rankingData = await fetchKeywordRanking(selectedClient.domain, keyword.text, rankType);
+      const rankingData = await fetchKeywordRanking(
+        selectedClient.domain,
+        keyword.text,
+        rankType,
+        selectedClient.name   // passed for Map Pack title fallback
+      );
       
       const { error } = await supabase
         .from('keywords')
@@ -273,6 +278,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           })),
           domain: selectedClient.domain,
           rankType,
+          brandName: selectedClient.name,
           applyMonthGuard: false  // Selected fetch updates current rank only
         })
       });
@@ -329,6 +335,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           })),
           domain: selectedClient.domain,
           rankType,
+          brandName: selectedClient.name,
           applyMonthGuard: true  // Monthly refresh must protect historical previous_month data
         })
       });

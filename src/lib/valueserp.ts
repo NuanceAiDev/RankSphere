@@ -15,13 +15,16 @@ function normalizeTargetDomain(url: string): string {
 export async function fetchKeywordRanking(
   domain: string,
   keyword: string,
-  rankType: 'dubai' | 'qatar' = 'qatar'
+  rankType: 'dubai' | 'qatar' = 'qatar',
+  brandName?: string | null
 ): Promise<RankingData> {
   console.count('🔥 API CALL START');
 
   const cleanClientDomain = normalizeTargetDomain(domain);
   // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
   const coreName = cleanClientDomain.split('.')[0];
+  // Prefer explicit brandName from DB; fall back to coreName derived from domain
+  const titleFallback = brandName?.toLowerCase() || coreName;
   console.log(`\n🔍 [Proxy] Target: "${cleanClientDomain}" | Keyword: "${keyword}" | Market: ${rankType}`);
 
   try {
@@ -42,7 +45,7 @@ export async function fetchKeywordRanking(
     const localMatch = data.local_results?.find((item: any) =>
       item.website?.toLowerCase().includes(cleanClientDomain) ||
       item.link?.toLowerCase().includes(cleanClientDomain) ||
-      item.title?.toLowerCase().includes(coreName)
+      item.title?.toLowerCase().includes(titleFallback)
     );
     if (localMatch) {
       console.log(`✅ Found in MAP PACK at pos ${localMatch.position}`);
