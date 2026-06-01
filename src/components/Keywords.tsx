@@ -264,8 +264,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       // Send all keywords to the backend in one request — server-side concurrency bypasses
       // the browser's 6-connection limit and keeps the tab-switch problem off the table.
-      const response = await fetch('/api/bulk-refresh', {
+      const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keywords: keywordsToFetch.map(k => ({
@@ -321,8 +322,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       // Delegate the entire refresh to the backend — all ValueSERP fetches run concurrently
       // in Node (no browser connection cap) and Supabase updates are written server-side.
-      const response = await fetch('/api/bulk-refresh', {
+      const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keywords: clientKeywords.map(k => ({

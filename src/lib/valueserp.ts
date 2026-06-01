@@ -31,7 +31,8 @@ export async function fetchKeywordRanking(
   try {
     // Route through our secure Vercel serverless proxy — API key never touches the browser
     const response = await fetch(
-      `/api/fetch-rank?keyword=${encodeURIComponent(keyword)}&rankType=${encodeURIComponent(rankType)}`
+      `/api/fetch-rank?keyword=${encodeURIComponent(keyword)}&rankType=${encodeURIComponent(rankType)}&_t=${Date.now()}`,
+      { cache: 'no-store' }
     );
 
     if (!response.ok) {
