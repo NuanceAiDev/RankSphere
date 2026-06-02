@@ -9,34 +9,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Strict geo-parameters per market — prevents SERP localization mismatches
   let googleDomain: string;
-  let locationParam: string;
+  let countryCode: string;
   if (rankType.toLowerCase() === 'dubai') {
     googleDomain = 'google.ae';
-    locationParam = 'Dubai,United Arab Emirates'; // Bright Data hyper-local city target
+    countryCode = 'ae'; // Bright Data 2-letter country code for UAE
   } else {
     // Default to Qatar — city-level targeting matches local Doha browser results
     googleDomain = 'google.com.qa';
-    locationParam = 'Doha,Qatar'; // Bright Data hyper-local city target
+    countryCode = 'qa'; // Bright Data 2-letter country code for Qatar
   }
 
   // Build the target Google search URL — num=100 requests exactly 100 organic results
-  const googleUrl = new URLSearchParams({
-    q: keyword,
-    num: '100',
-    hl: 'en',
-    gl: rankType.toLowerCase() === 'dubai' ? 'ae' : 'qa',
-    uule: '', // cleared — Bright Data zone handles geo via location param below
-  });
-  // Remove empty uule to keep the URL clean
-  googleUrl.delete('uule');
-
-  const targetUrl = `https://www.${googleDomain}/search?${googleUrl.toString()}`;
+  // encodeURIComponent ensures keywords with spaces/special chars don't break the URL
+  const targetUrl = `https://www.${googleDomain}/search?q=${encodeURIComponent(keyword)}&num=100&hl=en&gl=${countryCode}`;
 
   const brightDataPayload = {
     zone: process.env.BRIGHTDATA_ZONE ?? 'serp_api1', // Bright Data SERP API zone name
     url: targetUrl,
-    format: 'json',           // Request structured parsed JSON response
-    location: locationParam,  // Hyper-local city-level geotargeting
+    format: 'json',    // Request structured parsed JSON response
+    country: countryCode, // Bright Data 2-letter country code for geo-targeting
   };
 
   try {

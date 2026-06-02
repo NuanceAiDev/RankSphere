@@ -32,33 +32,25 @@ async function fetchRank(
 ): Promise<number | null> {
   // Strict geo-parameters — matches fetch-rank.ts logic
   let googleDomain: string;
-  let locationParam: string;
-  let glParam: string;
+  let countryCode: string;
   if (rankType.toLowerCase() === 'dubai') {
     googleDomain = 'google.ae';
-    locationParam = 'Dubai,United Arab Emirates'; // Bright Data hyper-local city target
-    glParam = 'ae';
+    countryCode = 'ae'; // Bright Data 2-letter country code for UAE
   } else {
     // Default to Qatar — city-level targeting matches local Doha browser results
     googleDomain = 'google.com.qa';
-    locationParam = 'Doha,Qatar'; // Bright Data hyper-local city target
-    glParam = 'qa';
+    countryCode = 'qa'; // Bright Data 2-letter country code for Qatar
   }
 
   // Build the target Google search URL — num=100 requests exactly 100 organic results
-  const googleParams = new URLSearchParams({
-    q: keyword,
-    num: '100',
-    hl: 'en',
-    gl: glParam,
-  });
-  const targetUrl = `https://www.${googleDomain}/search?${googleParams.toString()}`;
+  // encodeURIComponent ensures keywords with spaces/special chars don't break the URL
+  const targetUrl = `https://www.${googleDomain}/search?q=${encodeURIComponent(keyword)}&num=100&hl=en&gl=${countryCode}`;
 
   const brightDataPayload = {
     zone: process.env.BRIGHTDATA_ZONE ?? 'serp_api1', // Bright Data SERP API zone name
     url: targetUrl,
-    format: 'json',           // Request structured parsed JSON response
-    location: locationParam,  // Hyper-local city-level geotargeting
+    format: 'json',    // Request structured parsed JSON response
+    country: countryCode, // Bright Data 2-letter country code for geo-targeting
   };
 
   const response = await fetch('https://api.brightdata.com/request', {
