@@ -4,7 +4,7 @@ import { RankSettings, RankingData } from '../types';
 // Browser-polling architecture constants
 // ---------------------------------------------------------------------------
 const POLL_INTERVAL_MS = 5_000;  // 5 seconds between each resolve-scrape call
-const POLL_TIMEOUT_MS  = 60_000; // hard stop after 60 seconds — show error to user
+const POLL_TIMEOUT_MS  = 150_000; // hard stop after 150 seconds — gives Bright Data ample time for 10-page residential scrape
 
 // ---------------------------------------------------------------------------
 // Main ranking function — drives the 3-step frontend polling loop:
