@@ -131,9 +131,11 @@ async function fetchRank(
 
   // A. Organic results — iterate data.organic; use native `rank` field for true position.
   //    Scraper API returns pages 1–10 concatenated, so `rank` is already the absolute rank.
-  const organicMatch = data.organic?.find((r: any) =>
-    r.link?.toLowerCase().includes(cleanTargetDomain)
-  );
+  //    Guard: skip any item where `link` is missing/undefined to avoid false negatives.
+  const organicMatch = data.organic?.find((r: any) => {
+    if (!r.link) return false; // safely skip items with no link field
+    return normalizeTargetDomain(r.link).includes(cleanTargetDomain);
+  });
   if (organicMatch) {
     return (organicMatch.rank as number);
   }

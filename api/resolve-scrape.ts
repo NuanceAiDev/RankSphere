@@ -122,10 +122,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // A. Organic results — iterate data.organic; use native `rank` field for true position.
     //    Scraper API returns pages 1–10 concatenated, so `rank` is already the absolute rank.
+    //    Guard: skip any item where `link` is missing/undefined to avoid false negatives.
     let newRank: number | null = null;
-    const organicMatch = data.organic?.find((r: any) =>
-      r.link?.toLowerCase().includes(cleanTargetDomain)
-    );
+    const organicMatch = data.organic?.find((r: any) => {
+      if (!r.link) return false; // safely skip items with no link field
+      return normalizeTargetDomain(r.link).includes(cleanTargetDomain);
+    });
     if (organicMatch) {
       newRank = organicMatch.rank as number;
     }
