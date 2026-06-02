@@ -8,40 +8,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Strict geo-parameters per market — prevents SERP localization mismatches
-  let locationParams: Record<string, string>;
+  let googleDomain: string;
+  let locationParam: string;
   if (rankType.toLowerCase() === 'dubai') {
-    locationParams = {
-      location: 'Dubai, Dubai, United Arab Emirates',
-      google_domain: 'google.ae',
-      gl: 'ae',
-      hl: 'en'
-    };
+    googleDomain = 'google.ae';
+    locationParam = 'Dubai,United Arab Emirates'; // Bright Data hyper-local city target
   } else {
     // Default to Qatar — city-level targeting matches local Doha browser results
-    locationParams = {
-      location: 'Doha, Doha, Qatar',
-      google_domain: 'google.com.qa',
-      gl: 'qa',
-      hl: 'en'
-    };
+    googleDomain = 'google.com.qa';
+    locationParam = 'Doha,Qatar'; // Bright Data hyper-local city target
   }
 
-  const params = new URLSearchParams({
-    api_key: process.env.VALUESERP_API_KEY ?? '', // Pulled securely from Vercel environment variables
+  // Build the target Google search URL — num=100 requests exactly 100 organic results
+  const googleUrl = new URLSearchParams({
     q: keyword,
-    output: 'json',
-    page: '1',
-    max_page: '10', // Fetch Top 100 across 10 pages — num=100 is ignored for local queries
-    ...locationParams
+    num: '100',
+    hl: 'en',
+    gl: rankType.toLowerCase() === 'dubai' ? 'ae' : 'qa',
+    uule: '', // cleared — Bright Data zone handles geo via location param below
   });
+  // Remove empty uule to keep the URL clean
+  googleUrl.delete('uule');
+
+  const targetUrl = `https://www.${googleDomain}/search?${googleUrl.toString()}`;
+
+  const brightDataPayload = {
+    zone: process.env.BRIGHTDATA_ZONE ?? 'serp_api1', // Bright Data SERP API zone name
+    url: targetUrl,
+    format: 'json',           // Request structured parsed JSON response
+    location: locationParam,  // Hyper-local city-level geotargeting
+  };
 
   try {
-    const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`);
+    const response = await fetch('https://api.brightdata.com/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.BRIGHTDATA_API_KEY ?? ''}`,
+      },
+      body: JSON.stringify(brightDataPayload),
+    });
 
     if (!response.ok) {
       return res
         .status(response.status)
-        .json({ error: `ValueSERP upstream error: ${response.status}` });
+        .json({ error: `Bright Data upstream error: ${response.status}` });
     }
 
     const data = await response.json();

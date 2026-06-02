@@ -22,7 +22,7 @@ function normalizeTargetDomain(domain: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Fetch a single keyword rank from ValueSERP
+// Fetch a single keyword rank from Bright Data SERP API
 // ---------------------------------------------------------------------------
 async function fetchRank(
   keyword: string,
@@ -31,36 +31,46 @@ async function fetchRank(
   brandName?: string | null
 ): Promise<number | null> {
   // Strict geo-parameters — matches fetch-rank.ts logic
-  let locationParams: Record<string, string>;
+  let googleDomain: string;
+  let locationParam: string;
+  let glParam: string;
   if (rankType.toLowerCase() === 'dubai') {
-    locationParams = {
-      location: 'Dubai, Dubai, United Arab Emirates',
-      google_domain: 'google.ae',
-      gl: 'ae',
-      hl: 'en'
-    };
+    googleDomain = 'google.ae';
+    locationParam = 'Dubai,United Arab Emirates'; // Bright Data hyper-local city target
+    glParam = 'ae';
   } else {
     // Default to Qatar — city-level targeting matches local Doha browser results
-    locationParams = {
-      location: 'Doha, Doha, Qatar',
-      google_domain: 'google.com.qa',
-      gl: 'qa',
-      hl: 'en'
-    };
+    googleDomain = 'google.com.qa';
+    locationParam = 'Doha,Qatar'; // Bright Data hyper-local city target
+    glParam = 'qa';
   }
 
-  const params = new URLSearchParams({
-    api_key: process.env.VALUESERP_API_KEY ?? '',
+  // Build the target Google search URL — num=100 requests exactly 100 organic results
+  const googleParams = new URLSearchParams({
     q: keyword,
-    output: 'json',
-    page: '1',
-    max_page: '10', // Fetch Top 100 across 10 pages — num=100 is ignored for local queries
-    ...locationParams
+    num: '100',
+    hl: 'en',
+    gl: glParam,
   });
+  const targetUrl = `https://www.${googleDomain}/search?${googleParams.toString()}`;
 
-  const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`);
+  const brightDataPayload = {
+    zone: process.env.BRIGHTDATA_ZONE ?? 'serp_api1', // Bright Data SERP API zone name
+    url: targetUrl,
+    format: 'json',           // Request structured parsed JSON response
+    location: locationParam,  // Hyper-local city-level geotargeting
+  };
+
+  const response = await fetch('https://api.brightdata.com/request', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.BRIGHTDATA_API_KEY ?? ''}`,
+    },
+    body: JSON.stringify(brightDataPayload),
+  });
   if (!response.ok) {
-    throw new Error(`ValueSERP error: ${response.status}`);
+    throw new Error(`Bright Data error: ${response.status}`);
   }
 
   const data = await response.json();
@@ -71,7 +81,18 @@ async function fetchRank(
   // Prefer explicit brandName from DB; fall back to coreName derived from domain
   const titleFallback = brandName?.toLowerCase() || coreName;
 
-  // A. Map Pack (local_results) — catches Local Business Box positions.
+  // A. Organic results — use global_rank for the true absolute position across all 100 results.
+  //    Bright Data's `rank` field resets per-page; `global_rank` gives the correct overall rank.
+  const organicMatch = data.organic?.find((r: any) =>
+    r.link?.toLowerCase().includes(cleanTargetDomain)
+  );
+  if (organicMatch) {
+    const rank = organicMatch.global_rank || organicMatch.rank;
+    return rank as number;
+  }
+
+  // B. Map Pack (local_results) — catches Local Business Box positions.
+  //    Universal fallback: match by website URL first, then title/brand name.
   //    Some businesses have no website button, so we fall back to title matching.
   const localMatch = data.local_results?.find((r: any) =>
     r.website?.toLowerCase().includes(cleanTargetDomain) ||
@@ -79,16 +100,6 @@ async function fetchRank(
     r.title?.toLowerCase().includes(titleFallback)
   );
   if (localMatch) return localMatch.position as number;
-
-  // B. Organic results — use position_overall for the true global rank across paginated pages.
-  //    position resets to 1-10 per page, so it would be wrong for results beyond page 1.
-  const organicMatch = data.organic_results?.find((r: any) =>
-    r.link?.toLowerCase().includes(cleanTargetDomain)
-  );
-  if (organicMatch) {
-    const rank = organicMatch.position_overall || organicMatch.position;
-    return rank as number;
-  }
 
   return null; // Not ranked in top 100
 }
