@@ -47,6 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data = await response.json();
+    // --- TEMP DEBUG: inspect Bright Data response shape ---
+    console.log("BRIGHTDATA RAW KEYS:", Object.keys(data));
+    if (data.data) console.log("BRIGHTDATA DATA SUB-KEYS:", Object.keys(data.data));
+    console.log("BRIGHTDATA SAMPLE:", JSON.stringify(data).substring(0, 500));
+    // --- END TEMP DEBUG ---
     return res.status(200).json(data);
   } catch (error) {
     console.error('Proxy fetch failed:', error);
