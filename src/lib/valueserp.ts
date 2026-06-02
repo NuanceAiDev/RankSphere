@@ -1,76 +1,108 @@
 import { RankSettings, RankingData } from '../types';
 
-// Domain normalisation — strips protocol, www, and trailing slashes before matching.
-function normalizeTargetDomain(url: string): string {
-  return url
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/$/, '')
-    .trim()
-    .toLowerCase();
-}
+// ---------------------------------------------------------------------------
+// Browser-polling architecture constants
+// ---------------------------------------------------------------------------
+const POLL_INTERVAL_MS = 5_000;  // 5 seconds between each resolve-scrape call
+const POLL_TIMEOUT_MS  = 60_000; // hard stop after 60 seconds — show error to user
 
-// Main ranking function — calls the secure /api/fetch-rank proxy instead of
-// hitting ValueSERP directly. This keeps the API key server-side and eliminates CORS issues.
-// A single num=100 request replaces the old 10-page pagination loop (10x credit saving).
+// ---------------------------------------------------------------------------
+// Main ranking function — drives the 3-step frontend polling loop:
+//   1. POST /api/trigger-scrape  → get snapshot_id  (< 2 s)
+//   2. Poll POST /api/resolve-scrape every 5 s      (browser-managed)
+//   3. On 'complete' → return { rank, url }
+//
+// Keeps each individual server invocation under 2 seconds, safely below
+// Vercel's serverless execution limits on any tier.
+// ---------------------------------------------------------------------------
 export async function fetchKeywordRanking(
   domain: string,
   keyword: string,
   rankType: 'dubai' | 'qatar' = 'qatar',
-  brandName?: string | null
+  brandName?: string | null,
+  keywordId?: string           // required for resolve-scrape to write Supabase
 ): Promise<RankingData> {
   console.count('🔥 API CALL START');
+  console.log(`\n🔍 [Scraper] Keyword: "${keyword}" | Market: ${rankType} | Domain: ${domain}`);
 
-  const cleanClientDomain = normalizeTargetDomain(domain);
-  // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
-  const coreName = cleanClientDomain.split('.')[0];
-  // Prefer explicit brandName from DB; fall back to coreName derived from domain
-  const titleFallback = brandName?.toLowerCase() || coreName;
-  console.log(`\n🔍 [Proxy] Target: "${cleanClientDomain}" | Keyword: "${keyword}" | Market: ${rankType}`);
+  // -------------------------------------------------------------------------
+  // Step 1 — Trigger: fire the Bright Data job, get snapshot_id immediately
+  // -------------------------------------------------------------------------
+  const triggerRes = await fetch('/api/trigger-scrape', {
+    method: 'POST',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keyword, rankType }),
+  });
 
-  try {
-    // Route through our secure Vercel serverless proxy — API key never touches the browser
-    const response = await fetch(
-      `/api/fetch-rank?keyword=${encodeURIComponent(keyword)}&rankType=${encodeURIComponent(rankType)}&_t=${Date.now()}`,
-      { cache: 'no-store' }
-    );
+  if (!triggerRes.ok) {
+    const errData = await triggerRes.json().catch(() => ({}));
+    throw new Error(`trigger-scrape failed (${triggerRes.status}): ${errData.error ?? 'unknown'}`);
+  }
 
-    if (!response.ok) {
-      console.error(`Proxy returned ${response.status}`);
-      throw new Error(`Proxy error: ${response.status}`);
+  const { snapshot_id } = await triggerRes.json();
+  if (!snapshot_id) {
+    throw new Error('trigger-scrape did not return a snapshot_id');
+  }
+
+  console.log(`📸 Snapshot triggered: ${snapshot_id}`);
+
+  // -------------------------------------------------------------------------
+  // Step 2 & 3 — Browser polling loop: call resolve-scrape every 5 seconds
+  // -------------------------------------------------------------------------
+  const pollStart = Date.now();
+
+  while (true) {
+    if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
+      throw new Error(`Rank check timed out after ${POLL_TIMEOUT_MS / 1000}s for "${keyword}"`);
     }
 
-    const data = await response.json();
+    // Wait before polling (also on the very first attempt — scrape needs time to boot)
+    await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
 
-    // A. Map Pack (local_results) — catches Local Business Box positions.
-    //    Some businesses have no website button, so we fall back to title matching.
-    const localMatch = data.local_results?.find((item: any) =>
-      item.website?.toLowerCase().includes(cleanClientDomain) ||
-      item.link?.toLowerCase().includes(cleanClientDomain) ||
-      item.title?.toLowerCase().includes(titleFallback)
-    );
-    if (localMatch) {
-      console.log(`✅ Found in MAP PACK at pos ${localMatch.position}`);
-      return { rank: localMatch.position, url: localMatch.website || localMatch.link || '' };
+    console.log(`⏳ Polling resolve-scrape for snapshot ${snapshot_id}...`);
+
+    const resolveRes = await fetch('/api/resolve-scrape', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        snapshot_id,
+        keyword_id: keywordId ?? '',  // empty string when called without a DB keyword
+        domain,
+        rankType,
+        brandName,
+      }),
+    });
+
+    if (!resolveRes.ok) {
+      throw new Error(`resolve-scrape HTTP error: ${resolveRes.status}`);
     }
 
-    // B. Organic results — use position_overall for the true global rank across paginated pages.
-    //    position resets to 1-10 per page, so it would be wrong for results beyond page 1.
-    const organicMatch = data.organic_results?.find((item: any) =>
-      item.link?.toLowerCase().includes(cleanClientDomain)
-    );
-    if (organicMatch) {
-      const rank = organicMatch.position_overall || organicMatch.position;
-      console.log(`✅ Found in ORGANIC at global pos ${rank}`);
-      return { rank, url: organicMatch.link };
+    const result = await resolveRes.json();
+
+    if (result.status === 'error') {
+      throw new Error(`resolve-scrape error: ${result.error}`);
     }
 
-    console.log('❌ Not found in Top 100 results.');
-    return { rank: null, url: null };
+    if (result.status === 'pending') {
+      console.log('⌛ Still running — will check again in 5s');
+      continue; // loop back and wait another POLL_INTERVAL_MS
+    }
 
-  } catch (error) {
-    console.error('Proxy fetch failed:', error);
-    throw error;
+    if (result.status === 'complete') {
+      const rank: number | null = result.newRank ?? null;
+      if (rank !== null) {
+        console.log(`✅ Found at rank #${rank}`);
+        return { rank, url: '' };
+      } else {
+        console.log('❌ Not found in Top 100 results.');
+        return { rank: null, url: null };
+      }
+    }
+
+    // Unknown status — treat as transient and keep polling
+    console.warn('⚠️ Unknown resolve status:', result.status);
   }
 }
 

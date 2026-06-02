@@ -219,25 +219,16 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     
     try {
       const rankType = selectedClient.rank_type || 'qatar';
-      const rankingData = await fetchKeywordRanking(
+      // Pass keyword.id so resolve-scrape can write the rank to Supabase server-side
+      await fetchKeywordRanking(
         selectedClient.domain,
         keyword.text,
         rankType,
-        selectedClient.name   // passed for Map Pack title fallback
+        selectedClient.name,  // passed for Map Pack title fallback
+        keyword.id            // resolve-scrape uses this to update the DB row directly
       );
-      
-      const { error } = await supabase
-        .from('keywords')
-        .update({
-          current_month_rank: rankingData.rank,
-          current_month_date: new Date().toISOString().split('T')[0],
-          last_checked: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', keyword.id);
 
-      if (error) throw error;
-
+      // resolve-scrape already wrote current_month_rank to Supabase — just reload
       toast.success(`Updated ranking for "${keyword.text}"`);
       onKeywordAdded();
     } catch (error) {

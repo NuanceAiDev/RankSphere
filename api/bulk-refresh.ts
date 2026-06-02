@@ -22,7 +22,17 @@ function normalizeTargetDomain(domain: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Fetch a single keyword rank from Bright Data SERP API
+// Bright Data Scraper API — Dataset ID for Google SERP
+// ---------------------------------------------------------------------------
+const BD_DATASET_ID = 'gd_mfz5x93lmsjjjylob';
+const BD_BASE_URL   = 'https://api.brightdata.com/datasets/v3';
+
+// Polling config — bulk-refresh runs in Node (no Vercel timeout per keyword)
+const POLL_INTERVAL_MS = 5_000;  // 5 seconds between each progress check
+const POLL_TIMEOUT_MS  = 45_000; // bail after 45 seconds per keyword
+
+// ---------------------------------------------------------------------------
+// Fetch a single keyword rank via Bright Data Scraper API (async 3-step flow)
 // ---------------------------------------------------------------------------
 async function fetchRank(
   keyword: string,
@@ -31,41 +41,87 @@ async function fetchRank(
   brandName?: string | null
 ): Promise<number | null> {
   // Strict geo-parameters — matches fetch-rank.ts logic
-  let googleDomain: string;
-  let countryCode: string;
-  if (rankType.toLowerCase() === 'dubai') {
-    googleDomain = 'google.ae';
-    countryCode = 'ae'; // Bright Data 2-letter country code for UAE
-  } else {
-    // Default to Qatar — city-level targeting matches local Doha browser results
-    googleDomain = 'google.com.qa';
-    countryCode = 'qa'; // Bright Data 2-letter country code for Qatar
+  const countryCode = rankType.toLowerCase() === 'dubai' ? 'ae' : 'qa';
+
+  const apiKey = process.env.BRIGHTDATA_API_KEY ?? '';
+  const authHeader = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+
+  // -------------------------------------------------------------------------
+  // Step 1 — Trigger: POST to Scraper API, receive snapshot_id
+  // -------------------------------------------------------------------------
+  const triggerPayload = [{
+    url:          'https://www.google.com/',
+    keyword:      keyword,          // passed verbatim — Bright Data handles encoding
+    language:     'en',
+    start_page:   1,
+    end_page:     10,               // pages 1–10 → up to 100 organic results
+    collapse_aio: true,             // strip AI Overviews so ranks aren't suppressed
+    country:      countryCode,      // 'qa' for Qatar, 'ae' for Dubai
+  }];
+
+  const triggerRes = await fetch(
+    `${BD_BASE_URL}/trigger?dataset_id=${BD_DATASET_ID}&include_errors=true`,
+    { method: 'POST', headers: authHeader, body: JSON.stringify(triggerPayload) }
+  );
+
+  if (!triggerRes.ok) {
+    throw new Error(`Bright Data trigger error: ${triggerRes.status}`);
   }
 
-  // Build the target Google search URL — num=100 requests exactly 100 organic results
-  // encodeURIComponent ensures keywords with spaces/special chars don't break the URL
-  const targetUrl = `https://www.${googleDomain}/search?q=${encodeURIComponent(keyword)}&num=100&hl=en&gl=${countryCode}`;
+  const triggerData = await triggerRes.json();
+  const snapshotId: string = triggerData.snapshot_id;
 
-  const brightDataPayload = {
-    zone: process.env.BRIGHTDATA_ZONE ?? 'serp_api1', // Bright Data SERP API zone name
-    url: targetUrl,
-    format: 'json',    // Request structured parsed JSON response
-    country: countryCode, // Bright Data 2-letter country code for geo-targeting
-  };
-
-  const response = await fetch('https://api.brightdata.com/request', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.BRIGHTDATA_API_KEY ?? ''}`,
-    },
-    body: JSON.stringify(brightDataPayload),
-  });
-  if (!response.ok) {
-    throw new Error(`Bright Data error: ${response.status}`);
+  if (!snapshotId) {
+    throw new Error(`Bright Data did not return a snapshot_id for keyword "${keyword}"`);
   }
 
-  const data = await response.json();
+  // -------------------------------------------------------------------------
+  // Step 2 — Poll: GET /progress/{snapshot_id} every 5 s, timeout at 45 s
+  // -------------------------------------------------------------------------
+  const pollStart = Date.now();
+
+  while (true) {
+    if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
+      throw new Error(`Bright Data scrape timed out after ${POLL_TIMEOUT_MS / 1000}s for keyword "${keyword}"`);
+    }
+
+    await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+    const progressRes = await fetch(
+      `${BD_BASE_URL}/progress/${snapshotId}`,
+      { method: 'GET', headers: authHeader }
+    );
+
+    if (!progressRes.ok) {
+      throw new Error(`Bright Data progress error: ${progressRes.status}`);
+    }
+
+    const progress = await progressRes.json();
+    const status: string = (progress.status ?? '').toLowerCase();
+
+    if (status === 'failed' || status === 'error') {
+      throw new Error(`Bright Data scrape failed for keyword "${keyword}": ${JSON.stringify(progress)}`);
+    }
+
+    // 'ready' or 'success' means the snapshot is available
+    if (status === 'ready' || status === 'success') break;
+
+    // Any other status ('running', 'pending', etc.) — keep polling
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 3 — Fetch snapshot & parse results
+  // -------------------------------------------------------------------------
+  const snapshotRes = await fetch(
+    `${BD_BASE_URL}/snapshot/${snapshotId}?format=json`,
+    { method: 'GET', headers: authHeader }
+  );
+
+  if (!snapshotRes.ok) {
+    throw new Error(`Bright Data snapshot error: ${snapshotRes.status}`);
+  }
+
+  const data = await snapshotRes.json();
   const cleanTargetDomain = normalizeTargetDomain(domain);
 
   // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
@@ -73,14 +129,13 @@ async function fetchRank(
   // Prefer explicit brandName from DB; fall back to coreName derived from domain
   const titleFallback = brandName?.toLowerCase() || coreName;
 
-  // A. Organic results — use global_rank for the true absolute position across all 100 results.
-  //    Bright Data's `rank` field resets per-page; `global_rank` gives the correct overall rank.
+  // A. Organic results — iterate data.organic; use native `rank` field for true position.
+  //    Scraper API returns pages 1–10 concatenated, so `rank` is already the absolute rank.
   const organicMatch = data.organic?.find((r: any) =>
     r.link?.toLowerCase().includes(cleanTargetDomain)
   );
   if (organicMatch) {
-    const rank = organicMatch.global_rank || organicMatch.rank;
-    return rank as number;
+    return (organicMatch.rank as number);
   }
 
   // B. Map Pack (local_results) — catches Local Business Box positions.

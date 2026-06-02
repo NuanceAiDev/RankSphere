@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/trigger-scrape.ts": {
+      "maxDuration": 10
+    },
+    "api/resolve-scrape.ts": {
+      "maxDuration": 10
+    },
+    "api/bulk-refresh.ts": {
+      "maxDuration": 60
+    }
+  }
+}
