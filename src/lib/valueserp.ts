@@ -96,6 +96,8 @@ export async function fetchKeywordRanking(
         console.log(`✅ Found at rank #${rank}`);
         return { rank, url: '' };
       } else {
+        // Log the actual response keys so we can see the real snapshot shape
+        if (result.debugKeys) console.log('BRIGHT DATA KEYS:', result.debugKeys);
         console.log('❌ Not found in Top 100 results.');
         return { rank: null, url: null };
       }

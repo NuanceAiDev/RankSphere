@@ -113,6 +113,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const data = await snapshotRes.json();
+    // Bright Data Scraper API sometimes wraps results in an array — extract the first element
+    const coreData = Array.isArray(data) ? data[0] : data;
     const cleanTargetDomain = normalizeTargetDomain(domain);
 
     // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
@@ -120,11 +122,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Prefer explicit brandName from DB; fall back to coreName derived from domain
     const titleFallback = brandName?.toLowerCase() || coreName;
 
-    // A. Organic results — iterate data.organic; use native `rank` field for true position.
+    // A. Organic results — iterate coreData.organic; use native `rank` field for true position.
     //    Scraper API returns pages 1–10 concatenated, so `rank` is already the absolute rank.
     //    Guard: skip any item where `link` is missing/undefined to avoid false negatives.
     let newRank: number | null = null;
-    const organicMatch = data.organic?.find((r: any) => {
+    const organicMatch = coreData.organic?.find((r: any) => {
       if (!r.link) return false; // safely skip items with no link field
       return normalizeTargetDomain(r.link).includes(cleanTargetDomain);
     });
@@ -136,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     //    Universal fallback: match by website URL first, then title/brand name.
     //    Some businesses have no website button, so we fall back to title matching.
     if (newRank === null) {
-      const localMatch = data.local_results?.find((r: any) =>
+      const localMatch = coreData.local_results?.find((r: any) =>
         r.website?.toLowerCase().includes(cleanTargetDomain) ||
         r.link?.toLowerCase().includes(cleanTargetDomain) ||
         r.title?.toLowerCase().includes(titleFallback)
@@ -163,7 +165,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    return res.status(200).json({ status: 'complete', newRank });
+    return res.status(200).json({
+      status: 'complete',
+      newRank,
+      // debugKeys: only present when newRank is null — reveals actual response shape in browser
+      ...(newRank === null && { debugKeys: Object.keys(coreData) }),
+    });
 
   } catch (error) {
     console.error('resolve-scrape failed:', error);
