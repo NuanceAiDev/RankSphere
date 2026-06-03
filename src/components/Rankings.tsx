@@ -18,7 +18,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const [isReportDone, setIsReportDone] = useState(false);
-  const [reportSortOrder, setReportSortOrder] = useState<'default' | 'asc' | 'desc'>('default');
+  const [reportSortOrder, setReportSortOrder] = useState<'default' | 'asc' | 'desc'>('asc');
 
   // Update local state when selectedClient changes
   useEffect(() => {
