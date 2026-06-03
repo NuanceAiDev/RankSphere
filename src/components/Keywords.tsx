@@ -40,6 +40,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
   const [editCurrentRank, setEditCurrentRank] = useState<string>('');
   const [editPreviousRank, setEditPreviousRank] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState({ current: 0, total: 0 });
 
   // Check if current date is within the allowed range for monthly refresh (27th to 13th)
   const isMonthlyRefreshAllowed = (): boolean => {
@@ -299,10 +300,19 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
 
     const keywordsToFetch = clientKeywords.filter(k => selectedKeywords.has(k.id));
+    const total = keywordsToFetch.length;
     setIsFetchingRanks(true);
+    setRefreshProgress({ current: 0, total });
+
+    // Tick once per second to mirror the server-side sequential loop (1s delay per keyword)
+    let elapsed = 0;
+    const progressInterval = setInterval(() => {
+      elapsed++;
+      setRefreshProgress(prev => ({ ...prev, current: Math.min(elapsed, total) }));
+    }, 1000);
 
     try {
-      toast.loading(`Fetching rankings for ${keywordsToFetch.length} selected keywords...`, { id: 'fetch-selected' });
+      toast.loading(`Fetching rankings for ${total} selected keywords...`, { id: 'fetch-selected' });
 
       const rankType = selectedClient.rank_type || 'qatar';
 
@@ -346,7 +356,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       toast.dismiss('fetch-selected');
       toast.error('Failed to fetch rankings');
     } finally {
+      clearInterval(progressInterval);
       setIsFetchingRanks(false);
+      setRefreshProgress({ current: 0, total: 0 });
       setSelectedKeywords(new Set());
     }
   };
@@ -357,15 +369,24 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       return;
     }
 
+    const total = clientKeywords.length;
     setIsFetchingRanks(true);
+    setRefreshProgress({ current: 0, total });
+
+    // Tick once per second to mirror the server-side sequential loop (1s delay per keyword)
+    let elapsed = 0;
+    const progressInterval = setInterval(() => {
+      elapsed++;
+      setRefreshProgress(prev => ({ ...prev, current: Math.min(elapsed, total) }));
+    }, 1000);
 
     try {
-      toast.loading(`Monthly refresh for ${clientKeywords.length} keywords...`, { id: 'monthly-refresh' });
+      toast.loading(`Monthly refresh for ${total} keywords...`, { id: 'monthly-refresh' });
 
       const rankType = selectedClient.rank_type || 'qatar';
 
-      // Delegate the entire refresh to the backend — all ValueSERP fetches run concurrently
-      // in Node (no browser connection cap) and Supabase updates are written server-side.
+      // Delegate the entire refresh to the backend — all ValueSERP fetches run sequentially
+      // in Node with a 1s delay per keyword to prevent 503 proxy overload.
       const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
         method: 'POST',
         cache: 'no-store',
@@ -404,7 +425,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       toast.dismiss('monthly-refresh');
       toast.error('Failed to complete monthly refresh');
     } finally {
+      clearInterval(progressInterval);
       setIsFetchingRanks(false);
+      setRefreshProgress({ current: 0, total: 0 });
     }
   };
 
@@ -462,24 +485,34 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
             <button
               onClick={handleFetchSelectedKeywords}
               disabled={isFetchingRanks}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+              className={`flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+                isFetchingRanks ? 'animate-pulse' : 'transform hover:scale-105'
+              }`}
             >
               <RefreshCw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
-              Fetch Selected ({selectedKeywords.size})
+              {isFetchingRanks && refreshProgress.total > 0
+                ? `Updating ${refreshProgress.current} of ${refreshProgress.total}...`
+                : `Fetch Selected (${selectedKeywords.size})`
+              }
             </button>
           )}
           <button
             onClick={handleMonthlyRefresh}
             disabled={isFetchingRanks || clientKeywords.length === 0 || !monthlyRefreshAllowed}
             title={!monthlyRefreshAllowed ? "Monthly refresh is available only between the 27th and 13th of each month." : ""}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 transform disabled:opacity-50 disabled:transform-none ${
-              monthlyRefreshAllowed 
-                ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white hover:scale-105' 
-                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+              isFetchingRanks
+                ? 'animate-pulse bg-orange-500 text-white'
+                : monthlyRefreshAllowed
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white transform hover:scale-105'
+                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
             }`}
           >
             <RotateCcw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
-            Monthly Refresh
+            {isFetchingRanks && refreshProgress.total > 0
+              ? `Updating ${refreshProgress.current} of ${refreshProgress.total}...`
+              : 'Monthly Refresh'
+            }
           </button>
         </div>
       </div>
