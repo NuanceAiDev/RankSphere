@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw, ArrowUp, ArrowDown, ArrowUpDown, Pencil } from 'lucide-react';
 import { Client, Keyword } from '../types';
 import { fetchKeywordRanking } from '../lib/valueserp';
 import { supabase } from '../lib/supabase';
@@ -34,6 +34,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>(
     { key: 'current_month_rank', direction: 'asc' }
   );
+
+  // --- Manual Override (Edit) modal state ---
+  const [editingKeyword, setEditingKeyword] = useState<Keyword | null>(null);
+  const [editCurrentRank, setEditCurrentRank] = useState<string>('');
+  const [editPreviousRank, setEditPreviousRank] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Check if current date is within the allowed range for monthly refresh (27th to 13th)
   const isMonthlyRefreshAllowed = (): boolean => {
@@ -211,6 +217,44 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     } catch (error) {
       console.error('Error deleting keyword:', error);
       toast.error('Failed to delete keyword');
+    }
+  };
+
+  const handleOpenEdit = (keyword: Keyword) => {
+    setEditingKeyword(keyword);
+    setEditCurrentRank(keyword.current_month_rank != null ? String(keyword.current_month_rank) : '');
+    setEditPreviousRank(keyword.previous_month_rank != null ? String(keyword.previous_month_rank) : '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingKeyword) return;
+    setIsSavingEdit(true);
+    try {
+      // Parse inputs — empty or 0 becomes null ("Not Ranked") in the database
+      const parseRank = (val: string): number | null => {
+        const n = parseInt(val, 10);
+        return isNaN(n) || n <= 0 ? null : n;
+      };
+
+      const { error } = await supabase
+        .from('keywords')
+        .update({
+          current_month_rank:  parseRank(editCurrentRank),
+          previous_month_rank: parseRank(editPreviousRank),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingKeyword.id);
+
+      if (error) throw error;
+
+      toast.success(`Rankings updated for "${editingKeyword.text}"`);
+      setEditingKeyword(null);
+      onKeywordAdded(); // re-fetch so the table and Change arrow update instantly
+    } catch (error) {
+      console.error('Error saving manual rank override:', error);
+      toast.error('Failed to save rank override');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -664,6 +708,13 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                             <RefreshCw className={`w-4 h-4 ${fetchingKeywordId === keyword.id ? 'animate-spin' : ''}`} />
                           </button>
                           <button
+                            onClick={() => handleOpenEdit(keyword)}
+                            title="Manual rank override"
+                            className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteKeyword(keyword.id)}
                             className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           >
@@ -676,6 +727,84 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Manual Override Modal                                               */}
+      {/* ------------------------------------------------------------------ */}
+      {editingKeyword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setEditingKeyword(null)}
+          />
+
+          {/* Dialog */}
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              Manual Rank Override
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 truncate">
+              {editingKeyword.text}
+            </p>
+
+            <div className="space-y-4">
+              {/* Current Rank */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Current Rank
+                </label>
+                <input
+                  id="edit-current-rank"
+                  type="number"
+                  min="1"
+                  placeholder="Leave blank for Not Ranked"
+                  value={editCurrentRank}
+                  onChange={e => setEditCurrentRank(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
+                />
+              </div>
+
+              {/* Previous Rank */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Previous Rank
+                </label>
+                <input
+                  id="edit-previous-rank"
+                  type="number"
+                  min="1"
+                  placeholder="Leave blank for Not Ranked"
+                  value={editPreviousRank}
+                  onChange={e => setEditPreviousRank(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
+              Clear a field (or enter 0) to mark as "Not Ranked".
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSaveEdit}
+                disabled={isSavingEdit}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-2 rounded-lg transition-colors text-sm"
+              >
+                {isSavingEdit ? 'Saving…' : 'Save Override'}
+              </button>
+              <button
+                onClick={() => setEditingKeyword(null)}
+                disabled={isSavingEdit}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium py-2 rounded-lg transition-colors text-sm"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
