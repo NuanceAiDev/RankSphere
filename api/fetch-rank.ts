@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     q: keyword,
     output: 'json',
     page: '1',
-    max_page: '10', // Fetch Top 100 across 10 pages — num=100 is ignored for local queries
+    num: '100', // Fetch top 100 on a single page — costs 1 credit (max_page:10 costs 10)
     ...locationParams
   });
 

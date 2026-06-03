@@ -54,7 +54,7 @@ async function fetchRank(
     q: keyword,
     output: 'json',
     page: '1',
-    max_page: '10', // Fetch Top 100 across 10 pages — num=100 is ignored for local queries
+    num: '100', // Fetch top 100 on a single page — costs 1 credit (max_page:10 costs 10)
     ...locationParams
   });
 
@@ -132,9 +132,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let successCount = 0;
   let errorCount = 0;
 
-  // Fire all keyword fetches concurrently — no browser 6-connection cap in Node
-  const results = await Promise.allSettled(
-    keywords.map(async (keyword) => {
+  // Process keywords strictly one-at-a-time with a 1s gap between requests.
+  // This prevents concurrent upstream connections that cause 503 proxy errors.
+  for (let i = 0; i < keywords.length; i++) {
+    const keyword = keywords[i];
+    try {
       const newRank = await fetchRank(keyword.text, domain, rankType, brandName);
 
       // isNewMonth guard — only shift current → previous on a genuine new month
@@ -170,18 +172,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (error) throw new Error(`Supabase update failed for "${keyword.text}": ${error.message}`);
 
-      return keyword.id;
-    })
-  );
-
-  results.forEach((result, i) => {
-    if (result.status === 'fulfilled') {
       successCount++;
-    } else {
+    } catch (err) {
       errorCount++;
-      console.error(`Failed for keyword "${keywords[i].text}":`, result.reason);
+      console.error(`Failed for keyword "${keyword.text}":`, err);
     }
-  });
+
+    // Mandatory 1s delay between requests — prevents 503 overload on the ValueSERP proxy
+    if (i < keywords.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
 
   return res.status(200).json({
     success: true,
