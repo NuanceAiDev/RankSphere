@@ -275,7 +275,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
         .from('keywords')
         .update({
           current_month_rank: rankingData.rank,
-          current_month_date: new Date().toISOString().split('T')[0],
+          current_month_date: new Date().toISOString(),
           last_checked: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -702,9 +702,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           }`}>
                             {keyword.current_month_rank ? `#${keyword.current_month_rank}` : 'Not ranked'}
                           </span>
-                          {keyword.current_month_date && (
+                          {keyword.last_checked && (
                             <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {format(new Date(keyword.current_month_date), 'MMM d')}
+                              {format(new Date(keyword.last_checked), 'MMM d')}
                             </span>
                           )}
                         </div>

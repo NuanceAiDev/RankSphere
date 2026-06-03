@@ -162,7 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const payload: Record<string, unknown> = {
           current_month_rank: newRank,
-          current_month_date: today.toISOString().split('T')[0],
+          current_month_date: today.toISOString(),
           last_checked: today.toISOString(),
           updated_at: today.toISOString(),
           previous_month_rank: previousRank,
