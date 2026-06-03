@@ -950,7 +950,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
             {isReportDone ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
           </button>
           <select
-            value={reportSortOrder}
+            value={reportSortOrder === 'default' ? 'asc' : reportSortOrder}
             onChange={(e) => setReportSortOrder(e.target.value as 'default' | 'asc' | 'desc')}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
           >
