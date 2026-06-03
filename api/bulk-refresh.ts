@@ -132,54 +132,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let successCount = 0;
   let errorCount = 0;
 
-  // Process keywords strictly one-at-a-time with a 1s gap between requests.
-  // This prevents concurrent upstream connections that cause 503 proxy errors.
-  for (let i = 0; i < keywords.length; i++) {
-    const keyword = keywords[i];
-    try {
-      const newRank = await fetchRank(keyword.text, domain, rankType, brandName);
+  const BATCH_SIZE = 4;
 
-      // isNewMonth guard — only shift current → previous on a genuine new month
-      let previousRank = keyword.previous_month_rank;
-      let previousDate = keyword.previous_month_date;
+  // Process keywords in batches of BATCH_SIZE concurrently, with a 1s gap between batches.
+  // Each batch fires BATCH_SIZE requests in parallel; the inter-batch delay prevents 503 overload.
+  for (let i = 0; i < keywords.length; i += BATCH_SIZE) {
+    const batch = keywords.slice(i, i + BATCH_SIZE);
 
-      if (applyMonthGuard) {
-        const lastChecked = keyword.last_checked ? new Date(keyword.last_checked) : null;
-        const isNewMonth =
-          !lastChecked ||
-          lastChecked.getMonth() !== today.getMonth() ||
-          lastChecked.getFullYear() !== today.getFullYear();
+    await Promise.all(batch.map(async (keyword) => {
+      try {
+        const newRank = await fetchRank(keyword.text, domain, rankType, brandName);
 
-        if (isNewMonth) {
-          previousRank = keyword.current_month_rank;
-          previousDate = keyword.last_checked;
+        // isNewMonth guard — only shift current → previous on a genuine new month
+        let previousRank = keyword.previous_month_rank;
+        let previousDate = keyword.previous_month_date;
+
+        if (applyMonthGuard) {
+          const lastChecked = keyword.last_checked ? new Date(keyword.last_checked) : null;
+          const isNewMonth =
+            !lastChecked ||
+            lastChecked.getMonth() !== today.getMonth() ||
+            lastChecked.getFullYear() !== today.getFullYear();
+
+          if (isNewMonth) {
+            previousRank = keyword.current_month_rank;
+            previousDate = keyword.last_checked;
+          }
         }
+
+        const payload: Record<string, unknown> = {
+          current_month_rank: newRank,
+          current_month_date: today.toISOString().split('T')[0],
+          last_checked: today.toISOString(),
+          updated_at: today.toISOString(),
+          previous_month_rank: previousRank,
+          previous_month_date: previousDate
+        };
+
+        const { error } = await supabase
+          .from('keywords')
+          .update(payload)
+          .eq('id', keyword.id);
+
+        if (error) throw new Error(`Supabase update failed for "${keyword.text}": ${error.message}`);
+
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        console.error(`Failed for keyword "${keyword.text}":`, err);
       }
+    }));
 
-      const payload: Record<string, unknown> = {
-        current_month_rank: newRank,
-        current_month_date: today.toISOString().split('T')[0],
-        last_checked: today.toISOString(),
-        updated_at: today.toISOString(),
-        previous_month_rank: previousRank,
-        previous_month_date: previousDate
-      };
-
-      const { error } = await supabase
-        .from('keywords')
-        .update(payload)
-        .eq('id', keyword.id);
-
-      if (error) throw new Error(`Supabase update failed for "${keyword.text}": ${error.message}`);
-
-      successCount++;
-    } catch (err) {
-      errorCount++;
-      console.error(`Failed for keyword "${keyword.text}":`, err);
-    }
-
-    // Mandatory 1s delay between requests — prevents 503 overload on the ValueSERP proxy
-    if (i < keywords.length - 1) {
+    // 1s rest between batches — prevents 503 overload on the ValueSERP proxy
+    if (i + BATCH_SIZE < keywords.length) {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }

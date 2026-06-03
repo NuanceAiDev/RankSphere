@@ -304,10 +304,10 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     setIsFetchingRanks(true);
     setRefreshProgress({ current: 0, total });
 
-    // Tick once per second to mirror the server-side sequential loop (1s delay per keyword)
+    const BATCH_SIZE = 4;
     let elapsed = 0;
     const progressInterval = setInterval(() => {
-      elapsed++;
+      elapsed += BATCH_SIZE;
       setRefreshProgress(prev => ({ ...prev, current: Math.min(elapsed, total) }));
     }, 1000);
 
@@ -373,10 +373,10 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     setIsFetchingRanks(true);
     setRefreshProgress({ current: 0, total });
 
-    // Tick once per second to mirror the server-side sequential loop (1s delay per keyword)
+    const BATCH_SIZE = 4;
     let elapsed = 0;
     const progressInterval = setInterval(() => {
-      elapsed++;
+      elapsed += BATCH_SIZE;
       setRefreshProgress(prev => ({ ...prev, current: Math.min(elapsed, total) }));
     }, 1000);
 
