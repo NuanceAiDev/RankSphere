@@ -518,7 +518,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Upload Analytics Screenshots
@@ -581,14 +581,14 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       </div>
 
       {isLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-500 dark:text-gray-400">Loading screenshots...</p>
         </div>
       )}
 
       {uploadedFiles.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Uploaded Screenshots ({uploadedFiles.length})
           </h3>
@@ -596,7 +596,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {uploadedFiles.map((file) => (
               <div key={file.id} className="relative group">
-                <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                <div className="aspect-video bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
                   {file.uploading ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
@@ -659,7 +659,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       />
 
       {!isLoading && uploadedFiles.length === 0 && bucketExists !== false && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No screenshots uploaded yet</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">

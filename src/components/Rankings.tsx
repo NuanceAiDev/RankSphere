@@ -952,7 +952,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           <select
             value={reportSortOrder === 'default' ? 'asc' : reportSortOrder}
             onChange={(e) => setReportSortOrder(e.target.value as 'default' | 'asc' | 'desc')}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
           >
             <option value="default">Sort: Default</option>
             <option value="asc">Rank: Low to High (Ascending)</option>
@@ -972,7 +972,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
       <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
 
       {clientKeywords.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
           <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Keywords to Track</h3>
           <p className="text-gray-500 dark:text-gray-400">Add keywords in the Keywords tab to start tracking rankings</p>
@@ -981,7 +981,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         <>
           {/* Performance Overview */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Distribution</h3>
               {noPieData ? (
                 <div className="flex items-center justify-center h-[250px]">
@@ -1035,7 +1035,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               )}
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ranking Trend</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={trendData}>
@@ -1077,7 +1077,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
 
           {/* Performance Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Improvements</p>
@@ -1089,7 +1089,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Declines</p>
@@ -1101,7 +1101,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Rank</p>
@@ -1115,13 +1115,13 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           </div>
 
           {/* Rankings Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-none border border-gray-200 dark:border-white/5 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-white/5">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Keyword Rankings</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+                <thead className="bg-gray-50 dark:bg-zinc-800">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Keyword
@@ -1162,7 +1162,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                                   : keyword.previous_month_rank <= 30
                                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
                             }`}>
                               {keyword.previous_month_rank ? `#${keyword.previous_month_rank}` : '—'}
                             </span>
@@ -1182,7 +1182,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                                   : keyword.current_month_rank <= 30
                                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
                             }`}>
                               {keyword.current_month_rank ? `#${keyword.current_month_rank}` : 'Not ranked'}
                             </span>

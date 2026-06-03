@@ -170,7 +170,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
         <Sidebar
           clients={clients}
           keywords={keywords}

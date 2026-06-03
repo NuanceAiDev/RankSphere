@@ -128,7 +128,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Card 1: Total Keywords */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Keywords</p>
@@ -141,7 +141,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         </div>
 
         {/* Card 2: Improvements */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Improvements</p>
@@ -154,7 +154,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         </div>
 
         {/* Card 3: Declines */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Declines</p>
@@ -167,7 +167,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         </div>
 
         {/* Card 4: High Value Metric */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -188,7 +188,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Chart: ALWAYS Ranking Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {pieTitle}
           </h3>
@@ -225,7 +225,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         </div>
 
         {/* Right Chart: Ranking Comparison or Top Clients */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {barChartTitle}
           </h3>

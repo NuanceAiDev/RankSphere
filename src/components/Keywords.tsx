@@ -527,7 +527,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       />
 
       {isAddingKeyword && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <form onSubmit={handleAddKeyword} className="flex gap-4">
             <div className="flex-1">
               <input
@@ -535,7 +535,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                 value={newKeyword}
                 onChange={(e) => setNewKeyword(e.target.value)}
                 placeholder="Enter keyword (e.g., 'digital marketing')"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-zinc-800 text-gray-900 dark:text-white"
                 disabled={isLoading}
               />
             </div>
@@ -563,7 +563,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       )}
 
       {clientKeywords.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Keywords Yet</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">Start by adding keywords to track for this client</p>
@@ -585,10 +585,10 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-none border border-gray-200 dark:border-white/5 overflow-hidden">
           <div className="max-h-[calc(100vh-14rem)] overflow-auto shadow-md relative">
             <table className="w-full">
-              <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-700">
+              <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-zinc-800">
                 <tr>
                   <th className="px-6 py-4 text-left">
                     <input
@@ -678,7 +678,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                                 : keyword.previous_month_rank <= 30
                                 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                                 : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
                           }`}>
                             {keyword.previous_month_rank ? `#${keyword.previous_month_rank}` : '—'}
                           </span>
@@ -698,7 +698,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                                 : keyword.current_month_rank <= 30
                                 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                                 : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
                           }`}>
                             {keyword.current_month_rank ? `#${keyword.current_month_rank}` : 'Not ranked'}
                           </span>
@@ -776,7 +776,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           />
 
           {/* Dialog */}
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 border border-gray-200 dark:border-gray-700">
+          <div className="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 border border-gray-200 dark:border-white/5">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
               Manual Rank Override
             </h2>
@@ -797,7 +797,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                   placeholder="Leave blank for Not Ranked"
                   value={editCurrentRank}
                   onChange={e => setEditCurrentRank(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
                 />
               </div>
 
@@ -813,7 +813,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                   placeholder="Leave blank for Not Ranked"
                   value={editPreviousRank}
                   onChange={e => setEditPreviousRank(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-zinc-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm"
                 />
               </div>
             </div>
