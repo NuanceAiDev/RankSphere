@@ -1039,7 +1039,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ranking Trend</h3>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis 
                     dataKey="month" 
                     stroke="#6b7280"

@@ -588,7 +588,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
         <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-none border border-gray-200 dark:border-white/5 overflow-hidden">
           <div className="max-h-[calc(100vh-14rem)] overflow-auto shadow-md relative">
             <table className="w-full">
-              <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-zinc-800">
+              <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-zinc-900">
                 <tr>
                   <th className="px-6 py-4 text-left">
                     <input
@@ -598,7 +598,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     <button
                       onClick={() => handleSort('text')}
                       className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -611,7 +611,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                       )}
                     </button>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     <button
                       onClick={() => handleSort('previous_month_rank')}
                       className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -624,7 +624,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                       )}
                     </button>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     <button
                       onClick={() => handleSort('current_month_rank')}
                       className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -637,25 +637,25 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                       )}
                     </button>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Change
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Last Checked
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                 {sortedKeywords.map((keyword) => {
                   const rankChange = keyword.current_month_rank && keyword.previous_month_rank
                     ? keyword.previous_month_rank - keyword.current_month_rank
                     : null;
 
                   return (
-                    <tr key={keyword.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <tr key={keyword.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
@@ -673,12 +673,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                         <div className="flex flex-col">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             keyword.previous_month_rank 
-                              ? keyword.previous_month_rank <= 10 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                              ? keyword.previous_month_rank <= 10
+                                ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400'
                                 : keyword.previous_month_rank <= 30
-                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400'
+                                : 'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-zinc-400'
                           }`}>
                             {keyword.previous_month_rank ? `#${keyword.previous_month_rank}` : '—'}
                           </span>
@@ -693,12 +693,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                         <div className="flex flex-col">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             keyword.current_month_rank 
-                              ? keyword.current_month_rank <= 10 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                              ? keyword.current_month_rank <= 10
+                                ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400'
                                 : keyword.current_month_rank <= 30
-                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400'
+                                : 'bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-zinc-400'
                           }`}>
                             {keyword.current_month_rank ? `#${keyword.current_month_rank}` : 'Not ranked'}
                           </span>

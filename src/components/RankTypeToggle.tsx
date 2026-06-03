@@ -41,13 +41,13 @@ export function RankTypeToggle({ client, onUpdate }: RankTypeToggleProps) {
   return (
     <div className="flex items-center gap-4 mb-6">
       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Rank Type:</span>
-      <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <div className="flex bg-gray-100 dark:bg-zinc-900 rounded-lg p-1 border border-transparent dark:border-zinc-800">
         <button
           onClick={() => handleToggle('qatar')}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
             localRankType === 'qatar'
               ? 'bg-blue-500 text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200'
           }`}
         >
           Qatar
@@ -57,7 +57,7 @@ export function RankTypeToggle({ client, onUpdate }: RankTypeToggleProps) {
           className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
             localRankType === 'dubai'
               ? 'bg-blue-500 text-white shadow-sm'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200'
           }`}
         >
           Dubai
