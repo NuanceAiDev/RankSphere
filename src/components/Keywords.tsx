@@ -461,11 +461,11 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
 
-      <div className="flex items-center justify-between">
-        <div className="flex gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => setIsAddingKeyword(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
           >
             <Plus className="w-4 h-4" />
             Add Keyword
@@ -473,20 +473,22 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 disabled:opacity-50"
           >
             <Upload className="w-4 h-4" />
             Upload CSV
           </button>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {selectedKeywords.size > 0 && (
             <button
               onClick={handleFetchSelectedKeywords}
               disabled={isFetchingRanks}
-              className={`flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
-                isFetchingRanks ? 'animate-pulse' : 'transform hover:scale-105'
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
+                isFetchingRanks
+                  ? 'animate-pulse bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
+                  : 'bg-white text-green-700 border-green-300 hover:bg-green-50 dark:bg-zinc-800 dark:text-green-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
               }`}
             >
               <RefreshCw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
@@ -500,12 +502,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
             onClick={handleMonthlyRefresh}
             disabled={isFetchingRanks || clientKeywords.length === 0 || !monthlyRefreshAllowed}
             title={!monthlyRefreshAllowed ? "Monthly refresh is available only between the 27th and 13th of each month." : ""}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed ${
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
               isFetchingRanks
-                ? 'animate-pulse bg-orange-500 text-white'
+                ? 'animate-pulse bg-orange-50 text-orange-600 border-orange-300 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
                 : monthlyRefreshAllowed
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white transform hover:scale-105'
-                  : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  ? 'bg-white text-orange-600 border-gray-300 hover:bg-orange-50 dark:bg-zinc-800 dark:text-orange-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
+                  : 'bg-white text-gray-400 border-gray-200 cursor-not-allowed dark:bg-zinc-900 dark:text-zinc-600 dark:border-zinc-800'
             }`}
           >
             <RotateCcw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
@@ -516,6 +518,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           </button>
         </div>
       </div>
+
 
       {/* Hidden file input for CSV upload */}
       <input
