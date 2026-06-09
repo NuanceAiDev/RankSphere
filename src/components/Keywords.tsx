@@ -506,7 +506,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
               isFetchingRanks
                 ? 'animate-pulse bg-orange-50 text-orange-600 border-orange-300 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
                 : monthlyRefreshAllowed
-                  ? 'bg-white text-orange-600 border-gray-300 hover:bg-orange-50 dark:bg-zinc-800 dark:text-orange-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
+                  ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100 dark:bg-zinc-800 dark:text-orange-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
                   : 'bg-white text-gray-400 border-gray-200 cursor-not-allowed dark:bg-zinc-900 dark:text-zinc-600 dark:border-zinc-800'
             }`}
           >
