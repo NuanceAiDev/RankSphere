@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { Overview } from './components/Overview';
 import { Keywords } from './components/Keywords';
@@ -12,7 +16,7 @@ import { Client, Keyword } from './types';
 import { supabase, isSupabaseConfigured, retryOperation } from './lib/supabase';
 import toast from 'react-hot-toast';
 
-function App() {
+function Dashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -264,19 +268,40 @@ function App() {
           title="Delete Client"
           message={`Are you sure you want to delete "${clientToDelete?.name}"? This will also delete all associated keywords and cannot be undone.`}
         />
-
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
       </div>
-    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
