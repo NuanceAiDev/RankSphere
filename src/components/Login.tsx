@@ -1,57 +1,54 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { TrendingUp, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSignUpView, setIsSignUpView] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const clearMessages = () => {
+    setError(null);
+    setSignUpSuccess(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSupabaseConfigured) {
       setError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
       return;
     }
-    setError(null);
-    setInfo(null);
+    clearMessages();
     setLoading(true);
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      navigate('/');
+      if (isSignUpView) {
+        // ── Sign Up ────────────────────────────────────────────────
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setSignUpSuccess(true);
+      } else {
+        // ── Sign In ────────────────────────────────────────────────
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate('/');
+      }
     } catch (err: any) {
-      setError(err.message ?? 'Sign in failed. Please try again.');
+      setError(err.message ?? (isSignUpView ? 'Sign up failed.' : 'Sign in failed.') + ' Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignUp = async () => {
-    if (!isSupabaseConfigured) {
-      setError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
-      return;
-    }
-    if (!email || !password) {
-      setError('Please enter an email and password first.');
-      return;
-    }
-    setError(null);
-    setInfo(null);
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      setInfo('Check your inbox — a confirmation link has been sent.');
-    } catch (err: any) {
-      setError(err.message ?? 'Sign up failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const switchView = () => {
+    setIsSignUpView((v) => !v);
+    clearMessages();
   };
 
   return (
@@ -67,13 +64,13 @@ export function Login() {
             RankSphere
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-zinc-500">
-            Sign in to your dashboard
+            {isSignUpView ? 'Create your account' : 'Sign in to your dashboard'}
           </p>
         </div>
 
         {/* Card */}
         <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">
-          <form onSubmit={handleSignIn} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
 
             {/* Email */}
             <div className="space-y-1.5">
@@ -104,14 +101,26 @@ export function Login() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500 pointer-events-none" />
                 <input
                   id="login-password"
-                  type="password"
-                  autoComplete="current-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={isSignUpView ? 'new-password' : 'current-password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-gray-300 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border border-gray-300 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 dark:focus:border-blue-500 transition-colors"
                 />
+                {/* Password visibility toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword
+                    ? <EyeOff className="w-4 h-4" />
+                    : <Eye className="w-4 h-4" />
+                  }
+                </button>
               </div>
             </div>
 
@@ -123,21 +132,23 @@ export function Login() {
               </div>
             )}
 
-            {/* Info message (e.g. confirm email) */}
-            {info && (
+            {/* Sign-up success banner — only shown after a successful signUp call */}
+            {signUpSuccess && (
               <div className="px-3 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
-                <p className="text-xs text-blue-600 dark:text-blue-400 leading-snug">{info}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 leading-snug">
+                  Check your inbox — a confirmation link has been sent.
+                </p>
               </div>
             )}
 
-            {/* Sign In button */}
+            {/* Primary action button */}
             <button
               type="submit"
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Sign In
+              {isSignUpView ? 'Create Account' : 'Sign In'}
             </button>
 
           </form>
@@ -149,14 +160,14 @@ export function Login() {
             <div className="flex-1 h-px bg-gray-200 dark:bg-zinc-800" />
           </div>
 
-          {/* Sign Up button */}
+          {/* View toggle */}
           <button
             type="button"
-            onClick={handleSignUp}
+            onClick={switchView}
             disabled={loading}
             className="w-full px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Create an account
+            {isSignUpView ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
           </button>
         </div>
 
