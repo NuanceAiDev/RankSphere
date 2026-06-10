@@ -4,13 +4,25 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthContextValue {
   user: User | null;
+  role: string | null;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextValue>({ user: null, role: null, loading: true });
+
+/** Fetch the RBAC role for a given user id from the profiles table. */
+async function fetchRole(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  return data?.role ?? null;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,17 +32,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Check for an existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    // Check for an existing session on mount, then fetch the role
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        const userRole = await fetchRole(currentUser.id);
+        setRole(userRole);
+      }
       setLoading(false);
     });
 
-    // Keep auth state in sync across tabs and token refreshes
+    // Keep auth state + role in sync across tabs and token refreshes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        const userRole = await fetchRole(currentUser.id);
+        setRole(userRole);
+      } else {
+        // User logged out — clear role
+        setRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -47,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, role, loading }}>
       {children}
     </AuthContext.Provider>
   );

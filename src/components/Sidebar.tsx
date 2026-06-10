@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search, Filter } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Client, Keyword } from '../types';
 
 interface SidebarProps {
@@ -23,6 +24,8 @@ export function Sidebar({
   onDeleteClient 
 }: SidebarProps) {
   const { isDark, toggleTheme } = useTheme();
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
   const [hoveredClient, setHoveredClient] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [reportFilter, setReportFilter] = useState<'all' | 'generated' | 'pending'>('all');
@@ -78,13 +81,15 @@ export function Sidebar({
           />
         </div>
 
-        <button
-          onClick={onAddClient}
-          className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-xl transition-colors duration-150"
-        >
-          <Plus className="w-4 h-4" />
-          Add Client
-        </button>
+        {isAdmin && (
+          <button
+            onClick={onAddClient}
+            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-xl transition-colors duration-150"
+          >
+            <Plus className="w-4 h-4" />
+            Add Client
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -181,8 +186,8 @@ export function Sidebar({
                       </div>
                     </button>
 
-                    {/* Action buttons — visible on hover */}
-                    {hoveredClient === client.id && (
+                    {/* Action buttons — visible on hover, admin only */}
+                    {isAdmin && hoveredClient === client.id && (
                       <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); onEditClient(client); }}

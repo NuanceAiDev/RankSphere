@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RankingsProps {
   selectedClient: Client | null;
@@ -931,6 +932,9 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
     }
   };
 
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -938,17 +942,19 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           Rankings for {selectedClient.name}
         </h1>
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleMarkAsDone}
-            disabled={isMarkingDone || isReportDone}
-            className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-50 ${
-              isReportDone
-                ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 cursor-not-allowed'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
-            }`}
-          >
-            {isReportDone ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleMarkAsDone}
+              disabled={isMarkingDone || isReportDone}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-50 ${
+                isReportDone
+                  ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 cursor-not-allowed'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
+              }`}
+            >
+              {isReportDone ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
+            </button>
+          )}
           <select
             value={reportSortOrder === 'default' ? 'asc' : reportSortOrder}
             onChange={(e) => setReportSortOrder(e.target.value as 'default' | 'asc' | 'desc')}
@@ -958,14 +964,16 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
             <option value="asc">Rank: Low to High (Ascending)</option>
             <option value="desc">Rank: High to Low (Descending)</option>
           </select>
-          <button
-            onClick={generateReport}
-            disabled={isGeneratingReport || clientKeywords.length === 0}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
-          >
-            <Download className="w-4 h-4" />
-            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={generateReport}
+              disabled={isGeneratingReport || clientKeywords.length === 0}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+            >
+              <Download className="w-4 h-4" />
+              {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+            </button>
+          )}
         </div>
       </div>
 

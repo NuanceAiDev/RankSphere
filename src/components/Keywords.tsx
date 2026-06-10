@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { RankTypeToggle } from './RankTypeToggle';
+import { useAuth } from '../contexts/AuthContext';
 
 // Splits an array into sequential chunks of a given size for batch processing
 const chunkArray = <T,>(array: T[], size: number): T[][] => {
@@ -451,6 +452,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
   };
 
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -462,74 +466,80 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setIsAddingKeyword(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
-          >
-            <Plus className="w-4 h-4" />
-            Add Keyword
-          </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 disabled:opacity-50"
-          >
-            <Upload className="w-4 h-4" />
-            Upload CSV
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {selectedKeywords.size > 0 && (
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={handleFetchSelectedKeywords}
-              disabled={isFetchingRanks}
+              onClick={() => setIsAddingKeyword(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+            >
+              <Plus className="w-4 h-4" />
+              Add Keyword
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 disabled:opacity-50"
+            >
+              <Upload className="w-4 h-4" />
+              Upload CSV
+            </button>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-3">
+            {selectedKeywords.size > 0 && (
+              <button
+                onClick={handleFetchSelectedKeywords}
+                disabled={isFetchingRanks}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
+                  isFetchingRanks
+                    ? 'animate-pulse bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
+                    : 'bg-white text-green-700 border-green-300 hover:bg-green-50 dark:bg-zinc-800 dark:text-green-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
+                {isFetchingRanks && refreshProgress.total > 0
+                  ? `Updating ${refreshProgress.current} of ${refreshProgress.total}...`
+                  : `Fetch Selected (${selectedKeywords.size})`
+                }
+              </button>
+            )}
+            <button
+              onClick={handleMonthlyRefresh}
+              disabled={isFetchingRanks || clientKeywords.length === 0 || !monthlyRefreshAllowed}
+              title={!monthlyRefreshAllowed ? "Monthly refresh is available only between the 27th and 13th of each month." : ""}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
                 isFetchingRanks
-                  ? 'animate-pulse bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
-                  : 'bg-white text-green-700 border-green-300 hover:bg-green-50 dark:bg-zinc-800 dark:text-green-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
+                  ? 'animate-pulse bg-orange-50 text-orange-600 border-orange-300 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
+                  : monthlyRefreshAllowed
+                    ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100 dark:bg-zinc-800 dark:text-orange-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
+                    : 'bg-white text-gray-400 border-gray-200 cursor-not-allowed dark:bg-zinc-900 dark:text-zinc-600 dark:border-zinc-800'
               }`}
             >
-              <RefreshCw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
+              <RotateCcw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
               {isFetchingRanks && refreshProgress.total > 0
                 ? `Updating ${refreshProgress.current} of ${refreshProgress.total}...`
-                : `Fetch Selected (${selectedKeywords.size})`
+                : 'Monthly Refresh'
               }
             </button>
-          )}
-          <button
-            onClick={handleMonthlyRefresh}
-            disabled={isFetchingRanks || clientKeywords.length === 0 || !monthlyRefreshAllowed}
-            title={!monthlyRefreshAllowed ? "Monthly refresh is available only between the 27th and 13th of each month." : ""}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
-              isFetchingRanks
-                ? 'animate-pulse bg-orange-50 text-orange-600 border-orange-300 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20'
-                : monthlyRefreshAllowed
-                  ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100 dark:bg-zinc-800 dark:text-orange-400 dark:border-zinc-700 dark:hover:bg-zinc-700'
-                  : 'bg-white text-gray-400 border-gray-200 cursor-not-allowed dark:bg-zinc-900 dark:text-zinc-600 dark:border-zinc-800'
-            }`}
-          >
-            <RotateCcw className={`w-4 h-4 ${isFetchingRanks ? 'animate-spin' : ''}`} />
-            {isFetchingRanks && refreshProgress.total > 0
-              ? `Updating ${refreshProgress.current} of ${refreshProgress.total}...`
-              : 'Monthly Refresh'
-            }
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
 
-      {/* Hidden file input for CSV upload */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv"
-        onChange={handleCSVUpload}
-        className="hidden"
-      />
+      {/* Hidden file input for CSV upload — admin only */}
+      {isAdmin && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          onChange={handleCSVUpload}
+          className="hidden"
+        />
+      )}
 
-      {isAddingKeyword && (
+      {isAdmin && isAddingKeyword && (
         <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <form onSubmit={handleAddKeyword} className="flex gap-4">
             <div className="flex-1">
@@ -570,22 +580,24 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Keywords Yet</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">Start by adding keywords to track for this client</p>
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => setIsAddingKeyword(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
-            >
-              <Plus className="w-4 h-4" />
-              Add Keyword
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
-            >
-              <Upload className="w-4 h-4" />
-              Upload CSV
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => setIsAddingKeyword(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+              >
+                <Plus className="w-4 h-4" />
+                Add Keyword
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+              >
+                <Upload className="w-4 h-4" />
+                Upload CSV
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-none border border-gray-200 dark:border-white/5 overflow-hidden">
@@ -743,19 +755,23 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           >
                             <RefreshCw className={`w-4 h-4 ${fetchingKeywordId === keyword.id ? 'animate-spin' : ''}`} />
                           </button>
-                          <button
-                            onClick={() => handleOpenEdit(keyword)}
-                            title="Manual rank override"
-                            className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteKeyword(keyword.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleOpenEdit(keyword)}
+                              title="Manual rank override"
+                              className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteKeyword(keyword.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
