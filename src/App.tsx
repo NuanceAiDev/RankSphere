@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -179,16 +179,28 @@ function Dashboard() {
 
   return (
       <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-          className={`fixed top-8 z-[60] p-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-500 hover:text-gray-800 dark:text-zinc-400 dark:hover:text-zinc-200 shadow-sm transition-all duration-300 ease-in-out ${
-            isSidebarOpen 
-              ? 'left-64 rounded-full -ml-3' 
-              : 'left-0 rounded-r-lg border-l-0'
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className={`fixed top-12 z-[60] flex items-center justify-center h-10 w-10 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 shadow-lg shadow-black/5 hover:shadow-black/10 focus:outline-none transition-all duration-300 ease-out ${
+            isSidebarOpen
+              ? 'left-64 rounded-full -ml-5' // Floats perfectly on the edge of the open sidebar
+              : 'left-0 rounded-r-2xl border-l-0' // Snaps to the edge, creating a smooth tab with large rounded corner on one side
           }`}
           aria-label="Toggle Sidebar"
         >
-          {isSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+          {/* Animated Chevron Arrow */}
+          <div className="relative h-6 w-6">
+            <span className={`absolute block h-0.5 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
+              isSidebarOpen ? 'top-1.5 left-1 -rotate-45' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45'
+            }`}></span>
+            <span className={`absolute block h-0.5 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
+              isSidebarOpen ? 'top-1.5 right-1 rotate-45' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45'
+            }`}></span>
+            {/* Horizontal line bar, visible only when closed */}
+            <span className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 block h-0.5 w-4 rounded-full bg-current transition-opacity duration-300 ${
+              isSidebarOpen ? 'opacity-0' : 'opacity-100'
+            }`}></span>
+          </div>
         </button>
 
         <UserProfileWidget />
