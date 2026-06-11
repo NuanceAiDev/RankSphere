@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2, User } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [isSignUpView, setIsSignUpView] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +30,12 @@ export function Login() {
 
     try {
       if (isSignUpView) {
-        // No role metadata — DB trigger assigns 'viewer' implicitly
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        // Pass full_name in metadata — DB trigger reads new.raw_user_meta_data->>'full_name'
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName.trim() } },
+        });
         if (error) {
           setError(error.message);
         } else if (data.user && data.user.identities && data.user.identities.length === 0) {
@@ -57,6 +62,7 @@ export function Login() {
 
   const switchView = () => {
     setIsSignUpView((v) => !v);
+    setFullName('');
     clearMessages();
   };
 
@@ -89,6 +95,28 @@ export function Login() {
         {/* Glassmorphism card */}
         <div className="bg-zinc-900/50 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Full Name — sign-up only */}
+            {isSignUpView && (
+              <div className="space-y-1.5">
+                <label htmlFor="signup-name" className="block text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" />
+                  <input
+                    id="signup-name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Jane Smith"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Email */}
             <div className="space-y-1.5">

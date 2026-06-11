@@ -5,24 +5,29 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 interface AuthContextValue {
   user: User | null;
   role: string | null;
+  name: string | null;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue>({ user: null, role: null, loading: true });
+const AuthContext = createContext<AuthContextValue>({ user: null, role: null, name: null, loading: true });
 
-/** Fetch the RBAC role for a given user id from the profiles table. */
-async function fetchRole(userId: string): Promise<string | null> {
+/** Fetch RBAC role + display name for a given user id from the profiles table. */
+async function fetchProfile(userId: string): Promise<{ role: string | null; name: string | null }> {
   const { data } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', userId)
     .single();
-  return data?.role ?? null;
+  return {
+    role: data?.role ?? null,
+    name: data?.full_name ?? null,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,29 +37,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Check for an existing session on mount, then fetch the role
+    // Check for an existing session on mount, then fetch the profile
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        const userRole = await fetchRole(currentUser.id);
+        const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
         setRole(userRole);
+        setName(userName);
       }
       setLoading(false);
     });
 
-    // Keep auth state + role in sync across tabs and token refreshes
+    // Keep auth state + role + name in sync across tabs and token refreshes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        const userRole = await fetchRole(currentUser.id);
+        const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
         setRole(userRole);
+        setName(userName);
       } else {
-        // User logged out — clear role
+        // User logged out — clear role and name
         setRole(null);
+        setName(null);
       }
     });
 
@@ -72,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, loading }}>
+    <AuthContext.Provider value={{ user, role, name, loading }}>
       {children}
     </AuthContext.Provider>
   );
