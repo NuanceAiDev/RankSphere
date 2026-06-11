@@ -190,14 +190,14 @@ function Dashboard() {
         >
           {/* Animated Chevron Arrow */}
           <div className="relative h-6 w-6">
-            <span className={`absolute block h-0.5 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
+            <span className={`absolute block h-1 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
               isSidebarOpen ? 'top-1.5 left-1 -rotate-45' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45'
             }`}></span>
-            <span className={`absolute block h-0.5 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
+            <span className={`absolute block h-1 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
               isSidebarOpen ? 'top-1.5 right-1 rotate-45' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45'
             }`}></span>
             {/* Horizontal line bar, visible only when closed */}
-            <span className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 block h-0.5 w-4 rounded-full bg-current transition-opacity duration-300 ${
+            <span className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 block h-1 w-4 rounded-full bg-current transition-opacity duration-300 ${
               isSidebarOpen ? 'opacity-0' : 'opacity-100'
             }`}></span>
           </div>
