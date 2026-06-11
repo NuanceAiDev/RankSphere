@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, CheckCircle2, User } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Login() {
   const navigate = useNavigate();
@@ -13,6 +14,13 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  React.useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const clearMessages = () => {
     setError(null);
@@ -49,9 +57,6 @@ export function Login() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           setError(error.message);
-        } else {
-          // Force the redirect immediately, overriding the state delay
-          navigate('/', { replace: true });
         }
       }
     } catch (err: any) {
