@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search, Filter, LogOut } from 'lucide-react';
+import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search, Filter } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { Client, Keyword } from '../types';
 
 interface SidebarProps {
@@ -25,14 +24,9 @@ export function Sidebar({
   onDeleteClient 
 }: SidebarProps) {
   const { isDark, toggleTheme } = useTheme();
-  const { user, role } = useAuth();
+  const { role } = useAuth();
   const isAdmin = role === 'admin';
   const [hoveredClient, setHoveredClient] = useState<string | null>(null);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    // onAuthStateChange in AuthContext clears user/role → ProtectedRoute redirects to /login
-  };
   const [searchTerm, setSearchTerm] = useState('');
   const [reportFilter, setReportFilter] = useState<'all' | 'generated' | 'pending'>('all');
 
@@ -220,36 +214,6 @@ export function Sidebar({
               )}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* User Profile + Logout */}
-      <div className="mt-auto border-t border-gray-200 dark:border-zinc-800 p-4">
-        <div className="flex items-center justify-between">
-          {/* Left — email + role badge */}
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate max-w-[150px]">
-              {user?.email}
-            </span>
-            {role === 'admin' ? (
-              <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 uppercase tracking-wider">
-                Admin
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20 uppercase tracking-wider">
-                Viewer
-              </span>
-            )}
-          </div>
-
-          {/* Right — logout button */}
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </div>
 

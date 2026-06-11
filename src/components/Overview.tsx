@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
-import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award } from 'lucide-react';
+import React from 'react';
+import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award, LogOut } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Client, Keyword } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface OverviewProps {
   selectedClient: Client | null;
@@ -10,7 +12,14 @@ interface OverviewProps {
 }
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
-  
+
+  const { user, role } = useAuth();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // onAuthStateChange in AuthContext clears user/role → ProtectedRoute redirects to /login
+  };
+
   // --- 1. DETERMINE DATA SOURCE ---
   const relevantKeywords = selectedClient 
     ? keywords.filter(k => k.client_id === selectedClient.id)
@@ -108,20 +117,47 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        {/* Left — title + subtitle */}
         <div className="flex flex-col">
-           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-             {selectedClient ? selectedClient.name : 'Agency Overview'}
-           </h1>
-           <span className="text-xs text-gray-400 mt-1">
-             Keywords Analyzed: {totalKeywords}
-           </span>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {selectedClient ? selectedClient.name : 'Agency Overview'}
+          </h1>
+          <span className="text-xs text-gray-400 mt-1">
+            {selectedClient ? `Domain: ${selectedClient.domain}` : `Keywords Analyzed: ${totalKeywords}`}
+          </span>
         </div>
-        {selectedClient && (
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Domain: {selectedClient.domain}
-          </div>
-        )}
+
+        {/* Right — profile pill */}
+        <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-full px-4 py-2 shadow-sm flex-shrink-0">
+          {/* Email */}
+          <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 truncate max-w-[200px]">
+            {user?.email}
+          </span>
+
+          {/* Role badge */}
+          {role === 'admin' ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 uppercase tracking-wider whitespace-nowrap">
+              Admin
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20 uppercase tracking-wider whitespace-nowrap">
+              Viewer
+            </span>
+          )}
+
+          {/* Vertical divider */}
+          <div className="w-px h-5 bg-gray-200 dark:bg-zinc-700" />
+
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded-full transition-colors"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Metrics Cards */}
