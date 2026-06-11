@@ -63,11 +63,14 @@ export function Sidebar({
   });
 
   // Get status indicator for client based on report_done_month
-  const getClientStatusIndicator = (clientId: string): string => {
+  const getClientStatusIndicator = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
-    if (!client) return '🔴';
+    const hasReport = client ? hasReportDoneThisMonth(client) : false;
+    const colorClass = hasReport ? 'bg-green-500' : 'bg-red-500';
     
-    return hasReportDoneThisMonth(client) ? '🟢' : '🔴';
+    return (
+      <span className={`w-2.5 h-2.5 rounded-full ${colorClass} border border-black/10 dark:border-black/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.3)] drop-shadow-sm flex-shrink-0`}></span>
+    );
   };
 
   return (
@@ -180,8 +183,8 @@ export function Sidebar({
                       </div>
 
                       <div className="flex-1 min-w-0 pr-8">
-                        <div className="text-sm font-semibold truncate leading-tight flex items-center gap-1">
-                          <span className="text-xs leading-none">{getClientStatusIndicator(client.id)}</span>
+                        <div className="text-sm font-semibold truncate leading-tight flex items-center gap-1.5">
+                          {getClientStatusIndicator(client.id)}
                           {client.name}
                         </div>
                         <div className="text-xs text-gray-400 dark:text-zinc-500 truncate leading-tight">{client.domain}</div>
