@@ -121,46 +121,46 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Card 1: Total Keywords */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Keywords</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalKeywords}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
               <Target className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
         {/* Card 2: Improvements */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Improvements</p>
               <p className="text-2xl font-bold text-green-600">{improvements}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
         {/* Card 3: Declines */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Declines</p>
               <p className="text-2xl font-bold text-red-600">{declines}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl">
               <TrendingDown className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
         {/* Card 4: High Value Metric */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -170,7 +170,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
                 {selectedClient ? `#${avgCurrentRank}` : totalTop10}
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
               {selectedClient ? <BarChart3 className="w-6 h-6 text-white" /> : <Award className="w-6 h-6 text-white" />}
             </div>
           </div>
@@ -181,7 +181,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Chart: ALWAYS Ranking Distribution */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {pieTitle}
           </h3>
@@ -218,7 +218,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         </div>
 
         {/* Right Chart: Ranking Comparison or Top Clients */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {barChartTitle}
           </h3>
