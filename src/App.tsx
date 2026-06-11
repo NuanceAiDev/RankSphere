@@ -179,6 +179,14 @@ function Dashboard() {
 
   return (
       <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="fixed top-5 left-5 z-[60] p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <UserProfileWidget />
         <Sidebar
           clients={clients}
@@ -195,17 +203,6 @@ function Dashboard() {
         />
 
         <div className={`transition-all duration-300 ease-in-out p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-          {/* Top layout controls */}
-          <div className="flex items-center gap-4 mb-6">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white transition-colors shadow-sm"
-              aria-label="Toggle Sidebar"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          </div>
-
           {/* Tab Navigation - Only show if a client is selected */}
           {selectedClient && (
             <div className="mb-8">

@@ -5,7 +5,6 @@ import { fetchKeywordRanking } from '../lib/valueserp';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { RankTypeToggle } from './RankTypeToggle';
 import { useAuth } from '../contexts/AuthContext';
 
 // Splits an array into sequential chunks of a given size for batch processing
@@ -462,8 +461,6 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           Keywords for {selectedClient.name}
         </h1>
       </div>
-
-      <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         {isAdmin && (

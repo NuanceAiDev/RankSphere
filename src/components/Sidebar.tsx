@@ -75,7 +75,7 @@ export function Sidebar({
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-zinc-800">
         {/* Logo */}
-        <div className="flex items-center justify-center mb-3">
+        <div className="flex items-center justify-center mb-3 pl-12">
           <img
             src="/pp-logo.png"
             alt="Nuance Digital"
