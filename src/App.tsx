@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
@@ -18,6 +18,7 @@ import { supabase, isSupabaseConfigured, retryOperation } from './lib/supabase';
 import toast from 'react-hot-toast';
 
 function Dashboard() {
+  const { role } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -27,9 +28,10 @@ function Dashboard() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   useEffect(() => {
+    console.log("Initializing Data Fetch...");
     loadClients();
     loadKeywords();
-  }, []);
+  }, [role]);
 
   // Reset tab to 'overview' when deselecting a client (going to Agency Overview)
   useEffect(() => {

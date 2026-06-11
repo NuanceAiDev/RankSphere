@@ -42,9 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
-        setRole(userRole);
-        setName(userName);
+        try {
+          const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
+          setRole(userRole);
+          setName(userName);
+        } catch (e) {
+          console.error('Error fetching profile:', e);
+        }
       }
       setLoading(false);
     });
@@ -56,9 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
-        setRole(userRole);
-        setName(userName);
+        try {
+          const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
+          setRole(userRole);
+          setName(userName);
+        } catch (e) {
+          console.error('Error fetching profile:', e);
+        }
       } else {
         // User logged out — clear role and name
         setRole(null);
@@ -73,11 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // protected content before the session check resolves.
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-950 gap-4">
         <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-gray-500 dark:text-zinc-400">Loading Authentication...</p>
       </div>
     );
   }
+
+  console.log("Auth State:", { loading, role });
 
   return (
     <AuthContext.Provider value={{ user, role, name, loading }}>
