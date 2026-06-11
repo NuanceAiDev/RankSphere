@@ -86,7 +86,7 @@ export function Sidebar({
         {isAdmin && (
           <button
             onClick={onAddClient}
-            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-xl transition-colors duration-150"
+            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-full transition-colors duration-150"
           >
             <Plus className="w-4 h-4" />
             Add Client

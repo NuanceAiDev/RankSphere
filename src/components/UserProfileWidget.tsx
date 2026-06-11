@@ -18,11 +18,11 @@ function getInitials(name: string | null, email: string | null | undefined): str
 
 const RoleBadge = ({ role }: { role: string | null }) =>
   role === 'admin' ? (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 uppercase tracking-wider whitespace-nowrap">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20 uppercase tracking-wider whitespace-nowrap">
       Admin
     </span>
   ) : (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20 uppercase tracking-wider whitespace-nowrap">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20 uppercase tracking-wider whitespace-nowrap">
       Viewer
     </span>
   );
