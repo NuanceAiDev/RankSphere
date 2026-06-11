@@ -12,6 +12,7 @@ import { Rankings } from './components/Rankings';
 import { Analytics } from './components/Analytics';
 import { ClientModal } from './components/ClientModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { UserProfileWidget } from './components/UserProfileWidget';
 import { Client, Keyword } from './types';
 import { supabase, isSupabaseConfigured, retryOperation } from './lib/supabase';
 import toast from 'react-hot-toast';
@@ -173,7 +174,8 @@ function Dashboard() {
   ] as const;
 
   return (
-      <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
+      <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
+        <UserProfileWidget />
         <Sidebar
           clients={clients}
           keywords={keywords}
