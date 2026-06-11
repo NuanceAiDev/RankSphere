@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -179,12 +179,16 @@ function Dashboard() {
 
   return (
       <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="fixed top-5 left-5 z-[60] p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all"
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+          className={`fixed top-8 z-[60] p-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-500 hover:text-gray-800 dark:text-zinc-400 dark:hover:text-zinc-200 shadow-sm transition-all duration-300 ease-in-out ${
+            isSidebarOpen 
+              ? 'left-64 rounded-full -ml-3' 
+              : 'left-0 rounded-r-lg border-l-0'
+          }`}
           aria-label="Toggle Sidebar"
         >
-          <Menu className="w-5 h-5" />
+          {isSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
         </button>
 
         <UserProfileWidget />
@@ -202,7 +206,7 @@ function Dashboard() {
           isOpen={isSidebarOpen}
         />
 
-        <div className={`transition-all duration-300 ease-in-out p-8 pt-20 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className={`transition-all duration-300 ease-in-out p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
           {/* Tab Navigation - Only show if a client is selected */}
           {selectedClient && (
             <div className="mb-8">
