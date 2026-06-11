@@ -39,7 +39,7 @@ export function RankTypeToggle({ client, onUpdate }: RankTypeToggleProps) {
   };
 
   return (
-    <div className="flex items-center gap-4 mb-6">
+    <div className="flex items-center gap-4">
       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Rank Type:</span>
       <div className="flex bg-gray-100 dark:bg-zinc-900 rounded-lg p-1 border border-transparent dark:border-zinc-800">
         <button

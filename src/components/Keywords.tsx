@@ -457,17 +457,17 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Keywords for {selectedClient.name}
         </h1>
-      </div>
 
-      {isAdmin && (
-        <div className="flex items-center gap-4 mb-4">
-          <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
-        </div>
-      )}
+        {isAdmin && (
+          <div>
+            <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         {isAdmin && (
