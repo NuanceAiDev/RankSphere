@@ -57,7 +57,7 @@ export function UserProfileWidget() {
       {/* ── Minimised pill ─────────────────────────────────────────── */}
       <div
         onClick={() => setIsOpen((v) => !v)}
-        className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-full px-4 py-2 shadow-lg shadow-black/5 cursor-pointer select-none"
+        className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-full py-1.5 pl-1.5 pr-4 shadow-lg shadow-black/5 cursor-pointer select-none"
       >
         {/* Initials avatar */}
         <div className="flex items-center justify-center font-bold text-sm h-9 w-9 rounded-full text-white bg-gradient-to-br from-blue-500 to-blue-600 shadow-inner flex-shrink-0">

@@ -181,7 +181,7 @@ function Dashboard() {
       <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`fixed top-5 z-[70] flex flex-col justify-center items-center gap-[4px] h-10 w-10 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-full shadow-sm hover:shadow-md transition-all duration-300 ease-in-out ${
+          className={`fixed top-5 z-[70] flex flex-col justify-center items-center gap-[4px] h-10 w-10 bg-white/40 dark:bg-zinc-800/40 backdrop-blur-md border border-white/40 dark:border-zinc-700/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] hover:bg-white/60 dark:hover:bg-zinc-800/60 rounded-full transition-all duration-300 ease-in-out ${
             isSidebarOpen 
               ? 'left-[200px] lg:left-[210px]' // Positions it perfectly in the top right of a standard w-64 (256px) sidebar
               : 'left-5'                       // Slides to the left edge when closed
