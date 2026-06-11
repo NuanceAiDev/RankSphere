@@ -30,9 +30,13 @@ export function Login() {
     try {
       if (isSignUpView) {
         // No role metadata — DB trigger assigns 'viewer' implicitly
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) {
           setError(error.message);
+        } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+          // Supabase User Enumeration Protection returns a fake success with an
+          // empty identities array when the email is already registered.
+          setError('This email is already registered. Please sign in.');
         } else {
           setSignUpSuccess(true);
         }
