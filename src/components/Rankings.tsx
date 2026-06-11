@@ -59,8 +59,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       }
 
       // Filter out .keep files and get public URLs
-      const imageFiles = files.filter(file => 
-        file.name !== '.keep' && 
+      const imageFiles = files.filter(file =>
+        file.name !== '.keep' &&
         /\.(jpg|jpeg|png|webp)$/i.test(file.name)
       );
 
@@ -83,25 +83,25 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   // Check if client has report marked done for current month
   const hasReportDoneThisMonth = (): boolean => {
     if (!selectedClient?.report_done_month) return false;
-    
+
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
     const currentMonthYear = `${currentYear}-${currentMonth}`;
-    
+
     return selectedClient.report_done_month === currentMonthYear;
   };
 
   const handleMarkAsDone = async () => {
     if (!selectedClient) return;
-    
+
     setIsMarkingDone(true);
     try {
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
       const monthYear = `${currentYear}-${currentMonth}`;
-      
+
       const { error } = await supabase
         .from('clients')
         .update({ report_done_month: monthYear })
@@ -111,7 +111,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
       // Immediately update local state
       setIsReportDone(true);
-      toast.success('✅ Marked as Done');
+      toast.success('Marked as Done');
       onClientUpdated(); // Refresh client data to update sidebar indicators
     } catch (error) {
       console.error('Error marking report as done:', error);
@@ -169,22 +169,22 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   ];
 
   // Calculate average rankings for trend
-  const avgCurrentRank = clientKeywords.length > 0 
+  const avgCurrentRank = clientKeywords.length > 0
     ? clientKeywords.reduce((sum, k) => sum + (k.current_month_rank || 50), 0) / clientKeywords.length
     : 0;
 
-  const avgPreviousRank = clientKeywords.length > 0 
+  const avgPreviousRank = clientKeywords.length > 0
     ? clientKeywords.reduce((sum, k) => sum + (k.previous_month_rank || 50), 0) / clientKeywords.length
     : 0;
 
   const trendData = [
-    { 
-      month: 'Previous Month', 
+    {
+      month: 'Previous Month',
       avgRank: Math.round(avgPreviousRank),
       keywordsWithData: clientKeywords.filter(k => k.previous_month_rank).length
     },
-    { 
-      month: 'Current Month', 
+    {
+      month: 'Current Month',
       avgRank: Math.round(avgCurrentRank),
       keywordsWithData: clientKeywords.filter(k => k.current_month_rank).length
     }
@@ -200,7 +200,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   // Helper function to get ranking color based on change
   const getRankingColor = (current: number | null, previous: number | null): [number, number, number] => {
     if (!current || !previous) return [0, 0, 0]; // Black for no data
-    
+
     if (previous > current) return [0, 128, 0]; // Green for improvement
     if (previous < current) return [255, 0, 0]; // Red for decline
     return [128, 128, 128]; // Gray for no change
@@ -257,7 +257,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 15; // Reduced from 20 to 15 for ~12% more width
-      
+
       // Calculate date ranges — report covers the previous month
       const currentDate = new Date();
       const reportMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
@@ -265,7 +265,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
       const currentMonthLabel = format(reportMonthDate, 'MMM-yy');
       const previousMonthLabel = format(previousReportMonthDate, 'MMM-yy');
-      
+
       // ===== FIRST PAGE - PREMIUM AGENCY COVER =====
 
       // --- Brand colors ---
@@ -286,14 +286,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             try {
               const canvas = document.createElement('canvas');
               const ctx = canvas.getContext('2d');
-              canvas.width  = logoImg.width;
+              canvas.width = logoImg.width;
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
               const maxImgW = pageWidth - margin * 2;
               const maxImgH = 40;
-              const ratio  = Math.min(maxImgW / logoImg.width, maxImgH / logoImg.height);
-              const finalW = logoImg.width  * ratio;
+              const ratio = Math.min(maxImgW / logoImg.width, maxImgH / logoImg.height);
+              const finalW = logoImg.width * ratio;
               const finalH = logoImg.height * ratio;
               const imgX = (pageWidth - finalW) / 2;
               const imgY = (60 - finalH) / 2; // vertically centered in 60mm band
@@ -363,8 +363,8 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // ── 7. METADATA GRID (Website / Period / Prepared By) ─────────────────
       const periodText = format(reportMonthDate, 'MMM yyyy');
       const metaRows: [string, string][] = [
-        ['Website',     `https://${selectedClient.domain}`],
-        ['Period',      periodText],
+        ['Website', `https://${selectedClient.domain}`],
+        ['Period', periodText],
         ['Prepared By', 'Nuance Digital Solutions'],
       ];
       const labelX = centerX - 28;
@@ -392,7 +392,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       const top10Count = reportKeywords.filter(k => k.current_month_rank != null && k.current_month_rank >= 1 && k.current_month_rank <= 10).length;
 
       const cards: { label: string; value: string }[] = [
-        { label: 'Keywords #1',    value: String(numOneRankings) },
+        { label: 'Keywords #1', value: String(numOneRankings) },
         { label: 'Top 3 Rankings', value: String(top3Count) },
         { label: 'Top 10 Rankings', value: String(top10Count) },
       ];
@@ -432,10 +432,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       // ── 9. THIN YELLOW BOTTOM STRIPE ─────────────────────────────────────
       pdf.setFillColor(...brandYellow);
       pdf.rect(0, pageHeight - 6, pageWidth, 6, 'F');
-      
+
       // Add new page for table
       pdf.addPage();
-      
+
       // Add borders to new page
       pdf.setFillColor(251, 194, 16);
       pdf.rect(0, 0, 8, pageHeight, 'F');
@@ -443,13 +443,13 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
       pdf.setFillColor(4, 140, 212);
       pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-      
+
       // Header with logo and client info
       try {
         // Add smaller logo for table pages
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
-        
+
         const loadPageLogo = new Promise((resolve) => {
           logoImg.onload = async () => {
             try {
@@ -458,7 +458,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               canvas.width = logoImg.width;
               canvas.height = logoImg.height;
               ctx.drawImage(logoImg, 0, 0);
-              
+
               const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
               pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0); // Auto height to maintain aspect ratio
               resolve(true);
@@ -469,7 +469,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               try {
                 const logoImg = new Image();
                 logoImg.crossOrigin = 'anonymous';
-                
+
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
                     try {
@@ -478,7 +478,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       canvas.width = logoImg.width;
                       canvas.height = logoImg.height;
                       ctx.drawImage(logoImg, 0, 0);
-                      
+
                       const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                       pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
                       resolve(true);
@@ -493,7 +493,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   };
                   logoImg.src = '/pp.jpg';
                 });
-                
+
                 await loadFallbackLogo;
               } catch (error) {
                 pdf.text('Nuance', margin + 8, 20);
@@ -509,22 +509,22 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           };
           logoImg.src = '/pp.jpg';
         });
-        
+
         await loadPageLogo;
       } catch (error) {
         pdf.setFontSize(12);
         pdf.setTextColor(4, 140, 212);
         pdf.text('Nuance', margin, 20);
       }
-      
+
       // FIX FOR PAGE 2: Consistent size, format, and alignment
-      pdf.setFontSize(10); 
+      pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
       const headerText2 = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
       const headerMaxWidth2 = pageWidth - (margin * 2) - 25; // reserve space left of right margin
       const headerLines2 = pdf.splitTextToSize(headerText2, headerMaxWidth2);
       pdf.text(headerLines2, pageWidth - margin, 20, { align: 'right' });
-      
+
       // Page number
       pdf.text('1', pageWidth - margin, pageHeight - 15);
 
@@ -532,55 +532,55 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       pdf.setFontSize(18);
       pdf.setTextColor(0, 0, 0);
       pdf.text('Google Ranking', margin, 50);
-      
+
       pdf.setFontSize(12);
       pdf.setTextColor(128, 128, 128);
       pdf.text(`Showing ${reportKeywords.length} of ${reportKeywords.length} Rows`, margin, 65);
-      
+
       // Table header
       const tableStartY = 80;
       const colWidths = [95, 40, 40]; // Further reduced to prevent right border overlap
       const rowHeight = 12;
-      
+
       // Header background
-      pdf.setFillColor(128, 128, 128); 
+      pdf.setFillColor(128, 128, 128);
       const tableWidth = colWidths[0] + colWidths[1] + colWidths[2];
       const tableStartX = margin + 4;
       pdf.rect(tableStartX, tableStartY - 5, tableWidth, rowHeight + 2, 'F');
-      
+
       // Header text
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
       pdf.text('Keyword', tableStartX + 3, tableStartY + 5);
       pdf.text(previousMonthLabel, tableStartX + colWidths[0] + 3, tableStartY + 5);
       pdf.text(currentMonthLabel, tableStartX + colWidths[0] + colWidths[1] + 3, tableStartY + 5);
-      
+
       let currentY = tableStartY + rowHeight + 5;
       let pageNumber = 1;
-      
+
       // Table rows
       for (const [index, keyword] of reportKeywords.entries()) {
         // Check if we need a new page
         if (currentY > pageHeight - 40) {
           pdf.addPage();
           pageNumber++;
-          
+
           // Add borders to new page
           pdf.setFillColor(251, 194, 16);
           pdf.rect(0, 0, 8, pageHeight, 'F');
           pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
           pdf.setFillColor(4, 140, 212);
           pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-          
+
           // Header for additional pages
           pdf.setFontSize(12);
           pdf.setTextColor(4, 140, 212);
-          
+
           // Add logo to additional pages
           try {
             const logoImg = new Image();
             logoImg.crossOrigin = 'anonymous';
-            
+
             const loadAdditionalPageLogo = new Promise((resolve) => {
               logoImg.onload = async () => {
                 try {
@@ -589,7 +589,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   canvas.width = logoImg.width;
                   canvas.height = logoImg.height;
                   ctx.drawImage(logoImg, 0, 0);
-                  
+
                   const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                   pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                   resolve(true);
@@ -604,21 +604,21 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               };
               logoImg.src = '/pp.jpg';
             });
-            
+
             await loadAdditionalPageLogo;
           } catch (error) {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
             pdf.text('Nuance Digital', margin, 20);
           }
-          
-         pdf.setFontSize(10); // Explicitly set size so it matches every page
-pdf.setTextColor(128, 128, 128);
-const headerTextOvf = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
-const headerMaxWidthOvf = pageWidth - (margin * 2) - 25;
-const headerLinesOvf = pdf.splitTextToSize(headerTextOvf, headerMaxWidthOvf);
-pdf.text(headerLinesOvf, pageWidth - margin, 20, { align: 'right' });
-pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+
+          pdf.setFontSize(10); // Explicitly set size so it matches every page
+          pdf.setTextColor(128, 128, 128);
+          const headerTextOvf = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
+          const headerMaxWidthOvf = pageWidth - (margin * 2) - 25;
+          const headerLinesOvf = pdf.splitTextToSize(headerTextOvf, headerMaxWidthOvf);
+          pdf.text(headerLinesOvf, pageWidth - margin, 20, { align: 'right' });
+          pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
 
           // Repeat table header row on overflow page
           currentY = 40;
@@ -631,7 +631,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
           pdf.text(currentMonthLabel, tableStartX + colWidths[0] + colWidths[1] + 3, currentY + 5);
           currentY += rowHeight + 5;
         }
-        
+
         // Keyword name — switch to Amiri for Arabic support
         // Use splitTextToSize (equiv. overflow:'linebreak') so full text wraps instead of truncating
         if (arabicFontLoaded) {
@@ -670,37 +670,37 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
         pdf.setTextColor(0, 0, 0); // Always black for previous month
         const previousRankText = keyword.previous_month_rank ? toOrdinal(keyword.previous_month_rank) : '—';
         pdf.text(previousRankText, tableStartX + colWidths[0] + 3, currentY);
-        
+
         // Current month rank
         const currentRankColor = getRankingColor(keyword.current_month_rank, keyword.previous_month_rank);
         pdf.setTextColor(currentRankColor[0], currentRankColor[1], currentRankColor[2]);
         const currentRankText = keyword.current_month_rank ? toOrdinal(keyword.current_month_rank) : '—';
         pdf.text(currentRankText, tableStartX + colWidths[0] + colWidths[1] + 3, currentY);
-        
+
         currentY += effectiveRowHeight;
       }
-      
+
       // Footer on last page
       const footerY = pageHeight - 25;
-      
+
       // Add Analytics Screenshots Section if any exist
       if (analyticsScreenshots.length > 0) {
         // Always start Website Traffic Report on a new page
         pdf.addPage();
         pageNumber++;
-        
+
         // Add borders to new page
         pdf.setFillColor(251, 194, 16);
         pdf.rect(0, 0, 8, pageHeight, 'F');
         pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
         pdf.setFillColor(4, 140, 212);
         pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-        
+
         // Header for analytics page
         try {
           const logoImg = new Image();
           logoImg.crossOrigin = 'anonymous';
-          
+
           const loadAnalyticsPageLogo = new Promise((resolve) => {
             logoImg.onload = async () => {
               try {
@@ -709,7 +709,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                 canvas.width = logoImg.width;
                 canvas.height = logoImg.height;
                 ctx.drawImage(logoImg, 0, 0);
-                
+
                 const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                 resolve(true);
@@ -727,7 +727,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               try {
                 const logoImg = new Image();
                 logoImg.src = '/pp.jpg';
-                
+
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
                     try {
@@ -736,7 +736,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                       canvas.width = logoImg.width;
                       canvas.height = logoImg.height;
                       ctx.drawImage(logoImg, 0, 0);
-                      
+
                       const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                       pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
                       resolve(true);
@@ -751,7 +751,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                   };
                   logoImg.src = '/pp.jpg';
                 });
-                
+
                 await loadFallbackLogo;
               } catch (error) {
                 pdf.text('Nuance Digital', margin, 20);
@@ -760,51 +760,51 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
             };
             logoImg.src = '/pp.jpg';
           });
-          
+
           await loadAnalyticsPageLogo;
         } catch (error) {
           pdf.setFontSize(12);
           pdf.setTextColor(4, 140, 212);
           pdf.text('Nuance', margin, 20);
         }
-        
+
         pdf.setFontSize(10); // Explicitly set size so it matches every page
-pdf.setTextColor(128, 128, 128);
-const headerTextAnalytics = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
-const headerMaxWidthAnalytics = pageWidth - (margin * 2) - 25;
-const headerLinesAnalytics = pdf.splitTextToSize(headerTextAnalytics, headerMaxWidthAnalytics);
-pdf.text(headerLinesAnalytics, pageWidth - margin, 20, { align: 'right' });
-pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
-        
+        pdf.setTextColor(128, 128, 128);
+        const headerTextAnalytics = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
+        const headerMaxWidthAnalytics = pageWidth - (margin * 2) - 25;
+        const headerLinesAnalytics = pdf.splitTextToSize(headerTextAnalytics, headerMaxWidthAnalytics);
+        pdf.text(headerLinesAnalytics, pageWidth - margin, 20, { align: 'right' });
+        pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
+
         currentY = 50; // Start content lower on the page
-        
+
         // Analytics section title
         pdf.setFontSize(18);
         pdf.setTextColor(0, 0, 0);
         pdf.text('Website Traffic Report', margin, currentY);
-        
+
         // Section divider
         pdf.setDrawColor(200, 200, 200);
         pdf.setLineWidth(0.5);
         pdf.line(margin, currentY + 5, pageWidth - margin, currentY + 5);
-        
+
         currentY += 20;
-        
+
         // Add analytics screenshots with proper page overflow handling
         const screenshotSpacing = 18; // Consistent 18px vertical spacing between images
         const imagesPerPage = 2; // Exactly 2 images per page
-        
+
         let currentScreenshotY = currentY;
         let imagesOnCurrentPage = 0;
-        
+
         for (let i = 0; i < analyticsScreenshots.length; i++) {
           const screenshotUrl = analyticsScreenshots[i];
-          
+
           try {
             // Load and add screenshot
             const img = new Image();
             img.crossOrigin = 'anonymous';
-            
+
             const loadScreenshot = new Promise((resolve) => {
               img.onload = async () => {
                 try {
@@ -823,13 +823,13 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
 
                   // Always start from left margin (image fills full content width)
                   const xPos = margin;
-                  
+
                   // Check if we need a new page (when we have 2 images or exceed page height)
                   if (imagesOnCurrentPage >= imagesPerPage || currentScreenshotY + imgHeight > pageHeight - 40) {
                     pdf.addPage();
                     pageNumber++;
                     imagesOnCurrentPage = 0;
-                    
+
                     // Add borders to new page
                     pdf.setFillColor(251, 194, 16);
                     pdf.rect(0, 0, 8, pageHeight, 'F');
@@ -837,16 +837,16 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                     pdf.rect(pageWidth - 8, 0, 8, pageHeight, 'F'); // Right-side yellow accent
                     pdf.setFillColor(4, 140, 212);
                     pdf.rect(0, pageHeight - 8, pageWidth, 8, 'F');
-                    
+
                     // Header for additional analytics pages
                     pdf.setFontSize(12);
                     pdf.setTextColor(4, 140, 212);
-                    
+
                     // Add logo to additional analytics pages
                     try {
                       const logoImg = new Image();
                       logoImg.crossOrigin = 'anonymous';
-                      
+
                       const loadContinuationLogo = new Promise((resolve) => {
                         logoImg.onload = () => {
                           try {
@@ -855,7 +855,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                             canvas.width = logoImg.width;
                             canvas.height = logoImg.height;
                             ctx.drawImage(logoImg, 0, 0);
-                            
+
                             const logoDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                             pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                             resolve(true);
@@ -870,37 +870,37 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                         };
                         logoImg.src = '/pp.jpg';
                       });
-                      
+
                       await loadContinuationLogo;
                     } catch (error) {
                       pdf.text('Nuance Digital', margin, 20);
                     }
-                    
+
                     pdf.setTextColor(128, 128, 128);
                     const headerTextCont = `${selectedClient.name} – ${format(reportMonthDate, 'MMM yyyy')}`;
                     const headerMaxWidthCont = pageWidth - (margin * 2) - 25;
                     const headerLinesCont = pdf.splitTextToSize(headerTextCont, headerMaxWidthCont);
                     pdf.text(headerLinesCont, pageWidth - margin, 20, { align: 'right' });
                     pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
-                    
+
                     // Reset Y position for new page
                     currentScreenshotY = 40;
                   }
-                  
+
                   // Create canvas and draw image
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
                   canvas.width = img.width;
                   canvas.height = img.height;
                   ctx.drawImage(img, 0, 0);
-                  
+
                   const imgDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                   pdf.addImage(imgDataUrl, 'JPEG', xPos, currentScreenshotY, imgWidth, imgHeight);
-                  
+
                   // Update Y position for next image
                   currentScreenshotY += imgHeight + screenshotSpacing;
                   imagesOnCurrentPage++;
-                  
+
                   resolve(true);
                 } catch (error) {
                   console.warn('Failed to add screenshot to PDF:', error);
@@ -913,14 +913,14 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               };
               img.src = screenshotUrl;
             });
-            
+
             await loadScreenshot;
           } catch (error) {
             console.warn('Error processing screenshot:', error);
           }
         }
       }
-      
+
       // Save the PDF
       pdf.save(`${selectedClient.name}_SEO_Report_${format(new Date(), 'yyyy-MM')}.pdf`);
       toast.success('Report generated successfully!');
@@ -946,13 +946,12 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
             <button
               onClick={handleMarkAsDone}
               disabled={isMarkingDone || isReportDone}
-              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-50 ${
-                isReportDone
-                  ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 cursor-not-allowed'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-50 ${isReportDone
+                ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 cursor-not-allowed'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
+                }`}
             >
-              {isReportDone ? '✅ Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
+              {isReportDone ? 'Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
             </button>
           )}
           <select
@@ -1016,7 +1015,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{
                           backgroundColor: '#f3f4f6',
                           border: 'none',
@@ -1029,8 +1028,8 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                   <div className="flex justify-center gap-6 mt-4">
                     {pieData.map((entry, index) => (
                       <div key={index} className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
+                        <div
+                          className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: entry.color }}
                         ></div>
                         <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -1048,18 +1047,18 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis 
-                    dataKey="month" 
+                  <XAxis
+                    dataKey="month"
                     stroke="#6b7280"
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="#6b7280"
                     fontSize={12}
                     domain={[1, 100]}
                     reversed
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: '#f3f4f6',
                       border: 'none',
@@ -1071,10 +1070,10 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                       'Average Ranking'
                     ]}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="avgRank" 
-                    stroke="#3b82f6" 
+                  <Line
+                    type="monotone"
+                    dataKey="avgRank"
+                    stroke="#3b82f6"
                     strokeWidth={3}
                     dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6 }}
                   />
@@ -1163,15 +1162,14 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                              keyword.previous_month_rank 
-                                ? keyword.previous_month_rank <= 10 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                  : keyword.previous_month_rank <= 30
+                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${keyword.previous_month_rank
+                              ? keyword.previous_month_rank <= 10
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                : keyword.previous_month_rank <= 30
                                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
-                            }`}>
+                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
+                              }`}>
                               {keyword.previous_month_rank ? `#${keyword.previous_month_rank}` : '—'}
                             </span>
                             {keyword.previous_month_date && (
@@ -1183,15 +1181,14 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                              keyword.current_month_rank 
-                                ? keyword.current_month_rank <= 10 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                  : keyword.current_month_rank <= 30
+                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${keyword.current_month_rank
+                              ? keyword.current_month_rank <= 10
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                : keyword.current_month_rank <= 30
                                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
                                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
-                            }`}>
+                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
+                              }`}>
                               {keyword.current_month_rank ? `#${keyword.current_month_rank}` : 'Not ranked'}
                             </span>
                             {keyword.current_month_date && (
@@ -1203,9 +1200,8 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {rankChange !== null ? (
-                            <div className={`flex items-center gap-2 ${
-                              rankChange > 0 ? 'text-green-600' : rankChange < 0 ? 'text-red-600' : 'text-gray-500'
-                            }`}>
+                            <div className={`flex items-center gap-2 ${rankChange > 0 ? 'text-green-600' : rankChange < 0 ? 'text-red-600' : 'text-gray-500'
+                              }`}>
                               {rankChange > 0 ? (
                                 <TrendingUp className="w-4 h-4" />
                               ) : rankChange < 0 ? (
@@ -1223,7 +1219,7 @@ pdf.text(pageNumber.toString(), pageWidth - margin, pageHeight - 15);
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {keyword.last_checked 
+                            {keyword.last_checked
                               ? format(new Date(keyword.last_checked), 'MMM d, HH:mm')
                               : 'Never'
                             }
