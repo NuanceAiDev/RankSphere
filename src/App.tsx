@@ -208,7 +208,7 @@ function Dashboard() {
         />
 
         {/* Reclaimed top whitespace (removed pt-20) now that the edge-tab menu is integrated */}
-        <div className={`transition-all duration-300 ease-in-out p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'p-8 ml-64' : 'p-8 pl-20 lg:pl-24 ml-0'}`}>
           {/* Tab Navigation - Only show if a client is selected */}
           {selectedClient && (
             <div className="mb-8">
