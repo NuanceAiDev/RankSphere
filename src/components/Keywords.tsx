@@ -604,9 +604,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-none border border-gray-200 dark:border-white/5 overflow-hidden">
-          <div className="max-h-[calc(100vh-14rem)] overflow-auto shadow-md relative">
-            <table className="w-full">
+        <div className="rounded-xl overflow-hidden">
+          <div className="max-h-[calc(100vh-14rem)] overflow-auto relative">
+            <table className="w-full border-separate border-spacing-y-2">
               <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-zinc-900">
                 <tr>
                   {isAdmin && (
@@ -678,9 +678,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                     : null;
 
                   return (
-                    <tr key={keyword.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
+                    <tr key={keyword.id} className="group transition-colors">
                       {isAdmin && (
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50 rounded-l-xl">
                           <input
                             type="checkbox"
                             checked={selectedKeywords.has(keyword.id)}
@@ -689,12 +689,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           />
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className={`px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50 ${!isAdmin ? 'rounded-l-xl' : ''}`}>
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {keyword.text}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50">
                         <div className="flex flex-col">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             keyword.previous_month_rank 
@@ -714,7 +714,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50">
                         <div className="flex flex-col">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             keyword.current_month_rank 
@@ -734,7 +734,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50">
                         {rankChange !== null ? (
                           <div className={`flex items-center gap-1 ${
                             rankChange > 0 ? 'text-green-600' : rankChange < 0 ? 'text-red-600' : 'text-gray-500'
@@ -748,7 +748,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           <span className="text-sm text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className={`px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50 ${!isAdmin ? 'rounded-r-xl' : ''}`}>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {keyword.last_checked 
                             ? format(new Date(keyword.last_checked), 'MMM d, HH:mm')
@@ -757,7 +757,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                         </span>
                       </td>
                       {isAdmin && (
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50 rounded-r-xl">
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleFetchSingleKeyword(keyword)}
