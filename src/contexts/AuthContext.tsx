@@ -37,44 +37,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Check for an existing session on mount, then fetch the profile
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
-          setRole(userRole);
-          setName(userName);
-        } catch (e) {
-          console.error('Error fetching profile:', e);
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        if (session?.user) {
+          if (isMounted) setUser(session.user);
+          
+          // Fetch profile data
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role, full_name')
+            .eq('id', session.user.id)
+            .single();
+
+          if (error) {
+            console.error("Profile fetch error:", error.message);
+            if (isMounted) setRole('viewer'); // Fallback
+          } else if (data && isMounted) {
+            setRole(data.role);
+            setName(data.full_name);
+          }
+        } else {
+          if (isMounted) {
+            setUser(null);
+            setRole(null);
+            setName(null);
+          }
         }
+      } catch (err) {
+        console.error("Critical Auth Error:", err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
+    };
+
+    // 1. Run initial check
+    initializeAuth();
+
+    // 2. Set up listener for future login/logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // When auth state changes, re-run the initialization to fetch new roles
+      initializeAuth();
     });
 
-    // Keep auth state + role + name in sync across tabs and token refreshes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        try {
-          const { role: userRole, name: userName } = await fetchProfile(currentUser.id);
-          setRole(userRole);
-          setName(userName);
-        } catch (e) {
-          console.error('Error fetching profile:', e);
-        }
-      } else {
-        // User logged out — clear role and name
-        setRole(null);
-        setName(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    // 3. Cleanup function
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Block children until we know the auth state — prevents the flash of
