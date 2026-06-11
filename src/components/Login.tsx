@@ -50,7 +50,8 @@ export function Login() {
         if (error) {
           setError(error.message);
         } else {
-          navigate('/');
+          // Force the redirect immediately, overriding the state delay
+          navigate('/', { replace: true });
         }
       }
     } catch (err: any) {
