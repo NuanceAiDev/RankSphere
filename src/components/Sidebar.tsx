@@ -12,6 +12,7 @@ interface SidebarProps {
   onAddClient: () => void;
   onEditClient: (client: Client) => void;
   onDeleteClient: (client: Client) => void;
+  isOpen: boolean;
 }
 
 export function Sidebar({ 
@@ -21,7 +22,8 @@ export function Sidebar({
   onSelectClient, 
   onAddClient, 
   onEditClient, 
-  onDeleteClient 
+  onDeleteClient,
+  isOpen
 }: SidebarProps) {
   const { isDark, toggleTheme } = useTheme();
   const { role } = useAuth();
@@ -69,7 +71,7 @@ export function Sidebar({
   };
 
   return (
-    <div className="fixed left-0 top-0 h-full w-80 bg-white dark:bg-zinc-950 border-r border-gray-200 dark:border-zinc-800 flex flex-col">
+    <div className={`fixed left-0 top-0 h-full bg-white dark:bg-zinc-950 border-r border-gray-200 dark:border-zinc-800 flex flex-col z-40 transition-all duration-300 ease-in-out ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full overflow-hidden border-r-0'}`}>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-zinc-800">
         {/* Logo */}

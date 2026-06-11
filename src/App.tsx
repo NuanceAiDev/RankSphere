@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -26,6 +27,7 @@ function Dashboard() {
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     console.log("Initializing Data Fetch...");
@@ -189,9 +191,21 @@ function Dashboard() {
             setShowClientModal(true);
           }}
           onDeleteClient={setClientToDelete}
+          isOpen={isSidebarOpen}
         />
 
-        <div className="ml-80 p-8">
+        <div className={`transition-all duration-300 ease-in-out p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+          {/* Top layout controls */}
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-white transition-colors shadow-sm"
+              aria-label="Toggle Sidebar"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+
           {/* Tab Navigation - Only show if a client is selected */}
           {selectedClient && (
             <div className="mb-8">

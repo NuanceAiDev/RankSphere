@@ -605,14 +605,16 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
             <table className="w-full">
               <thead className="sticky top-0 z-20 bg-gray-50 dark:bg-zinc-900">
                 <tr>
-                  <th className="px-6 py-4 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedKeywords.size === clientKeywords.length && clientKeywords.length > 0}
-                      onChange={selectAllKeywords}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </th>
+                  {isAdmin && (
+                    <th className="px-6 py-4 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedKeywords.size === clientKeywords.length && clientKeywords.length > 0}
+                        onChange={selectAllKeywords}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </th>
+                  )}
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     <button
                       onClick={() => handleSort('text')}
@@ -673,14 +675,16 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
                   return (
                     <tr key={keyword.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedKeywords.has(keyword.id)}
-                          onChange={() => toggleKeywordSelection(keyword.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
+                      {isAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedKeywords.has(keyword.id)}
+                            onChange={() => toggleKeywordSelection(keyword.id)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {keyword.text}
