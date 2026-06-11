@@ -658,9 +658,11 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Last Checked
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  {isAdmin && (
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -746,16 +748,16 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                           }
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleFetchSingleKeyword(keyword)}
-                            disabled={fetchingKeywordId === keyword.id}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
-                          >
-                            <RefreshCw className={`w-4 h-4 ${fetchingKeywordId === keyword.id ? 'animate-spin' : ''}`} />
-                          </button>
-                          {isAdmin && (
+                      {isAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleFetchSingleKeyword(keyword)}
+                              disabled={fetchingKeywordId === keyword.id}
+                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <RefreshCw className={`w-4 h-4 ${fetchingKeywordId === keyword.id ? 'animate-spin' : ''}`} />
+                            </button>
                             <button
                               onClick={() => handleOpenEdit(keyword)}
                               title="Manual rank override"
@@ -763,17 +765,15 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
-                          )}
-                          {isAdmin && (
                             <button
                               onClick={() => handleDeleteKeyword(keyword.id)}
                               className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-                        </div>
-                      </td>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
