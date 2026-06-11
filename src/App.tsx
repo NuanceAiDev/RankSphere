@@ -202,7 +202,7 @@ function Dashboard() {
           isOpen={isSidebarOpen}
         />
 
-        <div className={`transition-all duration-300 ease-in-out p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className={`transition-all duration-300 ease-in-out p-8 pt-20 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
           {/* Tab Navigation - Only show if a client is selected */}
           {selectedClient && (
             <div className="mb-8">
