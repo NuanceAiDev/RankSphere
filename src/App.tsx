@@ -181,26 +181,15 @@ function Dashboard() {
       <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`fixed top-12 z-[60] flex items-center justify-center h-10 w-10 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 shadow-lg shadow-black/5 hover:shadow-black/10 focus:outline-none transition-all duration-300 ease-out ${
-            isSidebarOpen
-              ? 'left-64 rounded-full -ml-5' // Floats perfectly on the edge of the open sidebar
-              : 'left-0 rounded-r-2xl border-l-0' // Snaps to the edge, creating a smooth tab with large rounded corner on one side
+          className={`fixed top-5 z-[70] flex flex-col justify-center items-center gap-[4px] h-10 w-10 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-full shadow-sm hover:shadow-md transition-all duration-300 ease-in-out ${
+            isSidebarOpen 
+              ? 'left-[200px] lg:left-[210px]' // Positions it perfectly in the top right of a standard w-64 (256px) sidebar
+              : 'left-5'                       // Slides to the left edge when closed
           }`}
-          aria-label="Toggle Sidebar"
         >
-          {/* Animated Chevron Arrow */}
-          <div className="relative h-6 w-6">
-            <span className={`absolute block h-1 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
-              isSidebarOpen ? 'top-1.5 left-1 -rotate-45' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45'
-            }`}></span>
-            <span className={`absolute block h-1 w-4 rounded-full bg-current transition-transform duration-300 ease-out ${
-              isSidebarOpen ? 'top-1.5 right-1 rotate-45' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-45'
-            }`}></span>
-            {/* Horizontal line bar, visible only when closed */}
-            <span className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 block h-1 w-4 rounded-full bg-current transition-opacity duration-300 ${
-              isSidebarOpen ? 'opacity-0' : 'opacity-100'
-            }`}></span>
-          </div>
+          <span className="block w-[18px] h-[2.5px] bg-gray-800 dark:bg-zinc-200 rounded-full"></span>
+          <span className="block w-[18px] h-[2.5px] bg-gray-800 dark:bg-zinc-200 rounded-full"></span>
+          <span className="block w-[18px] h-[2.5px] bg-gray-800 dark:bg-zinc-200 rounded-full"></span>
         </button>
 
         <UserProfileWidget />
