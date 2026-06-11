@@ -222,33 +222,34 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {barChartTitle}
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={barChartData} layout="vertical" margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e0e7ff" />
               <XAxis 
+                type="number"
+                stroke="#6b7280" 
+                fontSize={12} 
+                domain={selectedClient ? [0, 'dataMax + 5'] : [0, 'auto']} 
+              />
+              <YAxis 
+                type="category"
                 dataKey={barChartXKey} 
                 stroke="#6b7280" 
                 fontSize={12} 
-                angle={-45} 
-                textAnchor="end" 
-                height={80} 
-              />
-              <YAxis 
-                stroke="#6b7280" 
-                fontSize={12} 
-                domain={selectedClient ? [0, 100] : [0, 'auto']} 
-                reversed={!!selectedClient} 
+                width={150}
+                tick={{ fill: '#6b7280' }}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none' }}
+                contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none', color: '#1f2937' }}
+                cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
               />
               {selectedClient ? (
                 <>
-                  <Bar dataKey="previousRank" fill="#94a3b8" name="Previous" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="currentRank" fill="#3b82f6" name="Current" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="previousRank" fill="#94a3b8" name="Previous Rank" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar dataKey="currentRank" fill="#3b82f6" name="Current Rank" radius={[0, 4, 4, 0]} barSize={12} />
                 </>
               ) : (
-                <Bar dataKey="top10Count" fill="#3b82f6" name="Keywords in Top 10" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="top10Count" fill="#3b82f6" name="Keywords in Top 10" radius={[0, 4, 4, 0]} barSize={24} />
               )}
             </BarChart>
           </ResponsiveContainer>
