@@ -223,7 +223,7 @@ export function Sidebar({
       <div className="px-3 py-2 border-t border-gray-100 dark:border-zinc-800">
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium text-gray-500 dark:text-zinc-300 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors duration-150"
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-full text-sm font-medium text-gray-500 dark:text-zinc-300 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors duration-150"
         >
           {isDark ? (
             <>
