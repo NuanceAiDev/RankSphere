@@ -86,19 +86,24 @@ export function Login() {
       <div className="w-full max-w-md relative z-10">
 
         {/* Brand mark */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="flex flex-col items-center mb-2">
-            <div className="flex items-center justify-center gap-3">
-              <img src="/pp-logo.png" alt="Nuance AI" className="h-8 w-auto object-contain" />
-              <span className="text-zinc-600 font-light text-lg">
-                ✕
-              </span>
-              <span className="text-2xl font-bold text-zinc-100 tracking-tight">
-                RankSphere
-              </span>
-            </div>
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex items-center justify-center gap-4">
+            <img 
+              src="/pp-logo.png" 
+              alt="Nuance AI" 
+              className="h-7 w-auto object-contain" 
+            />
+            
+            <span className="text-sm font-medium text-gray-400 dark:text-zinc-600">
+              ✕
+            </span>
+            
+            <span className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">
+              RankSphere
+            </span>
           </div>
-          <p className="mt-1.5 text-sm text-zinc-500">
+          
+          <p className="mt-4 text-sm text-gray-500 dark:text-zinc-400">
             {isSignUpView ? 'Create your account' : 'Sign in to your agency dashboard'}
           </p>
         </div>
