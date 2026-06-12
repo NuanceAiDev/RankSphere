@@ -487,7 +487,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           <button
             onClick={() => setShowClearAllModal(true)}
             disabled={isClearing}
-            className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+            className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-full transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
           >
             <Trash2 className="w-4 h-4" />
             {isClearing ? 'Clearing...' : 'Clear All'}
@@ -552,7 +552,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           {uploadedFiles.length < MAX_FILES && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-full transition-all duration-200 transform hover:scale-105"
             >
               Select Files
             </button>
@@ -667,7 +667,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-full transition-all duration-200 transform hover:scale-105"
           >
             Upload Screenshots
           </button>

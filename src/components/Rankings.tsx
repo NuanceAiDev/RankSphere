@@ -946,7 +946,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             <button
               onClick={handleMarkAsDone}
               disabled={isMarkingDone || isReportDone}
-              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors whitespace-nowrap disabled:opacity-50 ${isReportDone
+              className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors whitespace-nowrap disabled:opacity-50 ${isReportDone
                 ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 cursor-not-allowed'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
                 }`}
@@ -957,7 +957,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           <select
             value={reportSortOrder === 'default' ? 'asc' : reportSortOrder}
             onChange={(e) => setReportSortOrder(e.target.value as 'default' | 'asc' | 'desc')}
-            className="py-2 px-3 text-sm rounded-lg border bg-white border-gray-300 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
+            className="py-2 px-4 text-sm rounded-full border bg-white border-gray-300 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
           >
             <option value="default">Sort: Default</option>
             <option value="asc">Rank: Low to High (Ascending)</option>
@@ -967,7 +967,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             <button
               onClick={generateReport}
               disabled={isGeneratingReport || clientKeywords.length === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
             >
               <Download className="w-4 h-4" />
               {isGeneratingReport ? 'Generating...' : 'Generate Report'}
