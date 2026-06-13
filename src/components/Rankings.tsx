@@ -5,17 +5,16 @@ import { Client, Keyword } from '../types';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
-import { RankTypeToggle } from './RankTypeToggle';
+
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface RankingsProps {
   selectedClient: Client | null;
   keywords: Keyword[];
-  onClientUpdated: () => void;
 }
 
-export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
+export function Rankings({ selectedClient, keywords }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const [isReportDone, setIsReportDone] = useState(false);
@@ -976,7 +975,6 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         </div>
       </div>
 
-      <RankTypeToggle client={selectedClient} onUpdate={onClientUpdated} />
 
       {clientKeywords.length === 0 ? (
         <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
@@ -1121,117 +1119,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             </div>
           </div>
 
-          {/* Rankings Table */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-none border border-gray-200 dark:border-white/5 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-white/5">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Keyword Rankings</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-zinc-800">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Keyword
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Previous Month
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Current Month
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Change
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Last Checked
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {clientKeywords.map((keyword) => {
-                    const rankChange = keyword.current_month_rank && keyword.previous_month_rank
-                      ? keyword.previous_month_rank - keyword.current_month_rank
-                      : null;
 
-                    return (
-                      <tr key={keyword.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {keyword.text}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${keyword.previous_month_rank
-                              ? keyword.previous_month_rank <= 10
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                : keyword.previous_month_rank <= 30
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
-                              }`}>
-                              {keyword.previous_month_rank ? `#${keyword.previous_month_rank}` : '—'}
-                            </span>
-                            {keyword.previous_month_date && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {format(new Date(keyword.previous_month_date), 'MMM d, yyyy')}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${keyword.current_month_rank
-                              ? keyword.current_month_rank <= 10
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                : keyword.current_month_rank <= 30
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                              : 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-300'
-                              }`}>
-                              {keyword.current_month_rank ? `#${keyword.current_month_rank}` : 'Not ranked'}
-                            </span>
-                            {keyword.current_month_date && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {format(new Date(keyword.current_month_date), 'MMM d, yyyy')}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {rankChange !== null ? (
-                            <div className={`flex items-center gap-2 ${rankChange > 0 ? 'text-green-600' : rankChange < 0 ? 'text-red-600' : 'text-gray-500'
-                              }`}>
-                              {rankChange > 0 ? (
-                                <TrendingUp className="w-4 h-4" />
-                              ) : rankChange < 0 ? (
-                                <TrendingDown className="w-4 h-4" />
-                              ) : (
-                                <span className="w-4 h-4 text-center">→</span>
-                              )}
-                              <span className="text-sm font-medium">
-                                {rankChange > 0 ? `+${rankChange}` : rankChange < 0 ? rankChange : '0'}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">—</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {keyword.last_checked
-                              ? format(new Date(keyword.last_checked), 'MMM d, HH:mm')
-                              : 'Never'
-                            }
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </>
       )}
     </div>
