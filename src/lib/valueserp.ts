@@ -43,6 +43,9 @@ export async function fetchKeywordRanking(
 
     const data = await response.json();
 
+    // DEBUG: inspect raw SERP data — remove before merging
+    console.log('RAW SERP DATA:', data.organic_results);
+
     // A. Map Pack (local_results) — catches Local Business Box positions.
     //    Some businesses have no website button, so we fall back to title matching.
     const localMatch = data.local_results?.find((item: any) =>
