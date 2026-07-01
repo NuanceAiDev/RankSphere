@@ -12,7 +12,8 @@ function normalizeTargetDomain(url: string): string {
 
 // Main ranking function — calls the secure /api/fetch-rank proxy instead of
 // hitting ValueSERP directly. This keeps the API key server-side and eliminates CORS issues.
-// A single num=100 request replaces the old 10-page pagination loop (10x credit saving).
+// The proxy paginates pages 1-3 (max_page=3) to return up to ~30 results, since Google
+// deprecated the num=100 parameter in Sept 2025. Ranks use position_overall (global rank).
 export async function fetchKeywordRanking(
   domain: string,
   keyword: string,

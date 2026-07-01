@@ -30,8 +30,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     api_key: process.env.VALUESERP_API_KEY ?? '', // Pulled securely from Vercel environment variables
     q: keyword,
     output: 'json',
+    // Google deprecated the `num=100` parameter in Sept 2025 — it now silently
+    // returns only the first page (~10 results), so keywords ranking at position
+    // 10+ were reported as "not found". We instead paginate via `max_page`,
+    // which ValueSERP fetches server-side and merges into a single organic_results
+    // array with a global `position_overall`. max_page=3 covers the top ~30 results,
+    // balancing tracking depth against API credit cost (up to 3 credits per keyword).
+
     page: '1',
-    num: '100', // Fetch top 100 on a single page — costs 1 credit (max_page:10 costs 10)
+    max_page: '3',
     ...locationParams
   });
 
