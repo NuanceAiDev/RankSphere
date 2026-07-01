@@ -22,7 +22,9 @@ function normalizeTargetDomain(domain: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Fetch a single keyword rank from ValueSERP
+// Fetch a single keyword rank from ValueSERP — pages 1-3, early exit on match.
+// Google deprecated num=100 in Sept 2025, so we paginate manually.
+// Early exit saves credits (page-1 hit = 1 credit instead of 3).
 // ---------------------------------------------------------------------------
 async function fetchRank(
   keyword: string,
@@ -49,48 +51,45 @@ async function fetchRank(
     };
   }
 
-  const params = new URLSearchParams({
-    api_key: process.env.VALUESERP_API_KEY ?? '',
-    q: keyword,
-    output: 'json',
-    page: '1',
-    num: '100', // Fetch top 100 on a single page — costs 1 credit (max_page:10 costs 10)
-    ...locationParams
-  });
-
-  const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`ValueSERP error: ${response.status}`);
-  }
-
-  const data = await response.json();
   const cleanTargetDomain = normalizeTargetDomain(domain);
-
-  // Core name for title fallback (e.g. 'bodyglaze' from 'bodyglaze.com')
   const coreName = cleanTargetDomain.split('.')[0];
-  // Prefer explicit brandName from DB; fall back to coreName derived from domain
   const titleFallback = brandName?.toLowerCase() || coreName;
 
-  // A. Map Pack (local_results) — catches Local Business Box positions.
-  //    Some businesses have no website button, so we fall back to title matching.
-  const localMatch = data.local_results?.find((r: any) =>
-    r.website?.toLowerCase().includes(cleanTargetDomain) ||
-    r.link?.toLowerCase().includes(cleanTargetDomain) ||
-    r.title?.toLowerCase().includes(titleFallback)
-  );
-  if (localMatch) return localMatch.position as number;
+  for (let page = 1; page <= 3; page++) {
+    const params = new URLSearchParams({
+      api_key: process.env.VALUESERP_API_KEY ?? '',
+      q: keyword,
+      output: 'json',
+      page: String(page),
+      ...locationParams
+    });
 
-  // B. Organic results — use position_overall for the true global rank across paginated pages.
-  //    position resets to 1-10 per page, so it would be wrong for results beyond page 1.
-  const organicMatch = data.organic_results?.find((r: any) =>
-    r.link?.toLowerCase().includes(cleanTargetDomain)
-  );
-  if (organicMatch) {
-    const rank = organicMatch.position_overall || organicMatch.position;
-    return rank as number;
+    const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`);
+    if (!response.ok) throw new Error(`ValueSERP error: ${response.status}`);
+
+    const data = await response.json();
+
+    // A. Map Pack (local_results) — only present on page 1.
+    if (page === 1) {
+      const localMatch = data.local_results?.find((r: any) =>
+        r.website?.toLowerCase().includes(cleanTargetDomain) ||
+        r.link?.toLowerCase().includes(cleanTargetDomain) ||
+        r.title?.toLowerCase().includes(titleFallback)
+      );
+      if (localMatch) return localMatch.position as number;
+    }
+
+    // B. Organic results — position_overall gives the true global rank; fall back to
+    //    calculating it from the page number if ValueSERP omits it on single-page requests.
+    const organicMatch = data.organic_results?.find((r: any) =>
+      r.link?.toLowerCase().includes(cleanTargetDomain)
+    );
+    if (organicMatch) {
+      return (organicMatch.position_overall ?? (organicMatch.position + (page - 1) * 10)) as number;
+    }
   }
 
-  return null; // Not ranked in top 100
+  return null; // Not ranked in top 30
 }
 
 // ---------------------------------------------------------------------------
