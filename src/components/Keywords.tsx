@@ -202,12 +202,24 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
   const handleDeleteKeyword = async (keywordId: string) => {
     try {
-      const { error } = await supabase
+      // Match strictly on the unique `id` (UUID) so duplicate keyword *text* can never
+      // cause the wrong row to be removed. Chain .select() so Supabase returns the rows
+      // it actually deleted: without it, a delete blocked by RLS comes back as
+      // { data: null, error: null } — no error is thrown, the UI reports a false success,
+      // and the row reappears on the next refresh because nothing was really removed.
+      const { data, error } = await supabase
         .from('keywords')
         .delete()
-        .eq('id', keywordId);
+        .eq('id', keywordId)
+        .select();
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // The mutation was silently discarded (almost always an RLS policy denying
+        // DELETE for this role). Surface it instead of pretending it worked.
+        throw new Error('Delete was blocked — no rows were removed. Check your account permissions.');
+      }
 
       toast.success('Keyword deleted successfully!');
       setSelectedKeywords(prev => {
@@ -218,7 +230,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       onKeywordAdded();
     } catch (error) {
       console.error('Error deleting keyword:', error);
-      toast.error('Failed to delete keyword');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete keyword');
     }
   };
 

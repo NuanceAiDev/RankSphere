@@ -352,17 +352,25 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       const storagePath = extractStoragePathFromUrl(file.url);
       if (!storagePath) throw new Error('Could not extract storage path from URL');
 
-      const { error } = await supabase.storage
+      // .remove() returns the objects it actually deleted. A removal blocked by a
+      // storage RLS policy (or a path that no longer matches) comes back as an empty
+      // array with NO error — so without this check the tile would vanish from local
+      // state while the file survives in the bucket and reappears on the next load.
+      const { data, error } = await supabase.storage
         .from('analytics_screenshots')
         .remove([storagePath]);
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        throw new Error('Delete was blocked — the file was not removed from storage. Check your account permissions.');
+      }
+
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
       toast.success('File deleted successfully');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete file');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete file');
     }
   };
 
