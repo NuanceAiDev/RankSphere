@@ -58,7 +58,12 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
     try {
       const urlObj = new URL(url);
       const pathParts = urlObj.pathname.split('/');
-      const relevantParts = pathParts.slice(-3); 
+      // The object key is the last 3 segments: {clientSlug}/{month}/{filename}.
+      // URL.pathname keeps percent-encoding (spaces become %20, etc.), but Supabase
+      // stores the object under its RAW key (real spaces), so each segment must be
+      // decoded back to its literal form or remove() won't find the file. Decoding
+      // per-segment (not the whole string) preserves the real "/" folder separators.
+      const relevantParts = pathParts.slice(-3).map(part => decodeURIComponent(part));
       return relevantParts.join('/');
     } catch (error) {
       console.error('Error extracting storage path:', error);
