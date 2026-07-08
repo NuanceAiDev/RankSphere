@@ -23,4 +23,4 @@ BEGIN
 END $$;
 
 -- Refresh schema cache by updating table comment
-COMMENT ON TABLE clients IS 'Client information with report tracking - updated ' || NOW();
+COMMENT ON TABLE clients IS 'Client information with report tracking';
