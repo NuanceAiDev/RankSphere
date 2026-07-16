@@ -80,7 +80,7 @@ export function Sidebar({
         {/* Logo */}
         <div className="flex items-center justify-start mb-3">
           <img
-            src="/pp-logo.png"
+            src="/nuance-ai.png"
             alt="Nuance Digital"
             className="h-12 w-auto object-contain"
           />

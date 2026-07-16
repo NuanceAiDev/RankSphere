@@ -88,7 +88,7 @@ export function Login() {
         {/* Brand mark */}
         <div className="flex flex-col items-center mb-8">
           <img 
-            src="/pp-logo.png" 
+            src="/nuance-ai.png"
             alt="Nuance AI" 
             className="h-10 sm:h-12 w-auto object-contain mb-3" 
           />
