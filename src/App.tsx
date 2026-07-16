@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { Overview } from './components/Overview';
 import { Keywords } from './components/Keywords';
@@ -8,11 +13,13 @@ import { Rankings } from './components/Rankings';
 import { Analytics } from './components/Analytics';
 import { ClientModal } from './components/ClientModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { UserProfileWidget } from './components/UserProfileWidget';
 import { Client, Keyword } from './types';
 import { supabase, isSupabaseConfigured, retryOperation } from './lib/supabase';
 import toast from 'react-hot-toast';
 
-function App() {
+function Dashboard() {
+  const { role } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -20,11 +27,13 @@ function App() {
   const [showClientModal, setShowClientModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
+    console.log("Initializing Data Fetch...");
     loadClients();
     loadKeywords();
-  }, []);
+  }, [role]);
 
   // Reset tab to 'overview' when deselecting a client (going to Agency Overview)
   useEffect(() => {
@@ -169,8 +178,21 @@ function App() {
   ] as const;
 
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="relative min-h-screen bg-gray-50 dark:bg-black transition-colors duration-200">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className={`fixed top-5 z-[70] flex flex-col justify-center items-center gap-[4px] h-10 w-10 rounded-full transition-all duration-300 ease-in-out shadow-sm hover:shadow-md bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-gray-300/80 dark:border-zinc-700/80 hover:bg-white/80 dark:hover:bg-zinc-800/80 ${
+            isSidebarOpen 
+              ? 'left-[200px] lg:left-[210px]' // Positions it perfectly in the top right of a standard w-64 (256px) sidebar
+              : 'left-5'                       // Slides to the left edge when closed
+          }`}
+        >
+          <span className="block w-[18px] h-[2.5px] bg-gray-800 dark:bg-zinc-200 rounded-full"></span>
+          <span className="block w-[18px] h-[2.5px] bg-gray-800 dark:bg-zinc-200 rounded-full"></span>
+          <span className="block w-[18px] h-[2.5px] bg-gray-800 dark:bg-zinc-200 rounded-full"></span>
+        </button>
+
+        <UserProfileWidget />
         <Sidebar
           clients={clients}
           keywords={keywords}
@@ -182,9 +204,11 @@ function App() {
             setShowClientModal(true);
           }}
           onDeleteClient={setClientToDelete}
+          isOpen={isSidebarOpen}
         />
 
-        <div className="ml-80 p-8">
+        {/* Reclaimed top whitespace (removed pt-20) now that the edge-tab menu is integrated */}
+        <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'p-8 ml-64' : 'p-8 pl-20 lg:pl-24 ml-0'}`}>
           {/* Tab Navigation - Only show if a client is selected */}
           {selectedClient && (
             <div className="mb-8">
@@ -239,7 +263,6 @@ function App() {
                 <Rankings
                   selectedClient={selectedClient}
                   keywords={keywords}
-                  onClientUpdated={loadClients}
                 />
               )}
             </>
@@ -264,19 +287,40 @@ function App() {
           title="Delete Client"
           message={`Are you sure you want to delete "${clientToDelete?.name}"? This will also delete all associated keywords and cannot be undone.`}
         />
-
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
       </div>
-    </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { TrendingUp, TrendingDown, Target, BarChart3, Users, Award } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Client, Keyword } from '../types';
@@ -10,7 +10,7 @@ interface OverviewProps {
 }
 
 export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
-  
+
   // --- 1. DETERMINE DATA SOURCE ---
   const relevantKeywords = selectedClient 
     ? keywords.filter(k => k.client_id === selectedClient.id)
@@ -108,66 +108,59 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-             {selectedClient ? selectedClient.name : 'Agency Overview'}
-           </h1>
-           <span className="text-xs text-gray-400 mt-1">
-             Keywords Analyzed: {totalKeywords}
-           </span>
-        </div>
-        {selectedClient && (
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Domain: {selectedClient.domain}
-          </div>
-        )}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {selectedClient ? selectedClient.name : 'Agency Overview'}
+        </h1>
+        <span className="text-xs text-gray-400 mt-1 block">
+          {selectedClient ? `Domain: ${selectedClient.domain}` : `Keywords Analyzed: ${totalKeywords}`}
+        </span>
       </div>
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Card 1: Total Keywords */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Keywords</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalKeywords}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
               <Target className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
         {/* Card 2: Improvements */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Improvements</p>
               <p className="text-2xl font-bold text-green-600">{improvements}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
         {/* Card 3: Declines */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Declines</p>
               <p className="text-2xl font-bold text-red-600">{declines}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl">
               <TrendingDown className="w-6 h-6 text-white" />
             </div>
           </div>
         </div>
 
         {/* Card 4: High Value Metric */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -177,7 +170,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
                 {selectedClient ? `#${avgCurrentRank}` : totalTop10}
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
               {selectedClient ? <BarChart3 className="w-6 h-6 text-white" /> : <Award className="w-6 h-6 text-white" />}
             </div>
           </div>
@@ -188,7 +181,7 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Chart: ALWAYS Ranking Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {pieTitle}
           </h3>
@@ -225,37 +218,38 @@ export function Overview({ selectedClient, clients, keywords }: OverviewProps) {
         </div>
 
         {/* Right Chart: Ranking Comparison or Top Clients */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {barChartTitle}
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={barChartData} layout="vertical" margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e0e7ff" />
               <XAxis 
+                type="number"
+                stroke="#6b7280" 
+                fontSize={12} 
+                domain={selectedClient ? [0, 'dataMax + 5'] : [0, 'auto']} 
+              />
+              <YAxis 
+                type="category"
                 dataKey={barChartXKey} 
                 stroke="#6b7280" 
                 fontSize={12} 
-                angle={-45} 
-                textAnchor="end" 
-                height={80} 
-              />
-              <YAxis 
-                stroke="#6b7280" 
-                fontSize={12} 
-                domain={selectedClient ? [0, 100] : [0, 'auto']} 
-                reversed={!!selectedClient} 
+                width={150}
+                tick={{ fill: '#6b7280' }}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none' }}
+                contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '8px', border: 'none', color: '#1f2937' }}
+                cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
               />
               {selectedClient ? (
                 <>
-                  <Bar dataKey="previousRank" fill="#94a3b8" name="Previous" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="currentRank" fill="#3b82f6" name="Current" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="previousRank" fill="#94a3b8" name="Previous Rank" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar dataKey="currentRank" fill="#3b82f6" name="Current Rank" radius={[0, 4, 4, 0]} barSize={12} />
                 </>
               ) : (
-                <Bar dataKey="top10Count" fill="#3b82f6" name="Keywords in Top 10" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="top10Count" fill="#3b82f6" name="Keywords in Top 10" radius={[0, 4, 4, 0]} barSize={24} />
               )}
             </BarChart>
           </ResponsiveContainer>

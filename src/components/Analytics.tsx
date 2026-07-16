@@ -58,7 +58,12 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
     try {
       const urlObj = new URL(url);
       const pathParts = urlObj.pathname.split('/');
-      const relevantParts = pathParts.slice(-3); 
+      // The object key is the last 3 segments: {clientSlug}/{month}/{filename}.
+      // URL.pathname keeps percent-encoding (spaces become %20, etc.), but Supabase
+      // stores the object under its RAW key (real spaces), so each segment must be
+      // decoded back to its literal form or remove() won't find the file. Decoding
+      // per-segment (not the whole string) preserves the real "/" folder separators.
+      const relevantParts = pathParts.slice(-3).map(part => decodeURIComponent(part));
       return relevantParts.join('/');
     } catch (error) {
       console.error('Error extracting storage path:', error);
@@ -352,17 +357,25 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       const storagePath = extractStoragePathFromUrl(file.url);
       if (!storagePath) throw new Error('Could not extract storage path from URL');
 
-      const { error } = await supabase.storage
+      // .remove() returns the objects it actually deleted. A removal blocked by a
+      // storage RLS policy (or a path that no longer matches) comes back as an empty
+      // array with NO error — so without this check the tile would vanish from local
+      // state while the file survives in the bucket and reappears on the next load.
+      const { data, error } = await supabase.storage
         .from('analytics_screenshots')
         .remove([storagePath]);
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        throw new Error('Delete was blocked — the file was not removed from storage. Check your account permissions.');
+      }
+
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
       toast.success('File deleted successfully');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete file');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete file');
     }
   };
 
@@ -487,7 +500,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           <button
             onClick={() => setShowClearAllModal(true)}
             disabled={isClearing}
-            className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+            className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-full transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
           >
             <Trash2 className="w-4 h-4" />
             {isClearing ? 'Clearing...' : 'Clear All'}
@@ -518,7 +531,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Upload Analytics Screenshots
@@ -552,7 +565,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           {uploadedFiles.length < MAX_FILES && (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-full transition-all duration-200 transform hover:scale-105"
             >
               Select Files
             </button>
@@ -581,14 +594,14 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       </div>
 
       {isLoading && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-500 dark:text-gray-400">Loading screenshots...</p>
         </div>
       )}
 
       {uploadedFiles.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-none border border-gray-200 dark:border-white/5">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Uploaded Screenshots ({uploadedFiles.length})
           </h3>
@@ -596,7 +609,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {uploadedFiles.map((file) => (
               <div key={file.id} className="relative group">
-                <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                <div className="aspect-video bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
                   {file.uploading ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
@@ -659,7 +672,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
       />
 
       {!isLoading && uploadedFiles.length === 0 && bucketExists !== false && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-12 shadow-none border border-gray-200 dark:border-white/5 text-center">
           <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No screenshots uploaded yet</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
@@ -667,7 +680,7 @@ export function Analytics({ selectedClient }: AnalyticsProps) {
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-full transition-all duration-200 transform hover:scale-105"
           >
             Upload Screenshots
           </button>
