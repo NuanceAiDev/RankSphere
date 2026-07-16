@@ -311,7 +311,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
             pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
             resolve(true);
           };
-          logoImg.src = '/pp.jpg';
+          logoImg.src = '/nuance.jpg';
         });
         await loadLogo;
       } catch {
@@ -490,7 +490,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
-                  logoImg.src = '/pp.jpg';
+                  logoImg.src = '/nuance.jpg';
                 });
 
                 await loadFallbackLogo;
@@ -506,7 +506,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
             pdf.text('Nuance', margin, 20);
             resolve(true);
           };
-          logoImg.src = '/pp.jpg';
+          logoImg.src = '/nuance.jpg';
         });
 
         await loadPageLogo;
@@ -601,7 +601,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
                 pdf.text('Nuance Digital', margin, 20);
                 resolve(true);
               };
-              logoImg.src = '/pp.jpg';
+              logoImg.src = '/nuance.jpg';
             });
 
             await loadAdditionalPageLogo;
@@ -725,7 +725,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
               // Add logo instead of text
               try {
                 const logoImg = new Image();
-                logoImg.src = '/pp.jpg';
+                logoImg.src = '/nuance.jpg';
 
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
@@ -748,7 +748,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
-                  logoImg.src = '/pp.jpg';
+                  logoImg.src = '/nuance.jpg';
                 });
 
                 await loadFallbackLogo;
@@ -757,7 +757,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
               }
               resolve(true);
             };
-            logoImg.src = '/pp.jpg';
+            logoImg.src = '/nuance.jpg';
           });
 
           await loadAnalyticsPageLogo;
@@ -867,7 +867,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
                           pdf.text('Nuance Digital', margin, 20);
                           resolve(true);
                         };
-                        logoImg.src = '/pp.jpg';
+                        logoImg.src = '/nuance.jpg';
                       });
 
                       await loadContinuationLogo;
