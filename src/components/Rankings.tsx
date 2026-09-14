@@ -144,6 +144,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
   const clientKeywords = keywords.filter(k => k.client_id === selectedClient.id);
 
+  // Report branding follows the client's market: Dubai clients get the Nuance AI Solutions
+  // logo, everyone else (Qatar, or rank_type unset — same default as rank fetching) gets Nuance Digital.
+  const reportLogoSrc = selectedClient.rank_type === 'dubai' ? '/nuance-dubai.jpg' : '/nuance.jpg';
+
   // Safe rank extractor: treats null, undefined, and 0 as "not ranked"
   const getRank = (val: any): number => { const num = Number(val); return isNaN(num) || num <= 0 ? 0 : num; };
 
@@ -321,7 +325,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
             resolve(true);
           };
-          logoImg.src = '/nuance.jpg';
+          logoImg.src = reportLogoSrc;
         });
         await loadLogo;
       } catch {
@@ -500,7 +504,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
-                  logoImg.src = '/nuance.jpg';
+                  logoImg.src = reportLogoSrc;
                 });
 
                 await loadFallbackLogo;
@@ -516,7 +520,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             pdf.text('Nuance', margin, 20);
             resolve(true);
           };
-          logoImg.src = '/nuance.jpg';
+          logoImg.src = reportLogoSrc;
         });
 
         await loadPageLogo;
@@ -611,7 +615,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                 pdf.text('Nuance Digital', margin, 20);
                 resolve(true);
               };
-              logoImg.src = '/nuance.jpg';
+              logoImg.src = reportLogoSrc;
             });
 
             await loadAdditionalPageLogo;
@@ -735,7 +739,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               // Add logo instead of text
               try {
                 const logoImg = new Image();
-                logoImg.src = '/nuance.jpg';
+                logoImg.src = reportLogoSrc;
 
                 const loadFallbackLogo = new Promise((resolve) => {
                   logoImg.onload = async () => {
@@ -758,7 +762,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                     pdf.text('Nuance', margin + 8, 20);
                     resolve(true);
                   };
-                  logoImg.src = '/nuance.jpg';
+                  logoImg.src = reportLogoSrc;
                 });
 
                 await loadFallbackLogo;
@@ -767,7 +771,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               }
               resolve(true);
             };
-            logoImg.src = '/nuance.jpg';
+            logoImg.src = reportLogoSrc;
           });
 
           await loadAnalyticsPageLogo;
@@ -877,7 +881,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                           pdf.text('Nuance Digital', margin, 20);
                           resolve(true);
                         };
-                        logoImg.src = '/nuance.jpg';
+                        logoImg.src = reportLogoSrc;
                       });
 
                       await loadContinuationLogo;
