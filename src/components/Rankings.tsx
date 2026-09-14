@@ -12,9 +12,10 @@ import { useAuth } from '../contexts/AuthContext';
 interface RankingsProps {
   selectedClient: Client | null;
   keywords: Keyword[];
+  onClientUpdated: () => void;
 }
 
-export function Rankings({ selectedClient, keywords }: RankingsProps) {
+export function Rankings({ selectedClient, keywords, onClientUpdated }: RankingsProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const [isReportDone, setIsReportDone] = useState(false);
@@ -92,29 +93,38 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
   };
 
   const handleMarkAsDone = async () => {
-    if (!selectedClient) return;
+    if (!selectedClient || isMarkingDone || isReportDone) return;
 
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const monthYear = `${currentYear}-${currentMonth}`;
+
+    // Optimistic update — flip the button to "Done" immediately, before the network round-trip.
+    setIsReportDone(true);
     setIsMarkingDone(true);
-    try {
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-      const monthYear = `${currentYear}-${currentMonth}`;
 
-      const { error } = await supabase
+    try {
+      // .select() returns the updated row so an update silently discarded by RLS
+      // (0 rows, no error) is caught instead of being reported as a success.
+      const { data, error } = await supabase
         .from('clients')
         .update({ report_done_month: monthYear })
-        .eq('id', selectedClient.id);
+        .eq('id', selectedClient.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Update was blocked — no client row was changed. Check your account permissions.');
+      }
 
-      // Immediately update local state
-      setIsReportDone(true);
-      toast.success('Marked as Done');
-      onClientUpdated(); // Refresh client data to update sidebar indicators
+      toast.success(`Report for ${selectedClient.name} marked as done`);
+      onClientUpdated(); // Re-fetch clients so the sidebar status dot turns green
     } catch (error) {
+      // Roll back the optimistic update so the UI matches the database again
+      setIsReportDone(false);
       console.error('Error marking report as done:', error);
-      toast.error('Failed to mark report as done');
+      toast.error(error instanceof Error ? error.message : 'Failed to mark report as done');
     } finally {
       setIsMarkingDone(false);
     }
@@ -950,7 +960,7 @@ export function Rankings({ selectedClient, keywords }: RankingsProps) {
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700'
                 }`}
             >
-              {isReportDone ? 'Done' : isMarkingDone ? 'Marking...' : 'Mark as Done'}
+              {isReportDone ? 'Done' : 'Mark as Done'}
             </button>
           )}
           <select

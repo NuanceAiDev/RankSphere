@@ -263,6 +263,7 @@ function Dashboard() {
                 <Rankings
                   selectedClient={selectedClient}
                   keywords={keywords}
+                  onClientUpdated={loadClients}
                 />
               )}
             </>
