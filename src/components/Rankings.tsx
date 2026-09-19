@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 
 import { supabase } from '../lib/supabase';
+import { currentReportMonth, isReportDoneThisMonth } from '../lib/reportStatus';
 import { useAuth } from '../contexts/AuthContext';
 
 interface RankingsProps {
@@ -21,11 +22,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   const [isReportDone, setIsReportDone] = useState(false);
   const [reportSortOrder, setReportSortOrder] = useState<'default' | 'asc' | 'desc'>('asc');
 
-  // Update local state when selectedClient changes
+  // Re-derive the button state from the database whenever the selected client changes.
+  // Uses the same month-based check as the sidebar dot, so the two always agree.
   useEffect(() => {
-    if (selectedClient) {
-      setIsReportDone(hasReportDoneThisMonth());
-    }
+    setIsReportDone(isReportDoneThisMonth(selectedClient));
   }, [selectedClient]);
 
   const generateClientSlug = (clientName: string): string => {
@@ -80,25 +80,10 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
     }
   };
 
-  // Check if client has report marked done for current month
-  const hasReportDoneThisMonth = (): boolean => {
-    if (!selectedClient?.report_done_month) return false;
-
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const currentMonthYear = `${currentYear}-${currentMonth}`;
-
-    return selectedClient.report_done_month === currentMonthYear;
-  };
-
   const handleMarkAsDone = async () => {
     if (!selectedClient || isMarkingDone || isReportDone) return;
 
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const monthYear = `${currentYear}-${currentMonth}`;
+    const monthYear = currentReportMonth();
 
     // Optimistic update — flip the button to "Done" immediately, before the network round-trip.
     setIsReportDone(true);

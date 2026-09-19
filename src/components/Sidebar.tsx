@@ -3,6 +3,7 @@ import { Plus, Moon, Sun, Users, TrendingUp, CreditCard as Edit2, Trash2, Search
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Client, Keyword } from '../types';
+import { isReportDoneThisMonth } from '../lib/reportStatus';
 
 interface SidebarProps {
   clients: Client[];
@@ -32,18 +33,6 @@ export function Sidebar({
   const [searchTerm, setSearchTerm] = useState('');
   const [reportFilter, setReportFilter] = useState<'all' | 'generated' | 'pending'>('all');
 
-  // Check if client has report done for current month
-  const hasReportDoneThisMonth = (client: Client): boolean => {
-    if (!client.report_done_month) return false;
-    
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const currentMonthYear = `${currentYear}-${currentMonth}`;
-    
-    return client.report_done_month === currentMonthYear;
-  };
-
   // Filter clients based on search term and report status
   const filteredClients = clients.filter(client => {
     // Search filter
@@ -54,19 +43,21 @@ export function Sidebar({
     
     // Report status filter
     if (reportFilter === 'generated') {
-      return hasReportDoneThisMonth(client);
+      return isReportDoneThisMonth(client);
     } else if (reportFilter === 'pending') {
-      return !hasReportDoneThisMonth(client);
+      return !isReportDoneThisMonth(client);
     }
     
     return true; // 'all' filter
   });
 
-  // Get status indicator for client based on report_done_month
+  // Get status indicator for client based on report_done_month.
+  // Colours follow the team's workflow rather than the usual convention: green flags the
+  // clients still waiting on a report (work to pick up), red marks the ones already done.
   const getClientStatusIndicator = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
-    const hasReport = client ? hasReportDoneThisMonth(client) : false;
-    const colorClass = hasReport ? 'bg-green-500' : 'bg-red-500';
+    const hasReport = isReportDoneThisMonth(client);
+    const colorClass = hasReport ? 'bg-red-500' : 'bg-green-500';
     
     return (
       <span className={`w-2.5 h-2.5 rounded-full ${colorClass} border border-black/10 dark:border-black/30 shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1.5px_1px_rgba(255,255,255,0.3)] drop-shadow-sm flex-shrink-0`}></span>
