@@ -148,6 +148,11 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
   // logo, everyone else (Qatar, or rank_type unset — same default as rank fetching) gets Nuance Digital.
   const reportLogoSrc = selectedClient.rank_type === 'dubai' ? '/nuance-dubai.jpg' : '/nuance.jpg';
 
+  // Text drawn in place of the logo when the image fails to load. Short variant is used in
+  // the narrow page headers, where the full name would overflow the available width.
+  const reportBrandName = selectedClient.rank_type === 'dubai' ? 'Nuance AI Solutions' : 'Nuance Digital';
+  const reportBrandShort = selectedClient.rank_type === 'dubai' ? 'Nuance AI' : 'Nuance';
+
   // Safe rank extractor: treats null, undefined, and 0 as "not ranked"
   const getRank = (val: any): number => { const num = Number(val); return isNaN(num) || num <= 0 ? 0 : num; };
 
@@ -315,14 +320,14 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
             } catch {
               pdf.setFontSize(16);
               pdf.setTextColor(...darkBlue);
-              pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
+              pdf.text(reportBrandName, centerX, 30, { align: 'center' });
               resolve(true);
             }
           };
           logoImg.onerror = () => {
             pdf.setFontSize(16);
             pdf.setTextColor(...darkBlue);
-            pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
+            pdf.text(reportBrandName, centerX, 30, { align: 'center' });
             resolve(true);
           };
           logoImg.src = reportLogoSrc;
@@ -331,7 +336,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       } catch {
         pdf.setFontSize(16);
         pdf.setTextColor(...darkBlue);
-        pdf.text('Nuance Digital', centerX, 30, { align: 'center' });
+        pdf.text(reportBrandName, centerX, 30, { align: 'center' });
       }
 
       // Layer 2: Dark blue title band (60 -> 100mm)
@@ -496,12 +501,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
                       resolve(true);
                     } catch (error) {
-                      pdf.text('Nuance', margin + 8, 20);
+                      pdf.text(reportBrandShort, margin + 8, 20);
                       resolve(true);
                     }
                   };
                   logoImg.onerror = async () => {
-                    pdf.text('Nuance', margin + 8, 20);
+                    pdf.text(reportBrandShort, margin + 8, 20);
                     resolve(true);
                   };
                   logoImg.src = reportLogoSrc;
@@ -509,7 +514,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
                 await loadFallbackLogo;
               } catch (error) {
-                pdf.text('Nuance', margin + 8, 20);
+                pdf.text(reportBrandShort, margin + 8, 20);
               }
               resolve(true);
             }
@@ -517,7 +522,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           logoImg.onerror = async () => {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance', margin, 20);
+            pdf.text(reportBrandShort, margin, 20);
             resolve(true);
           };
           logoImg.src = reportLogoSrc;
@@ -527,7 +532,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
       } catch (error) {
         pdf.setFontSize(12);
         pdf.setTextColor(4, 140, 212);
-        pdf.text('Nuance', margin, 20);
+        pdf.text(reportBrandShort, margin, 20);
       }
 
       // FIX FOR PAGE 2: Consistent size, format, and alignment
@@ -607,12 +612,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                   pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                   resolve(true);
                 } catch (error) {
-                  pdf.text('Nuance Digital', margin, 20);
+                  pdf.text(reportBrandName, margin, 20);
                   resolve(true);
                 }
               };
               logoImg.onerror = async () => {
-                pdf.text('Nuance Digital', margin, 20);
+                pdf.text(reportBrandName, margin, 20);
                 resolve(true);
               };
               logoImg.src = reportLogoSrc;
@@ -622,7 +627,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
           } catch (error) {
             pdf.setFontSize(12);
             pdf.setTextColor(4, 140, 212);
-            pdf.text('Nuance Digital', margin, 20);
+            pdf.text(reportBrandName, margin, 20);
           }
 
           pdf.setFontSize(10); // Explicitly set size so it matches every page
@@ -729,7 +734,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
               } catch (error) {
                 pdf.setFontSize(12);
                 pdf.setTextColor(4, 140, 212);
-                pdf.text('Nuance', margin, 20);
+                pdf.text(reportBrandShort, margin, 20);
                 resolve(true);
               }
             };
@@ -754,12 +759,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                       pdf.addImage(logoDataUrl, 'JPEG', margin + 8, 12, 15, 0);
                       resolve(true);
                     } catch (error) {
-                      pdf.text('Nuance', margin + 8, 20);
+                      pdf.text(reportBrandShort, margin + 8, 20);
                       resolve(true);
                     }
                   };
                   logoImg.onerror = async () => {
-                    pdf.text('Nuance', margin + 8, 20);
+                    pdf.text(reportBrandShort, margin + 8, 20);
                     resolve(true);
                   };
                   logoImg.src = reportLogoSrc;
@@ -767,7 +772,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
                 await loadFallbackLogo;
               } catch (error) {
-                pdf.text('Nuance Digital', margin, 20);
+                pdf.text(reportBrandName, margin, 20);
               }
               resolve(true);
             };
@@ -778,7 +783,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
         } catch (error) {
           pdf.setFontSize(12);
           pdf.setTextColor(4, 140, 212);
-          pdf.text('Nuance', margin, 20);
+          pdf.text(reportBrandShort, margin, 20);
         }
 
         pdf.setFontSize(10); // Explicitly set size so it matches every page
@@ -873,12 +878,12 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
                             pdf.addImage(logoDataUrl, 'JPEG', margin, 15, 20, 0);
                             resolve(true);
                           } catch (error) {
-                            pdf.text('Nuance Digital', margin, 20);
+                            pdf.text(reportBrandName, margin, 20);
                             resolve(true);
                           }
                         };
                         logoImg.onerror = () => {
-                          pdf.text('Nuance Digital', margin, 20);
+                          pdf.text(reportBrandName, margin, 20);
                           resolve(true);
                         };
                         logoImg.src = reportLogoSrc;
@@ -886,7 +891,7 @@ export function Rankings({ selectedClient, keywords, onClientUpdated }: Rankings
 
                       await loadContinuationLogo;
                     } catch (error) {
-                      pdf.text('Nuance Digital', margin, 20);
+                      pdf.text(reportBrandName, margin, 20);
                     }
 
                     pdf.setTextColor(128, 128, 128);
