@@ -1,12 +1,25 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw, ArrowUp, ArrowDown, ArrowUpDown, Pencil } from 'lucide-react';
 import { Client, Keyword } from '../types';
-import { fetchKeywordRanking } from '../lib/valueserp';
+import { fetchKeywordRanking, isTimeoutError, timeoutSignal } from '../lib/valueserp';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
 import { RankTypeToggle } from './RankTypeToggle';
+
+// A bulk refresh can legitimately run for minutes (batches of 4, 1s apart, up to 3 SERP
+// pages each), but it must still be bounded — an unbounded fetch that never settles leaves
+// the progress button stuck forever because finally{} never runs.
+const BULK_FETCH_TIMEOUT_MS = 180_000;
+
+// Turns any refresh failure into something the user can act on, naming timeouts explicitly.
+const describeRefreshError = (error: unknown, fallback: string): string => {
+  if (isTimeoutError(error)) {
+    return 'Server timeout — the request took too long and was cancelled. Please try again.';
+  }
+  return error instanceof Error ? error.message : fallback;
+};
 
 // Splits an array into sequential chunks of a given size for batch processing
 const chunkArray = <T,>(array: T[], size: number): T[][] => {
@@ -296,12 +309,21 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       if (error) throw error;
 
-      toast.success(`Updated ranking for "${keyword.text}"`);
+      // A null rank is a valid result, not a failure — it was written to the database above,
+      // so the row now reads "Not ranked". Say so explicitly rather than implying a position.
+      if (rankingData.rank == null) {
+        toast(`"${keyword.text}" is not ranked in the top 30`, { icon: 'ℹ️' });
+      } else {
+        toast.success(`"${keyword.text}" is ranked #${rankingData.rank}`);
+      }
       onKeywordAdded();
     } catch (error) {
       console.error('Error fetching single keyword:', error);
-      toast.error(`Failed to fetch ranking for "${keyword.text}"`);
+      toast.error(
+        describeRefreshError(error, `Failed to fetch ranking for "${keyword.text}"`)
+      );
     } finally {
+      // Always clears the per-row spinner, including on a 504 or a timeout.
       setFetchingKeywordId(null);
     }
   };
@@ -334,6 +356,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
         method: 'POST',
         cache: 'no-store',
+        signal: timeoutSignal(BULK_FETCH_TIMEOUT_MS),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keywords: keywordsToFetch.map(k => ({
@@ -353,7 +376,14 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       toast.dismiss('fetch-selected');
 
-      if (!response.ok) throw new Error(`Bulk refresh failed: ${response.status}`);
+      if (!response.ok) {
+        // A 504/503 body is an HTML gateway page, so never parse it — surface the status instead.
+        throw new Error(
+          response.status === 504 || response.status === 503
+            ? `Server timeout (${response.status}) — the refresh ran longer than the server allows. Some keywords may already have been updated.`
+            : `Bulk refresh failed (${response.status})`
+        );
+      }
 
       const { successCount, errorCount } = await response.json();
 
@@ -367,7 +397,10 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     } catch (error) {
       console.error('Error fetching selected keywords:', error);
       toast.dismiss('fetch-selected');
-      toast.error('Failed to fetch rankings');
+      toast.error(describeRefreshError(error, 'Failed to fetch rankings'));
+      // The server writes each keyword as it finishes, so a timeout can still leave partial
+      // results behind — re-sync the table so the user sees whatever did get saved.
+      onKeywordAdded();
     } finally {
       clearInterval(progressInterval);
       setIsFetchingRanks(false);
@@ -403,6 +436,7 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
         method: 'POST',
         cache: 'no-store',
+        signal: timeoutSignal(BULK_FETCH_TIMEOUT_MS),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keywords: clientKeywords.map(k => ({
@@ -422,7 +456,14 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
 
       toast.dismiss('monthly-refresh');
 
-      if (!response.ok) throw new Error(`Bulk refresh failed: ${response.status}`);
+      if (!response.ok) {
+        // A 504/503 body is an HTML gateway page, so never parse it — surface the status instead.
+        throw new Error(
+          response.status === 504 || response.status === 503
+            ? `Server timeout (${response.status}) — the refresh ran longer than the server allows. Some keywords may already have been updated.`
+            : `Bulk refresh failed (${response.status})`
+        );
+      }
 
       const { successCount, errorCount } = await response.json();
 
@@ -436,7 +477,9 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     } catch (error) {
       console.error('Error during monthly refresh:', error);
       toast.dismiss('monthly-refresh');
-      toast.error('Failed to complete monthly refresh');
+      toast.error(describeRefreshError(error, 'Failed to complete monthly refresh'));
+      // Partial progress is persisted server-side per keyword — re-sync so it's visible.
+      onKeywordAdded();
     } finally {
       clearInterval(progressInterval);
       setIsFetchingRanks(false);

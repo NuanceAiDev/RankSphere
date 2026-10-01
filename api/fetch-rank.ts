@@ -1,5 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Per-page ceiling for the upstream ValueSERP call. Kept well under the serverless
+// execution limit so we can return a JSON error ourselves rather than being killed
+// mid-flight and handing the browser an HTML gateway timeout.
+const UPSTREAM_TIMEOUT_MS = 8_000;
+
 function normalizeDomain(domain: string): string {
   return domain
     .replace(/^https?:\/\//, '')
@@ -54,14 +59,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let data: any;
     try {
-      const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`);
+      // Cap each upstream call. Without this a hung ValueSERP request stalls the whole
+      // function until the platform kills it, and the browser gets an HTML 504 gateway
+      // page instead of JSON — which is what left the UI spinning.
+      const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`, {
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)
+      });
       if (!response.ok) {
         return res.status(response.status).json({ error: `ValueSERP upstream error: ${response.status}` });
       }
       data = await response.json();
     } catch (err) {
+      const timedOut = err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError');
       console.error(`Proxy fetch failed on page ${page}:`, err);
-      return res.status(500).json({ error: 'Failed to fetch SERP data' });
+      // Always answer with JSON so the client can report a real reason instead of hanging.
+      return res.status(timedOut ? 504 : 500).json({
+        error: timedOut
+          ? `ValueSERP timed out after ${UPSTREAM_TIMEOUT_MS}ms on page ${page}`
+          : 'Failed to fetch SERP data'
+      });
     }
 
     // A. Map Pack (local_results) — only appears on page 1.

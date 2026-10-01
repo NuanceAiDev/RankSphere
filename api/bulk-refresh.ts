@@ -9,6 +9,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 );
 
+// Per-page ceiling for each upstream ValueSERP call. A keyword that times out is counted
+// as a failure for that keyword only; the rest of the batch continues.
+const UPSTREAM_TIMEOUT_MS = 8_000;
+
 // ---------------------------------------------------------------------------
 // Domain normalisation — strips protocol, www, and trailing slashes
 // ---------------------------------------------------------------------------
@@ -64,7 +68,11 @@ async function fetchRank(
       ...locationParams
     });
 
-    const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`);
+    // Cap each upstream call so one hung keyword can't stall the entire batch until the
+    // platform kills the function and the browser receives an HTML 504 instead of JSON.
+    const response = await fetch(`https://api.valueserp.com/search?${params.toString()}`, {
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)
+    });
     if (!response.ok) throw new Error(`ValueSERP error: ${response.status}`);
 
     const data = await response.json();
