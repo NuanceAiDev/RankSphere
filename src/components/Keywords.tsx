@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw, ArrowUp, ArrowDown, ArrowUpDown, Pencil } from 'lucide-react';
 import { Client, Keyword } from '../types';
-import { fetchKeywordRanking, isTimeoutError } from '../lib/valueserp';
+import { fetchKeywordRanking, isTimeoutError, withTimeout } from '../lib/valueserp';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -13,6 +13,11 @@ import { RankTypeToggle } from './RankTypeToggle';
 // well inside the serverless time limit and keep the SERP proxy from rate-limiting us.
 const CHUNK_SIZE = 3;
 const CHUNK_DELAY_MS = 1000;
+
+// Hard ceilings so every promise handed to Promise.allSettled is guaranteed to settle.
+// Without these a single stalled request leaves the whole run — and the UI — hanging silently.
+const KEYWORD_TIMEOUT_MS = 40_000;   // whole keyword: SERP lookup + database write
+const DB_WRITE_TIMEOUT_MS = 15_000;  // Supabase runs its own fetch with no timeout of its own
 
 // Turns any refresh failure into something the user can act on, naming timeouts explicitly.
 const describeRefreshError = (error: unknown, fallback: string): string => {
@@ -363,17 +368,27 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
 
     const nowIso = new Date().toISOString();
-    const { error } = await supabase
-      .from('keywords')
-      .update({
-        current_month_rank: rankingData.rank,  // null is stored as-is, so the row reads "Not ranked"
-        current_month_date: nowIso,
-        last_checked: nowIso,
-        updated_at: nowIso,
-        previous_month_rank: previousRank,
-        previous_month_date: previousDate
-      })
-      .eq('id', keyword.id);
+    // Bounded: supabase-js issues its own fetch with no timeout, so a stalled write would
+    // otherwise never settle and would hang the enclosing Promise.allSettled indefinitely.
+    const { error } = await withTimeout(
+      // Promise.resolve() turns the Supabase query builder (a thenable) into a real promise
+      // so withTimeout's generic resolves to the response type rather than unknown.
+      Promise.resolve(
+        supabase
+          .from('keywords')
+          .update({
+            current_month_rank: rankingData.rank,  // null is stored as-is, so the row reads "Not ranked"
+            current_month_date: nowIso,
+            last_checked: nowIso,
+            updated_at: nowIso,
+            previous_month_rank: previousRank,
+            previous_month_date: previousDate
+          })
+          .eq('id', keyword.id)
+      ),
+      DB_WRITE_TIMEOUT_MS,
+      `Saving "${keyword.text}"`
+    );
 
     if (error) throw new Error(`Could not save "${keyword.text}": ${error.message}`);
   };
@@ -397,11 +412,33 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     let completed = 0;
     const failures: string[] = [];
 
+    const chunks = chunkArray(queue, CHUNK_SIZE);
+    console.log(`[refresh] start — ${total} keyword(s) in ${chunks.length} chunk(s) of ${CHUNK_SIZE}`);
+
     try {
-      for (const chunk of chunkArray(queue, CHUNK_SIZE)) {
+      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+        const chunk = chunks[chunkIndex];
+        console.log(
+          `[refresh] chunk ${chunkIndex + 1}/${chunks.length} → awaiting`,
+          chunk.map(k => k.text)
+        );
+
         // allSettled, not all: one rejection must not cancel its siblings or end the run.
+        // Each entry carries a hard deadline, so this can never wait on a promise that
+        // never settles — that was the silent hang.
         const results = await Promise.allSettled(
-          chunk.map(keyword => refreshKeywordRank(keyword, rankType, applyMonthGuard))
+          chunk.map(keyword =>
+            withTimeout(
+              refreshKeywordRank(keyword, rankType, applyMonthGuard),
+              KEYWORD_TIMEOUT_MS,
+              `"${keyword.text}"`
+            )
+          )
+        );
+
+        console.log(
+          `[refresh] chunk ${chunkIndex + 1}/${chunks.length} ← settled`,
+          results.map(r => r.status)
         );
 
         results.forEach((result, index) => {
@@ -427,11 +464,22 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       console.error('Refresh run failed:', error);
       toast.error(describeRefreshError(error, 'Refresh failed'));
     } finally {
-      // Always runs, so the buttons reset even if something unexpected throws.
-      toast.dismiss(toastId);
+      // Runs on every exit path — normal completion, throw, or early break — so the buttons
+      // can never be left spinning. The state resets happen first and unconditionally;
+      // anything that could throw is isolated below them.
+      console.log('[refresh] finally — resetting UI state');
       setIsFetchingRanks(false);
       setRefreshProgress({ current: 0, total: 0 });
-      onKeywordAdded();  // reflect everything saved, including a partially completed run
+      toast.dismiss(toastId);
+
+      // Isolated: a failed reload must not prevent the resets above or the summary below.
+      try {
+        onKeywordAdded();  // reflect everything saved, including a partially completed run
+      } catch (reloadError) {
+        console.error('[refresh] reload after refresh failed:', reloadError);
+      }
+
+      console.log(`[refresh] done — ${successCount} succeeded, ${failures.length} failed`);
     }
 
     if (successCount > 0) {

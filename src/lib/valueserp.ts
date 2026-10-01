@@ -3,17 +3,41 @@ import { RankSettings, RankingData } from '../types';
 // A single-keyword lookup walks up to 3 SERP pages server-side, so it needs headroom —
 // but it must never wait forever: a request that never settles leaves the spinner stuck
 // on screen because neither .then() nor finally{} ever runs.
-const SINGLE_FETCH_TIMEOUT_MS = 45_000;
+const SINGLE_FETCH_TIMEOUT_MS = 25_000;
 
 /**
- * AbortSignal that fires after `ms`, so a hung request rejects instead of hanging forever.
- * Feature-detected — AbortSignal.timeout is unavailable on older browsers, where we simply
- * fall back to no timeout rather than throwing.
+ * AbortSignal that always fires after `ms`, so a hung request rejects instead of hanging.
+ *
+ * This previously returned `undefined` when AbortSignal.timeout was unavailable, which
+ * silently removed the timeout altogether — the request then hung forever with no error
+ * raised anywhere. The fallback below guarantees a signal in every browser.
  */
-export function timeoutSignal(ms: number): AbortSignal | undefined {
-  return typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
-    ? AbortSignal.timeout(ms)
-    : undefined;
+export function timeoutSignal(ms: number): AbortSignal {
+  if (typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal) {
+    return AbortSignal.timeout(ms);
+  }
+
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(new DOMException(`Timed out after ${ms}ms`, 'TimeoutError')), ms);
+  return controller.signal;
+}
+
+/**
+ * Hard deadline for any promise. Used to bound work that fetch's own signal can't reach —
+ * notably Supabase queries, which run their own unbounded fetch internally. Guarantees the
+ * returned promise settles, so a Promise.allSettled() over these can never stall.
+ */
+export function withTimeout<T>(operation: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new DOMException(`${label} timed out after ${ms}ms`, 'TimeoutError')),
+      ms
+    );
+    operation.then(
+      value => { clearTimeout(timer); resolve(value); },
+      error => { clearTimeout(timer); reject(error); }
+    );
+  });
 }
 
 /** True when a fetch rejected because it timed out / was aborted, rather than returning a response. */
