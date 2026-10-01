@@ -50,6 +50,8 @@ The `VALUESERP_API_KEY` must be set as a **server-side** Vercel environment vari
 
 **Vercel Proxy for SERP API**: The browser never calls ValueSERP directly. `src/lib/valueserp.ts` calls `/api/fetch-rank`, a Vercel serverless function (`api/fetch-rank.ts`) that injects the API key server-side. This prevents key exposure and eliminates CORS issues.
 
+**Client-driven chunked refresh**: Bulk refreshes (Monthly Refresh and Fetch Selected) are driven from the browser in `Keywords.tsx`, not by a single long-running serverless call. `runChunkedRefresh` walks the keyword queue `CHUNK_SIZE` (3) at a time via `Promise.allSettled`, pausing `CHUNK_DELAY_MS` between chunks. Each keyword is its own short `/api/fetch-rank` request, which keeps every call inside the serverless time limit (a single bulk call used to exceed it and return a 504), reports true progress, and lets one failed keyword be skipped instead of aborting the run.
+
 **State lives in `App.tsx`**: `clients` and `keywords` arrays are loaded once at the top level (`Dashboard` component) and passed down as props. Child components call `onKeywordAdded` / `onClientUpdated` callbacks to trigger re-fetches. There is no global state library (no Redux/Zustand).
 
 **Mock Supabase client**: When env vars are absent, `src/lib/supabase.ts` returns a mock client that throws user-friendly errors instead of crashing. The `isSupabaseConfigured` boolean guards write operations.
@@ -65,8 +67,7 @@ The `VALUESERP_API_KEY` must be set as a **server-side** Vercel environment vari
 ```
 RankSphere/
 ├── api/                    # Vercel serverless functions (Node.js, not bundled by Vite)
-│   ├── fetch-rank.ts       # ValueSERP proxy — keeps API key server-side
-│   └── bulk-refresh.ts     # Bulk rank refresh endpoint
+│   └── fetch-rank.ts       # ValueSERP proxy — keeps API key server-side
 ├── src/
 │   ├── App.tsx             # Root: routing, Dashboard state (clients + keywords)
 │   ├── types/index.ts      # All shared TypeScript interfaces

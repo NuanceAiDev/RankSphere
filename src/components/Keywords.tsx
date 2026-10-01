@@ -1,17 +1,18 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Plus, Upload, RefreshCw, Target, Trash2, RotateCcw, ArrowUp, ArrowDown, ArrowUpDown, Pencil } from 'lucide-react';
 import { Client, Keyword } from '../types';
-import { fetchKeywordRanking, isTimeoutError, timeoutSignal } from '../lib/valueserp';
+import { fetchKeywordRanking, isTimeoutError } from '../lib/valueserp';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
 import { RankTypeToggle } from './RankTypeToggle';
 
-// A bulk refresh can legitimately run for minutes (batches of 4, 1s apart, up to 3 SERP
-// pages each), but it must still be bounded — an unbounded fetch that never settles leaves
-// the progress button stuck forever because finally{} never runs.
-const BULK_FETCH_TIMEOUT_MS = 180_000;
+// Bulk refreshes are driven from the browser: keywords are processed CHUNK_SIZE at a time,
+// each as its own short request, with a pause between chunks. Small chunks keep every request
+// well inside the serverless time limit and keep the SERP proxy from rate-limiting us.
+const CHUNK_SIZE = 3;
+const CHUNK_DELAY_MS = 1000;
 
 // Turns any refresh failure into something the user can act on, naming timeouts explicitly.
 const describeRefreshError = (error: unknown, fallback: string): string => {
@@ -328,6 +329,122 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
   };
 
+  // Refresh one keyword end-to-end: look up the rank, then persist it. Throws on failure so
+  // the caller can count it without disturbing the rest of the queue.
+  const refreshKeywordRank = async (
+    keyword: Keyword,
+    rankType: 'dubai' | 'qatar',
+    applyMonthGuard: boolean
+  ) => {
+    const rankingData = await fetchKeywordRanking(
+      selectedClient.domain,
+      keyword.text,
+      rankType,
+      selectedClient.name   // passed for Map Pack title fallback
+    );
+
+    // Monthly refresh archives the outgoing month's rank before overwriting it, but only once
+    // per month — re-running it in the same month must not clobber previous_month_rank.
+    let previousRank = keyword.previous_month_rank;
+    let previousDate = keyword.previous_month_date;
+
+    if (applyMonthGuard) {
+      const today = new Date();
+      const lastChecked = keyword.last_checked ? new Date(keyword.last_checked) : null;
+      const isNewMonth =
+        !lastChecked ||
+        lastChecked.getMonth() !== today.getMonth() ||
+        lastChecked.getFullYear() !== today.getFullYear();
+
+      if (isNewMonth) {
+        previousRank = keyword.current_month_rank;
+        previousDate = keyword.last_checked;
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from('keywords')
+      .update({
+        current_month_rank: rankingData.rank,  // null is stored as-is, so the row reads "Not ranked"
+        current_month_date: nowIso,
+        last_checked: nowIso,
+        updated_at: nowIso,
+        previous_month_rank: previousRank,
+        previous_month_date: previousDate
+      })
+      .eq('id', keyword.id);
+
+    if (error) throw new Error(`Could not save "${keyword.text}": ${error.message}`);
+  };
+
+  // Client-driven chunked refresh. Every keyword is its own short /api/fetch-rank request, so
+  // nothing can outrun the serverless time limit the way one big bulk request did. Chunks run
+  // CHUNK_SIZE at a time with a pause between them to stay under the proxy's rate limit, and a
+  // failing keyword is recorded and skipped rather than aborting the queue.
+  const runChunkedRefresh = async (
+    queue: Keyword[],
+    { applyMonthGuard, toastId, label }: { applyMonthGuard: boolean; toastId: string; label: string }
+  ) => {
+    const total = queue.length;
+    const rankType = selectedClient.rank_type || 'qatar';
+
+    setIsFetchingRanks(true);
+    setRefreshProgress({ current: 0, total });
+    toast.loading(`${label} 0 of ${total}...`, { id: toastId });
+
+    let successCount = 0;
+    let completed = 0;
+    const failures: string[] = [];
+
+    try {
+      for (const chunk of chunkArray(queue, CHUNK_SIZE)) {
+        // allSettled, not all: one rejection must not cancel its siblings or end the run.
+        const results = await Promise.allSettled(
+          chunk.map(keyword => refreshKeywordRank(keyword, rankType, applyMonthGuard))
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            successCount++;
+          } else {
+            failures.push(chunk[index].text);
+            console.error(`Refresh failed for "${chunk[index].text}":`, result.reason);
+          }
+        });
+
+        // Progress reflects keywords actually processed, not a timer guess.
+        completed += chunk.length;
+        setRefreshProgress({ current: completed, total });
+        toast.loading(`${label} ${completed} of ${total}...`, { id: toastId });
+
+        // Breathe between chunks so the SERP proxy doesn't start returning 503s.
+        if (completed < total) {
+          await new Promise(resolve => setTimeout(resolve, CHUNK_DELAY_MS));
+        }
+      }
+    } catch (error) {
+      console.error('Refresh run failed:', error);
+      toast.error(describeRefreshError(error, 'Refresh failed'));
+    } finally {
+      // Always runs, so the buttons reset even if something unexpected throws.
+      toast.dismiss(toastId);
+      setIsFetchingRanks(false);
+      setRefreshProgress({ current: 0, total: 0 });
+      onKeywordAdded();  // reflect everything saved, including a partially completed run
+    }
+
+    if (successCount > 0) {
+      toast.success(`Updated ${successCount} of ${total} keywords`);
+    }
+    if (failures.length > 0) {
+      const preview = failures.slice(0, 3).join(', ');
+      toast.error(
+        `Failed ${failures.length} of ${total}: ${preview}${failures.length > 3 ? '...' : ''}`
+      );
+    }
+  };
+
   const handleFetchSelectedKeywords = async () => {
     if (selectedKeywords.size === 0) {
       toast.error('No keywords selected');
@@ -335,76 +452,15 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
     }
 
     const keywordsToFetch = clientKeywords.filter(k => selectedKeywords.has(k.id));
-    const total = keywordsToFetch.length;
-    setIsFetchingRanks(true);
-    setRefreshProgress({ current: 0, total });
-
-    const BATCH_SIZE = 4;
-    let elapsed = 0;
-    const progressInterval = setInterval(() => {
-      elapsed += BATCH_SIZE;
-      setRefreshProgress(prev => ({ ...prev, current: Math.min(elapsed, total) }));
-    }, 1000);
 
     try {
-      toast.loading(`Fetching rankings for ${total} selected keywords...`, { id: 'fetch-selected' });
-
-      const rankType = selectedClient.rank_type || 'qatar';
-
-      // Send all keywords to the backend in one request — server-side concurrency bypasses
-      // the browser's 6-connection limit and keeps the tab-switch problem off the table.
-      const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
-        method: 'POST',
-        cache: 'no-store',
-        signal: timeoutSignal(BULK_FETCH_TIMEOUT_MS),
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keywords: keywordsToFetch.map(k => ({
-            id: k.id,
-            text: k.text,
-            last_checked: k.last_checked,
-            current_month_rank: k.current_month_rank,
-            previous_month_rank: k.previous_month_rank,
-            previous_month_date: k.previous_month_date
-          })),
-          domain: selectedClient.domain,
-          rankType,
-          brandName: selectedClient.name,
-          applyMonthGuard: false  // Selected fetch updates current rank only
-        })
+      // Selected fetch updates the current rank only — no month archiving.
+      await runChunkedRefresh(keywordsToFetch, {
+        applyMonthGuard: false,
+        toastId: 'fetch-selected',
+        label: 'Fetching'
       });
-
-      toast.dismiss('fetch-selected');
-
-      if (!response.ok) {
-        // A 504/503 body is an HTML gateway page, so never parse it — surface the status instead.
-        throw new Error(
-          response.status === 504 || response.status === 503
-            ? `Server timeout (${response.status}) — the refresh ran longer than the server allows. Some keywords may already have been updated.`
-            : `Bulk refresh failed (${response.status})`
-        );
-      }
-
-      const { successCount, errorCount } = await response.json();
-
-      if (successCount > 0) {
-        toast.success(`Successfully updated ${successCount} keywords!`);
-        onKeywordAdded();
-      }
-      if (errorCount > 0) {
-        toast.error(`Failed to update ${errorCount} keywords`);
-      }
-    } catch (error) {
-      console.error('Error fetching selected keywords:', error);
-      toast.dismiss('fetch-selected');
-      toast.error(describeRefreshError(error, 'Failed to fetch rankings'));
-      // The server writes each keyword as it finishes, so a timeout can still leave partial
-      // results behind — re-sync the table so the user sees whatever did get saved.
-      onKeywordAdded();
     } finally {
-      clearInterval(progressInterval);
-      setIsFetchingRanks(false);
-      setRefreshProgress({ current: 0, total: 0 });
       setSelectedKeywords(new Set());
     }
   };
@@ -415,76 +471,12 @@ export function Keywords({ selectedClient, keywords, onKeywordAdded, onClientUpd
       return;
     }
 
-    const total = clientKeywords.length;
-    setIsFetchingRanks(true);
-    setRefreshProgress({ current: 0, total });
-
-    const BATCH_SIZE = 4;
-    let elapsed = 0;
-    const progressInterval = setInterval(() => {
-      elapsed += BATCH_SIZE;
-      setRefreshProgress(prev => ({ ...prev, current: Math.min(elapsed, total) }));
-    }, 1000);
-
-    try {
-      toast.loading(`Monthly refresh for ${total} keywords...`, { id: 'monthly-refresh' });
-
-      const rankType = selectedClient.rank_type || 'qatar';
-
-      // Delegate the entire refresh to the backend — all ValueSERP fetches run sequentially
-      // in Node with a 1s delay per keyword to prevent 503 proxy overload.
-      const response = await fetch(`/api/bulk-refresh?_t=${Date.now()}`, {
-        method: 'POST',
-        cache: 'no-store',
-        signal: timeoutSignal(BULK_FETCH_TIMEOUT_MS),
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keywords: clientKeywords.map(k => ({
-            id: k.id,
-            text: k.text,
-            last_checked: k.last_checked,
-            current_month_rank: k.current_month_rank,
-            previous_month_rank: k.previous_month_rank,
-            previous_month_date: k.previous_month_date
-          })),
-          domain: selectedClient.domain,
-          rankType,
-          brandName: selectedClient.name,
-          applyMonthGuard: true  // Monthly refresh must protect historical previous_month data
-        })
-      });
-
-      toast.dismiss('monthly-refresh');
-
-      if (!response.ok) {
-        // A 504/503 body is an HTML gateway page, so never parse it — surface the status instead.
-        throw new Error(
-          response.status === 504 || response.status === 503
-            ? `Server timeout (${response.status}) — the refresh ran longer than the server allows. Some keywords may already have been updated.`
-            : `Bulk refresh failed (${response.status})`
-        );
-      }
-
-      const { successCount, errorCount } = await response.json();
-
-      if (successCount > 0) {
-        toast.success(`Monthly refresh completed! Updated ${successCount} keywords.`);
-        onKeywordAdded();
-      }
-      if (errorCount > 0) {
-        toast.error(`Failed to update ${errorCount} keywords`);
-      }
-    } catch (error) {
-      console.error('Error during monthly refresh:', error);
-      toast.dismiss('monthly-refresh');
-      toast.error(describeRefreshError(error, 'Failed to complete monthly refresh'));
-      // Partial progress is persisted server-side per keyword — re-sync so it's visible.
-      onKeywordAdded();
-    } finally {
-      clearInterval(progressInterval);
-      setIsFetchingRanks(false);
-      setRefreshProgress({ current: 0, total: 0 });
-    }
+    // Monthly refresh must protect historical previous_month data.
+    await runChunkedRefresh(clientKeywords, {
+      applyMonthGuard: true,
+      toastId: 'monthly-refresh',
+      label: 'Monthly refresh'
+    });
   };
 
   const toggleKeywordSelection = (keywordId: string) => {
