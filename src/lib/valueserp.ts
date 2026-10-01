@@ -3,11 +3,13 @@ import { RankSettings, RankingData } from '../types';
 // A single-keyword lookup walks up to 3 SERP pages server-side, so it needs headroom —
 // but it must never wait forever: a request that never settles leaves the spinner stuck
 // on screen because neither .then() nor finally{} ever runs.
-// Must stay above the proxy's own worst case (3 SERP pages x 20s = 60s), otherwise the
-// browser would abort a request the server is still legitimately working on. This is a
-// backstop against a request that never settles, not a performance target: early exit
-// means a typical keyword resolves in a few seconds.
-const SINGLE_FETCH_TIMEOUT_MS = 70_000;
+// Per-page ceiling. Each proxy call is now a single ValueSERP request (~2-5s), so this is
+// a generous backstop rather than an expected wait. Worst case for a keyword is 3 pages.
+const PAGE_FETCH_TIMEOUT_MS = 20_000;
+
+// Google deprecated num=100 in Sept 2025, so one request returns ~10 results. We check up
+// to 3 pages (top ~30) and stop early, which also caps credit spend at what we actually use.
+const MAX_PAGES = 3;
 
 /**
  * AbortSignal that always fires after `ms`, so a hung request rejects instead of hanging.
@@ -53,54 +55,58 @@ export function isTimeoutError(error: unknown): boolean {
   );
 }
 
-// Main ranking function — calls the secure /api/fetch-rank proxy instead of
-// hitting ValueSERP directly. This keeps the API key server-side and eliminates CORS issues.
-// The proxy checks pages 1-3 with early exit: a page-1 hit costs 1 credit, page-3 costs 3.
-// domain and brandName are passed so the proxy can do matching server-side and return early.
+// Main ranking function — calls the secure /api/fetch-rank proxy instead of hitting
+// ValueSERP directly, so the API key never reaches the browser and there is no CORS issue.
+//
+// Pagination is driven here rather than in the proxy: we request one SERP page per call and
+// stop as soon as the domain is found. That keeps every serverless invocation to a single
+// upstream request (~2-5s), well inside the free tier's 10s limit, and still spends only the
+// credits we actually use — a page-1 hit costs 1 credit, not 3.
 export async function fetchKeywordRanking(
   domain: string,
   keyword: string,
   rankType: 'dubai' | 'qatar' = 'qatar',
   brandName?: string | null
 ): Promise<RankingData> {
-  console.count('🔥 API CALL START');
-  console.log(`\n🔍 [Proxy] Target: "${domain}" | Keyword: "${keyword}" | Market: ${rankType}`);
+  console.log(`🔍 [Proxy] Target: "${domain}" | Keyword: "${keyword}" | Market: ${rankType}`);
 
-  try {
-    // Route through our secure Vercel serverless proxy — API key never touches the browser.
-    // Proxy returns { rank, url } after checking up to 3 pages with early exit.
-    const url = `/api/fetch-rank?keyword=${encodeURIComponent(keyword)}&rankType=${encodeURIComponent(rankType)}&domain=${encodeURIComponent(domain)}&brandName=${encodeURIComponent(brandName ?? '')}&_t=${Date.now()}`;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const url =
+      `/api/fetch-rank?keyword=${encodeURIComponent(keyword)}` +
+      `&rankType=${encodeURIComponent(rankType)}` +
+      `&domain=${encodeURIComponent(domain)}` +
+      `&brandName=${encodeURIComponent(brandName ?? '')}` +
+      `&page=${page}&_t=${Date.now()}`;
+
     const response = await fetch(url, {
       cache: 'no-store',
-      signal: timeoutSignal(SINGLE_FETCH_TIMEOUT_MS)
+      signal: timeoutSignal(PAGE_FETCH_TIMEOUT_MS)
     });
 
     if (!response.ok) {
-      console.error(`Proxy returned ${response.status}`);
+      console.error(`Proxy returned ${response.status} on page ${page}`);
       // 504/503 come back as an HTML gateway page, so never try to parse the body here.
       throw new Error(
         response.status === 504 || response.status === 503
-          ? `Server timeout (${response.status}) while fetching this keyword`
-          : `Proxy error: ${response.status}`
+          ? `Server timeout (${response.status}) on page ${page} of this keyword`
+          : `Proxy error: ${response.status} on page ${page}`
       );
     }
 
     const result = await response.json();
 
     if (result.rank != null) {
-      console.log(`✅ Found at global pos ${result.rank}`);
+      console.log(`✅ Found at global position ${result.rank} (page ${page})`);
       return { rank: result.rank, url: result.url ?? undefined };
     }
 
-    // Not ranked is a valid outcome, not an error: return null so the caller writes
-    // null to the database and the table reads "Not ranked" instead of staying blank.
-    console.log('❌ Not found in top 30 results.');
-    return { rank: null, url: undefined };
-
-  } catch (error) {
-    console.error('Proxy fetch failed:', error);
-    throw error;
+    console.log(`… not on page ${page}`);
   }
+
+  // Not ranked is a valid outcome, not an error: return null so the caller writes null to
+  // the database and the table reads "Not ranked" instead of staying blank.
+  console.log(`❌ Not found in the top ${MAX_PAGES * 10} results.`);
+  return { rank: null, url: undefined };
 }
 
 export const DEFAULT_RANK_SETTINGS: RankSettings = {
