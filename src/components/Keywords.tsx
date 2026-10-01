@@ -16,7 +16,7 @@ const CHUNK_DELAY_MS = 1000;
 
 // Hard ceilings so every promise handed to Promise.allSettled is guaranteed to settle.
 // Without these a single stalled request leaves the whole run — and the UI — hanging silently.
-const KEYWORD_TIMEOUT_MS = 40_000;   // whole keyword: SERP lookup + database write
+const KEYWORD_TIMEOUT_MS = 85_000;   // whole keyword: SERP lookup (<=70s) + database write (<=15s)
 const DB_WRITE_TIMEOUT_MS = 15_000;  // Supabase runs its own fetch with no timeout of its own
 
 // Turns any refresh failure into something the user can act on, naming timeouts explicitly.

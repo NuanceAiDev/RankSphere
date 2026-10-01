@@ -3,7 +3,11 @@ import { RankSettings, RankingData } from '../types';
 // A single-keyword lookup walks up to 3 SERP pages server-side, so it needs headroom —
 // but it must never wait forever: a request that never settles leaves the spinner stuck
 // on screen because neither .then() nor finally{} ever runs.
-const SINGLE_FETCH_TIMEOUT_MS = 25_000;
+// Must stay above the proxy's own worst case (3 SERP pages x 20s = 60s), otherwise the
+// browser would abort a request the server is still legitimately working on. This is a
+// backstop against a request that never settles, not a performance target: early exit
+// means a typical keyword resolves in a few seconds.
+const SINGLE_FETCH_TIMEOUT_MS = 70_000;
 
 /**
  * AbortSignal that always fires after `ms`, so a hung request rejects instead of hanging.

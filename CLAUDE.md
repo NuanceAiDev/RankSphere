@@ -48,7 +48,9 @@ The `VALUESERP_API_KEY` must be set as a **server-side** Vercel environment vari
 
 ### Key Architectural Decisions
 
-**Vercel Proxy for SERP API**: The browser never calls ValueSERP directly. `src/lib/valueserp.ts` calls `/api/fetch-rank`, a Vercel serverless function (`api/fetch-rank.ts`) that injects the API key server-side. This prevents key exposure and eliminates CORS issues.
+**Vercel Proxy for SERP API**: The browser never calls ValueSERP directly. `src/lib/valueserp.ts` calls `/api/fetch-rank`, a Vercel serverless function (`api/fetch-rank.ts`) that injects the API key server-side. This prevents key exposure and eliminates CORS issues. Never move this key to a `VITE_` variable — Vite inlines those into the public client bundle, which would leak a paid credential to every visitor.
+
+**Serverless time budget**: `api/fetch-rank.ts` sets `export const config = { maxDuration: 60 }`. Vercel's unconfigured 10s default was too short for a 3-page SERP walk and produced 504s. Timeouts are layered so each is inside the next: upstream page 20s → proxy 60s → browser fetch 70s → whole keyword 85s.
 
 **Client-driven chunked refresh**: Bulk refreshes (Monthly Refresh and Fetch Selected) are driven from the browser in `Keywords.tsx`, not by a single long-running serverless call. `runChunkedRefresh` walks the keyword queue `CHUNK_SIZE` (3) at a time via `Promise.allSettled`, pausing `CHUNK_DELAY_MS` between chunks. Each keyword is its own short `/api/fetch-rank` request, which keeps every call inside the serverless time limit (a single bulk call used to exceed it and return a 504), reports true progress, and lets one failed keyword be skipped instead of aborting the run.
 

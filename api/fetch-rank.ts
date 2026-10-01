@@ -1,9 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Per-page ceiling for the upstream ValueSERP call. Kept well under the serverless
-// execution limit so we can return a JSON error ourselves rather than being killed
-// mid-flight and handing the browser an HTML gateway timeout.
-const UPSTREAM_TIMEOUT_MS = 8_000;
+// Vercel defaults serverless functions to a 10s limit, which a 3-page SERP walk could
+// exceed — that was the real source of the 504s, not a platform ceiling. 60s is accepted
+// on Hobby and Pro alike, and lets this function finish naturally.
+export const config = { maxDuration: 60 };
+
+// Per-page ceiling for the upstream ValueSERP call. 3 pages x 20s stays inside the 60s
+// budget above, so we always return a JSON error ourselves rather than being killed
+// mid-flight and handing the browser an HTML gateway timeout. Early exit means most
+// keywords resolve on page 1 in a few seconds.
+const UPSTREAM_TIMEOUT_MS = 20_000;
 
 function normalizeDomain(domain: string): string {
   return domain
